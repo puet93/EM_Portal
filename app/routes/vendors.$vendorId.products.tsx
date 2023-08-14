@@ -17,11 +17,13 @@ export const action = async ({ params, request }: ActionArgs) => {
 	const handler = unstable_createMemoryUploadHandler();
 	const formData = await unstable_parseMultipartFormData(request, handler);
 	const file = formData.get('file') as File;
-	const parsedCSV = await parseCSV(file);
-	const data = parsedCSV.map((row) => ({
-		itemNo: row.itemNo,
-		vendorId,
-	}));
+	const parsedCSV: any[] = await parseCSV(file);
+	const data: { itemNo: string; vendorId: string }[] = parsedCSV.map(
+		(row) => ({
+			itemNo: row.itemNo as string,
+			vendorId: row.vendorId as string,
+		})
+	);
 
 	return json({
 		vendor,
