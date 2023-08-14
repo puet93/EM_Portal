@@ -1,4 +1,4 @@
-app = "label-printer-85cd"
+app = "label-printer"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = [ ]
