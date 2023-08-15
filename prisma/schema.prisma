@@ -37,15 +37,24 @@ model Note {
     userId String
 }
 
+model RetailerProduct {
+    id              String        @id @default(cuid())
+    sku             String        @unique
+    title           String
+    vendorProduct   VendorProduct @relation(fields: [vendorProductId], references: [id])
+    vendorProductId String        @unique
+}
+
 model Vendor {
-    id            String          @id @default(cuid())
-    name          String          @unique
-    VendorProduct VendorProduct[]
+    id       String          @id @default(cuid())
+    name     String          @unique
+    products VendorProduct[]
 }
 
 model VendorProduct {
-    id       String @id @default(cuid())
-    itemNo   String @unique
-    vendor   Vendor @relation(fields: [vendorId], references: [id])
-    vendorId String
+    id              String           @id @default(cuid())
+    itemNo          String           @unique
+    retailerProduct RetailerProduct?
+    vendor          Vendor           @relation(fields: [vendorId], references: [id])
+    vendorId        String
 }
