@@ -14,6 +14,10 @@ export const action = async ({ params, request }: ActionArgs) => {
 	const vendorId = params.vendorId;
 	const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
 
+	if (typeof vendorId !== 'string' || vendorId.length === 0) {
+		return json({ message: 'Invalid vendor' }, 500);
+	}
+
 	const handler = unstable_createMemoryUploadHandler();
 	const formData = await unstable_parseMultipartFormData(request, handler);
 	const file = formData.get('file') as File;
@@ -21,7 +25,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 	const data: { itemNo: string; vendorId: string }[] = parsedCSV.map(
 		(row) => ({
 			itemNo: row.itemNo,
-			vendorId: row.vendorId,
+			vendorId: vendorId,
 		})
 	);
 
