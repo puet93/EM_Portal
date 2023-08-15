@@ -22,18 +22,18 @@ export const action = async ({ params, request }: ActionArgs) => {
 			const data: { sku: string; title: string; itemNo: string }[] =
 				parsedCSV.map((row) => ({
 					sku: row.sku,
-					title: 'DEFAULT PRODUCT NAME',
+					title: row.title || 'DEFAULT TITLE',
 					itemNo: row.itemNo,
 				}));
 			const products = await prisma.$transaction(
-				data.map((product) => {
+				data.map(({ sku, title, itemNo }) => {
 					return prisma.retailerProduct.create({
 						data: {
-							sku: product.sku,
-							title: 'DEFAULT TITLE',
+							sku: sku,
+							title: title,
 							vendorProduct: {
 								connect: {
-									itemNo: product.itemNo,
+									itemNo: itemNo,
 								},
 							},
 						},
