@@ -33,8 +33,8 @@ export default function Index() {
 									<input type="checkbox" />
 								</th>
 								<th>Title</th>
-								<th>Edward Martin</th>
-								<th>Florim</th>
+								<th>Edward Martin Item No.</th>
+								<th>Florim Item No.</th>
 							</tr>
 							{search.data.results.length > 0 ? (
 								search.data.results.map((result) => (
@@ -45,6 +45,35 @@ export default function Index() {
 										<td>{result.title}</td>
 										<td>{result.sku}</td>
 										<td>{result.vendorProduct.itemNo}</td>
+										<td>
+											<button
+												onClick={() => {
+													var mywindow = window.open(
+														'',
+														'PRINT'
+													);
+													mywindow.document.write(
+														'<html><head><title>Sample Label</title>'
+													);
+													mywindow.document.write(
+														'</head><body>'
+													);
+													mywindow.document.write(
+														'<h1>SAMPLE LABEL</h1>'
+													);
+													mywindow.document.write(
+														`<p>${result.title}</p>`
+													);
+													mywindow.document.write(
+														'</body></html>'
+													);
+													mywindow.print();
+													mywindow.close();
+												}}
+											>
+												Print Label
+											</button>
+										</td>
 									</tr>
 								))
 							) : (
