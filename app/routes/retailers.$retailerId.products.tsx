@@ -16,30 +16,58 @@ export const action = async ({ params, request }: ActionArgs) => {
 	const formData = await unstable_parseMultipartFormData(request, handler);
 	const file = formData.get('file') as File;
 	const parsedCSV: any[] = await parseCSV(file);
-	const data: { sku: string; title: string; itemNo: string }[] =
-		parsedCSV.map((row) => ({
-			sku: row.sku,
-			title: 'DEFAULT PRODUCT NAME',
-			itemNo: row.itemNo,
-		}));
 
-	const syncedProducts = await prisma.$transaction(
-		data.map((product) => {
-			return prisma.retailerProduct.create({
-				data: {
-					sku: product.sku, // row.sku
-					title: 'DEFAULT TITLE',
-					vendorProduct: {
-						connect: {
-							itemNo: product.itemNo, // row.itemNo
+	switch (request.method) {
+		case 'POST': {
+			const data: { sku: string; title: string; itemNo: string }[] =
+				parsedCSV.map((row) => ({
+					sku: row.sku,
+					title: 'DEFAULT PRODUCT NAME',
+					itemNo: row.itemNo,
+				}));
+			const products = await prisma.$transaction(
+				data.map((product) => {
+					return prisma.retailerProduct.create({
+						data: {
+							sku: product.sku, // row.sku
+							title: 'DEFAULT TITLE',
+							vendorProduct: {
+								connect: {
+									itemNo: product.itemNo, // row.itemNo
+								},
+							},
 						},
-					},
-				},
-			});
-		})
-	);
+					});
+				})
+			);
 
-	return json({ syncedProducts });
+			return json({ products });
+		}
+		case 'PUT': {
+			const data: { sku: string; title: string }[] = parsedCSV.map(
+				(row) => ({
+					sku: row.sku,
+					title: row.title,
+				})
+			);
+			const products = await prisma.$transaction(
+				data.map((product) => {
+					return prisma.retailerProduct.update({
+						where: {
+							sku: product.sku,
+						},
+						data: {
+							title: product.title,
+						},
+					});
+				})
+			);
+
+			return json({ products });
+		}
+		default:
+			return json({ message: 'Method not supported' }, 405);
+	}
 };
 
 export const loader = async ({ params, request }: LoaderArgs) => {
