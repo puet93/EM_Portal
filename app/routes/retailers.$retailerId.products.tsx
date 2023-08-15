@@ -29,11 +29,11 @@ export const action = async ({ params, request }: ActionArgs) => {
 				data.map((product) => {
 					return prisma.retailerProduct.create({
 						data: {
-							sku: product.sku, // row.sku
+							sku: product.sku,
 							title: 'DEFAULT TITLE',
 							vendorProduct: {
 								connect: {
-									itemNo: product.itemNo, // row.itemNo
+									itemNo: product.itemNo,
 								},
 							},
 						},
