@@ -10,10 +10,11 @@ export default function Index() {
 	return (
 		<main>
 			{user ? (
-				<Link to="/notes">View Notes for {user.email}</Link>
+				<Link to="/retailers/edwardmartin/products">
+					Welcome, {user.email}
+				</Link>
 			) : (
 				<div>
-					<Link to="/join">Sign up</Link>
 					<Link to="/login">Log In</Link>
 				</div>
 			)}
