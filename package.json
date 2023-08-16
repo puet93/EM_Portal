@@ -32,6 +32,8 @@
   ],
   "dependencies": {
     "@isaacs/express-prometheus-middleware": "^1.2.1",
+    "@pdfme/common": "^2.0.2",
+    "@pdfme/generator": "^2.0.2",
     "@prisma/client": "^5.1.1",
     "@remix-run/css-bundle": "^1.19.3",
     "@remix-run/express": "^1.19.3",
