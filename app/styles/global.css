@@ -1,0 +1,98 @@
+html,
+body {
+	margin: 0;
+	padding: 0;
+	font-family: 'Inter', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+}
+
+th {
+	text-align: left;
+}
+
+button,
+.button {
+	background-color: #cccccc;
+	border: 0;
+	border-radius: 10px;
+	box-sizing: border-box;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: calc(20 / 14);
+	padding: 12px 20px;
+	white-space: nowrap;
+}
+
+.primary.button {
+	background-color: blue;
+	color: white;
+}
+
+.input > label {
+	display: block;
+}
+
+.input > input[type='text'],
+.input > input[type='search'] {
+	background-color: #fafafa;
+	border: 0;
+	color: black;
+	border-radius: 10px;
+	font-size: 14px;
+	line-height: calc(20 / 14);
+	padding: 12px 20px;
+	width: 100%;
+}
+
+.orders-page {
+	min-height: 100vh;
+}
+
+.new-order-page {
+	height: 100%;
+	background-color: red;
+	display: flex;
+	max-width: 1024px;
+	margin: 0 auto;
+
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.new-order-search {
+	flex: 1 1 300px;
+	background-color: green;
+	margin-right: 24px;
+}
+
+.new-order-search-results {
+	background-color: orange;
+}
+
+.new-order-search-results table {
+	width: 100%;
+}
+
+.new-order-cart {
+	flex: 0 0 300px;
+	min-height: 500px;
+	background-color: green;
+}
+
+.search-bar {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+}
+
+.search-bar > .input {
+	flex: 1 1 auto;
+}
