@@ -9,14 +9,15 @@ generator client {
 }
 
 model User {
-    id    String @id @default(cuid())
-    email String @unique
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    password Password?
-    notes    Note[]
+    id        String    @id @default(cuid())
+    firstName String?
+    lastName  String?
+    email     String    @unique
+    role      Role      @default(USER)
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    password  Password?
+    notes     Note[]
 }
 
 model Password {
@@ -38,10 +39,43 @@ model Note {
     userId String
 }
 
+model Address {
+    id         String  @id @default(cuid())
+    line1      String
+    line2      String
+    line3      String?
+    line4      String?
+    city       String
+    postalCode String
+    country    String
+    customerId String
+    orders     Order[]
+}
+
+model Order {
+    id        String      @id @default(cuid())
+    address   Address?    @relation(fields: [addressId], references: [id])
+    addressId String?
+    createdAt DateTime    @default(now())
+    notes     String?
+    status    OrderStatus @default(DRAFT)
+    items     OrderItem[]
+}
+
+model OrderItem {
+    id        String          @id @default(uuid())
+    order     Order           @relation(fields: [orderId], references: [id])
+    orderId   String
+    product   RetailerProduct @relation(fields: [productId], references: [id])
+    productId String
+    quantity  Int             @default(1)
+}
+
 model RetailerProduct {
     id              String        @id @default(cuid())
     sku             String        @unique
     title           String
+    orderItems      OrderItem[]
     vendorProduct   VendorProduct @relation(fields: [vendorProductId], references: [id])
     vendorProductId String        @unique
 }
@@ -58,4 +92,18 @@ model VendorProduct {
     retailerProduct RetailerProduct?
     vendor          Vendor           @relation(fields: [vendorId], references: [id])
     vendorId        String
+}
+
+enum OrderStatus {
+    DRAFT
+    NEW
+    PROCESSING
+    COMPLETE
+    CANCELLED
+}
+
+enum Role {
+    ADMIN
+    SUPERADMIN
+    USER
 }

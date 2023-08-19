@@ -5,6 +5,11 @@ body {
 	font-family: 'Inter', sans-serif;
 }
 
+body {
+	background-color: rgb(19, 23, 32);
+	color: white;
+}
+
 h1,
 h2,
 h3,
@@ -14,13 +19,30 @@ h6 {
 	margin: 0;
 }
 
+a {
+	color: white;
+}
+
+a:visited {
+	color: #bcbcbc;
+}
+
 th {
 	text-align: left;
 }
 
-button,
+ul,
+ol,
+li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
 .button {
-	background-color: #cccccc;
+	display: inline-block;
+	background-color: slategray;
+	color: white;
 	border: 0;
 	border-radius: 10px;
 	box-sizing: border-box;
@@ -28,32 +50,58 @@ button,
 	font-size: 14px;
 	line-height: calc(20 / 14);
 	padding: 12px 20px;
+	text-decoration: none;
 	white-space: nowrap;
 }
 
 .primary.button {
-	background-color: blue;
+	background-color: lightseagreen;
 	color: white;
+}
+
+.button.button--sm {
+	border-radius: 6px;
+	font-size: 12px;
+	line-height: calc(16 / 12);
+	padding: 4px 12px;
+}
+
+.input {
+	margin-top: 20px;
+	margin-bottom: 20px;
 }
 
 .input > label {
 	display: block;
 }
 
-.input > input[type='text'],
-.input > input[type='search'] {
-	background-color: #fafafa;
+.input > input[type='email'],
+.input > input[type='password'],
+.input > input[type='search'],
+.input > input[type='text'] {
+	background-color: rgba(0, 0, 0, 0.2);
 	border: 0;
-	color: black;
+	box-sizing: border-box;
+	color: white;
 	border-radius: 10px;
 	font-size: 14px;
 	line-height: calc(20 / 14);
+	margin-top: 8px;
 	padding: 12px 20px;
 	width: 100%;
 }
 
 .orders-page {
-	min-height: 100vh;
+	padding: 48px;
+	background-color: rgba(0, 0, 0, 0.15);
+}
+
+.order-list-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin: 20px 0;
+	max-width: 640px;
 }
 
 .new-order-page {
@@ -95,4 +143,41 @@ button,
 
 .search-bar > .input {
 	flex: 1 1 auto;
+}
+
+.dashboard {
+	display: grid;
+	grid-template-columns: minmax(270px, 320px) auto;
+	grid-template-rows: 100px 1fr;
+
+	min-height: 100vh;
+}
+
+.dashboard-header,
+.dashboard-nav,
+.dashboard-content {
+	box-sizing: border-box;
+	padding: 24px;
+}
+
+.dashboard-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
+	grid-column: 1 / -1;
+	grid-row: 1 / 2;
+}
+
+.dashboard-nav {
+	grid-row: 2 / -1;
+}
+
+.dashboard-content {
+	padding-right: 80px;
+}
+
+.dashbard-nav-list {
+	display: flex;
+	flex-direction: column;
 }

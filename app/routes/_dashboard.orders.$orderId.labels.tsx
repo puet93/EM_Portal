@@ -8,7 +8,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	const orders = await getOrder(params.orderId);
 
 	let size = [384, 192];
-	let pages = orders.lineItems;
+	let pages = orders.items;
 
 	if (pages.length === 0) {
 		throw new Error();
@@ -20,14 +20,16 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		const label = pages[i];
 
 		if (i === 0) {
-			doc.text(label.title, 24, 24)
-				.text(label.sku)
-				.text(label.vendorProductId);
+			doc.text(label.product.title, 24, 24)
+				.text(label.product.sku)
+				.text(label.product.vendorProduct.itemNo)
+				.text('www.edwardmartin.com');
 		} else {
 			doc.addPage({ size })
-				.text(label.title, 24, 24)
-				.text(label.sku)
-				.text(label.vendorProductId);
+				.text(label.product.title, 24, 24)
+				.text(label.product.sku)
+				.text(label.product.vendorProduct.itemNo)
+				.text('www.edwardmartin.com');
 		}
 	}
 	doc.end();

@@ -12,23 +12,23 @@ export default function OrderIndex() {
 	const data = useLoaderData<typeof loader>();
 	return (
 		<div>
-			<Link to="new">Create New Order</Link>
+			<Link className="primary button" to="new">
+				Create New Order
+			</Link>
 
 			<table>
 				<tbody>
 					<tr>
-						<th>Select</th>
 						<th>Order No.</th>
+						<th>Status</th>
 					</tr>
 
 					{data.orders.map((order) => (
 						<tr key={order.id}>
 							<td>
-								<input type="checkbox" value={order.id} />
-							</td>
-							<td>
 								<Link to={order.id}>{order.id}</Link>
 							</td>
+							<td>{order.status}</td>
 						</tr>
 					))}
 				</tbody>

@@ -15,22 +15,31 @@ export default function OrderPage() {
 
 	return (
 		<div>
-			<h2>Order ID: {data.order.id}</h2>
+			<Link to="/orders">Go Back</Link>
 
-			<Link to="labels" target="_blank" reloadDocument>
+			<h2>Order ID: {data.order?.id}</h2>
+
+			<Link
+				className="primary button"
+				to="labels"
+				target="_blank"
+				reloadDocument
+			>
 				Print All
 			</Link>
 
-			<ul>
-				{data.order.lineItems.map((item) => (
-					<li key={item.sku}>
+			<ul className="order-list">
+				{data.order?.items.map((item) => (
+					<li className="order-list-item" key={item.id}>
 						<div>
-							<h3>{item.title}</h3>
-							<p>{item.sku}</p>
-							<p>{item.vendorProductId}</p>
+							<h3>{item.product.title}</h3>
+							<p>{item.product.sku}</p>
+							<p>{item.product.vendorProduct.itemNo}</p>
 						</div>
 
-						<button>Print Label</button>
+						<button className="button button--sm">
+							Print Label
+						</button>
 					</li>
 				))}
 			</ul>
