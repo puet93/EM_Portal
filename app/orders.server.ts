@@ -1,7 +1,11 @@
 import { prisma } from '~/db.server';
 
 export async function getOrders() {
-	const orders = await prisma.order.findMany();
+	const orders = await prisma.order.findMany({
+		orderBy: {
+			createdAt: 'desc',
+		},
+	});
 	return orders;
 }
 

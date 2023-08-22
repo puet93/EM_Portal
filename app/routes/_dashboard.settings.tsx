@@ -1,6 +1,7 @@
-import type { LoaderFunction } from '@remix-run/node';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Form, Link, useLoaderData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
+import { prisma } from '~/db.server';
 import { requireUser } from '~/session.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -9,46 +10,87 @@ export const loader: LoaderFunction = async ({ request }) => {
 	return json({ user });
 };
 
+export const action: ActionFunction = async ({ request }) => {
+	const user = await requireUser(request);
+
+	const formData = await request.formData();
+	const email = formData.get('email');
+	const firstName = formData.get('firstName');
+	const lastName = formData.get('lastName');
+
+	if (
+		typeof email !== 'string' ||
+		typeof firstName !== 'string' ||
+		typeof lastName !== 'string'
+	) {
+		return json({ message: 'Invalid form fields' });
+	}
+
+	const updatedUser = await prisma.user.update({
+		where: {
+			id: user.id,
+		},
+		data: {
+			email,
+			firstName,
+			lastName,
+		},
+	});
+
+	return json({ message: 'User profile updated!', updatedUser });
+};
+
 export default function SettingsPage() {
 	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
 
 	return (
 		<main className="dashboard-content">
-			<header>
-				<h1>Settings Page</h1>
-			</header>
+			<div className="settings-page">
+				<header>
+					<h1>Settings Page</h1>
+				</header>
 
-			<Form method="post">
-				<div className="input">
-					<label htmlFor="email">Email</label>
-					<input
-						id="email"
-						name="email"
-						type="text"
-						value={data.user.email}
-					/>
-				</div>
+				<Form method="post">
+					<div className="input">
+						<label htmlFor="email">Email</label>
+						<input
+							id="email"
+							name="email"
+							type="text"
+							defaultValue={data.user.email}
+						/>
+					</div>
 
-				<div className="input">
-					<label htmlFor="first-name">First Name</label>
-					<input
-						id="first-name"
-						name="firstName"
-						type="text"
-						value={data.user.firstName}
-					/>
-				</div>
+					<div className="input">
+						<label htmlFor="first-name">First Name</label>
+						<input
+							id="first-name"
+							name="firstName"
+							type="text"
+							defaultValue={data.user.firstName}
+						/>
+					</div>
 
-				<div className="input">
-					<label htmlFor="last-name">Last Name</label>
-					<input
-						id="last-name"
-						name="lastName"
-						type="text"
-						value={data.user.lastName}
-					/>
-				</div>
-			</Form>
+					<div className="input">
+						<label htmlFor="last-name">Last Name</label>
+						<input
+							id="last-name"
+							name="lastName"
+							type="text"
+							defaultValue={data.user.lastName}
+						/>
+					</div>
+
+					<div className="form-actions">
+						<button className="primary button">Save</button>
+					</div>
+
+					{actionData?.message ? (
+						<div>{actionData.message}</div>
+					) : null}
+				</Form>
+			</div>
 		</main>
 	);
 }

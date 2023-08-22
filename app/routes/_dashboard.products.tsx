@@ -7,6 +7,7 @@ import {
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
+import { useLoaderData } from '@remix-run/react';
 
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
@@ -78,3 +79,37 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	});
 	return json({ products });
 };
+
+export default function RetailerProductPage() {
+	const data = useLoaderData<typeof loader>();
+
+	return (
+		<main>
+			<div className="products-page">
+				{data.products ? (
+					<table>
+						<tbody>
+							<tr>
+								<th className="caption">Description</th>
+								<th className="caption">Vendor Item No.</th>
+							</tr>
+							{data.products.map((product) => (
+								<tr key={product.id}>
+									<td>
+										<div className="title">
+											{product.title}
+										</div>
+										<div className="caption">
+											{product.sku}
+										</div>
+									</td>
+									<td>{product.vendorProduct.itemNo}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				) : null}
+			</div>
+		</main>
+	);
+}
