@@ -84,8 +84,11 @@ export default function RetailerProductPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<main>
-			<div className="products-page">
+		<main className="products-page">
+			<div className="products-index-page">
+				<header>
+					<h1 className="headline-h3">Products</h1>
+				</header>
 				{data.products ? (
 					<table>
 						<tbody>

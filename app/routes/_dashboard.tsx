@@ -1,6 +1,6 @@
 import type { LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Form, Link, Outlet } from '@remix-run/react';
+import { Form, NavLink, Outlet } from '@remix-run/react';
 import { requireUser } from '~/session.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -25,19 +25,40 @@ export default function DashboardLayout() {
 			<nav className="dashboard-nav">
 				<ul className="dashboard-nav-list">
 					<li>
-						<Link className="dashboard-nav-item" to="/orders">
+						<NavLink
+							className={({ isActive }) =>
+								isActive
+									? 'dashboard-nav-item active'
+									: 'dashboard-nav-item'
+							}
+							to="/orders"
+						>
 							Orders
-						</Link>
+						</NavLink>
 					</li>
 					<li>
-						<Link className="dashboard-nav-item" to="/products">
+						<NavLink
+							className={({ isActive }) =>
+								isActive
+									? 'dashboard-nav-item active'
+									: 'dashboard-nav-item'
+							}
+							to="/products"
+						>
 							Products
-						</Link>
+						</NavLink>
 					</li>
 					<li>
-						<Link className="dashboard-nav-item" to="/settings">
+						<NavLink
+							className={({ isActive }) =>
+								isActive
+									? 'dashboard-nav-item active'
+									: 'dashboard-nav-item'
+							}
+							to="/settings"
+						>
 							Settings
-						</Link>
+						</NavLink>
 					</li>
 				</ul>
 			</nav>

@@ -14,10 +14,14 @@ export default function OrderPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<div>
-			<Link to="/orders">Go Back</Link>
+		<div className="orders-detail-page">
+			<header>
+				<h1 className="headline-h3">Order ID: {data.order?.id}</h1>
+			</header>
 
-			<h2>Order ID: {data.order?.id}</h2>
+			<Link className="button" to="/orders">
+				Go Back
+			</Link>
 
 			<Link
 				className="primary button"
@@ -27,6 +31,17 @@ export default function OrderPage() {
 			>
 				Print All
 			</Link>
+
+			<div>
+				<label htmlFor="status">Status</label>
+				<select id="status" name="status">
+					<option value="DRAFT">Draft</option>
+					<option value="NEW">New</option>
+					<option value="PROCESSING">Processing</option>
+					<option value="COMPLETE">Complete</option>
+					<option value="CANCELLED">Cancelled</option>
+				</select>
+			</div>
 
 			<ul className="order-list">
 				{data.order?.items.map((item) => (

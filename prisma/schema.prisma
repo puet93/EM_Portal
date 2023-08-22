@@ -42,13 +42,12 @@ model Note {
 model Address {
     id         String  @id @default(cuid())
     line1      String
-    line2      String
+    line2      String?
     line3      String?
     line4      String?
     city       String
+    state      String
     postalCode String
-    country    String
-    customerId String
     orders     Order[]
 }
 

@@ -1,15 +1,10 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import {
-	Form,
-	useActionData,
-	useFetcher,
-	useNavigation,
-	useSubmit,
-} from '@remix-run/react';
+import { Outlet, useFetcher, useSubmit } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireSuperAdmin } from '~/session.server';
 import { useState } from 'react';
+import { ImageIcon, SearchIcon } from '~/components/Icons';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireSuperAdmin(request);
@@ -20,7 +15,12 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
 	const cart = formData.get('cart');
-	const parsedCart = JSON.parse(cart);
+
+	if (typeof cart !== 'string' || cart.length === 0) {
+		return json({ error: 'Unable to read cart.' });
+	}
+
+	const parsedCart: { id: string }[] = JSON.parse(cart);
 	const order = await prisma.order.create({
 		data: {
 			items: {
@@ -47,7 +47,7 @@ export default function CreateOrderPage() {
 		);
 	}
 
-	function handleChange(e, item) {
+	function handleChange(e, item: { id: string }) {
 		if (e.target.checked) {
 			setCart([...cart, item]);
 		} else {
@@ -55,21 +55,36 @@ export default function CreateOrderPage() {
 		}
 	}
 
-	function isAlreadyInCart(item, cart): boolean {
+	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
 		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
+	}
+
+	function removeFromCart(item: { id: string }) {
+		setCart(cart.filter((cartItem) => cartItem.id !== item.id));
+		const checkbox = document.getElementById(item.id + '-checkbox');
+		if (checkbox === null) return;
+		checkbox.checked = false;
 	}
 
 	return (
 		<div className="new-order-page">
+			<header className="page-header">
+				<h1 className="headline-h3">Create Order</h1>
+			</header>
+
 			<section>
+				<h2 className="headline-h6">Search for items</h2>
 				<search.Form method="post" action="/search">
 					<div className="search-bar">
+						<SearchIcon className="search-icon" id="search-icon" />
 						<input
+							aria-labelledby="search-icon"
 							className="search-input"
 							type="search"
 							name="query"
 							id="query"
 							placeholder="Search"
+							autoComplete="off"
 						/>
 
 						<button className="button" type="submit">
@@ -88,32 +103,53 @@ export default function CreateOrderPage() {
 									<th className="caption">Florim Item No.</th>
 								</tr>
 
-								{search.data.results.map((item) => {
-									const checked = isAlreadyInCart(item, cart);
+								{search.data.results.map(
+									(item: {
+										id: string;
+										title: string;
+										sku: string;
+										vendorProduct: { itemNo: string };
+									}) => {
+										const checked = isAlreadyInCart(
+											item,
+											cart
+										);
 
-									return (
-										<tr key={item.id}>
-											<td>
-												<input
-													type="checkbox"
-													onChange={(e) => {
-														handleChange(e, item);
-													}}
-													defaultChecked={checked}
-												/>
-											</td>
-											<td>
-												<div className="title">
-													{item.title}
-												</div>
-												<div className="caption">
-													{item.sku}
-												</div>
-											</td>
-											<td>{item.vendorProduct.itemNo}</td>
-										</tr>
-									);
-								})}
+										return (
+											<tr key={item.id}>
+												<td>
+													<input
+														id={`${item.id}-checkbox`}
+														type="checkbox"
+														onChange={(e) => {
+															handleChange(
+																e,
+																item
+															);
+														}}
+														defaultChecked={checked}
+													/>
+												</td>
+												<td>
+													<label
+														className="checkbox-label"
+														htmlFor={`${item.id}-checkbox`}
+													>
+														<div className="title">
+															{item.title}
+														</div>
+														<div className="caption">
+															{item.sku}
+														</div>
+													</label>
+												</td>
+												<td>
+													{item.vendorProduct.itemNo}
+												</td>
+											</tr>
+										);
+									}
+								)}
 							</tbody>
 						</table>
 					) : (
@@ -122,7 +158,9 @@ export default function CreateOrderPage() {
 				) : null}
 			</section>
 
-			<aside>
+			<aside className="sample-cart">
+				<h2 className="headline-h6">Selected Samples</h2>
+
 				<button
 					className="primary button full-width"
 					onClick={handleSubmit}
@@ -130,9 +168,32 @@ export default function CreateOrderPage() {
 					Create Order
 				</button>
 
-				{cart.map((item) => (
-					<div key={item.id}>{item.title}</div>
-				))}
+				<Outlet />
+
+				<ul className="sample-cart-list">
+					{cart.map(
+						(item: { id: string; sku: string; title: string }) => (
+							<li className="sample-cart-item" key={item.id}>
+								<div className="sample-cart-img">
+									<ImageIcon />
+								</div>
+								<div>
+									<div className="caption caption--bold">
+										{item.title}
+									</div>
+									<div className="caption-2">{item.sku}</div>
+								</div>
+								<button
+									aria-label="Delete"
+									className="sample-cart-delete-button"
+									onClick={() => {
+										removeFromCart(item);
+									}}
+								></button>
+							</li>
+						)
+					)}
+				</ul>
 			</aside>
 		</div>
 	);

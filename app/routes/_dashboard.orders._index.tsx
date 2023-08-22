@@ -11,7 +11,10 @@ export const loader = async ({ request }: LoaderArgs) => {
 export default function OrderIndex() {
 	const data = useLoaderData<typeof loader>();
 	return (
-		<div>
+		<div className="orders-index-page">
+			<header>
+				<h1 className="headline-h3">Orders</h1>
+			</header>
 			<Link className="primary button" to="new">
 				Create New Order
 			</Link>
@@ -19,8 +22,8 @@ export default function OrderIndex() {
 			<table>
 				<tbody>
 					<tr>
-						<th>Order No.</th>
-						<th>Status</th>
+						<th className="caption">Order No.</th>
+						<th className="caption">Status</th>
 					</tr>
 
 					{data.orders.map((order) => (

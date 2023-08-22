@@ -48,7 +48,7 @@ export default function SettingsPage() {
 		<main className="dashboard-content">
 			<div className="settings-page">
 				<header>
-					<h1>Settings Page</h1>
+					<h1 className="headline-h3">Settings Page</h1>
 				</header>
 
 				<Form method="post">
