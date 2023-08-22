@@ -60,6 +60,33 @@ export function ImageIcon() {
 	);
 }
 
+export function SaveIcon() {
+	return (
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+			<path
+				fillRule="evenodd"
+				clipRule="evenodd"
+				d="M16.164 3H5.007C3.897 3 2.999 3.904 3.007 5.015L3.111 19.015C3.119 20.114 4.012 21 5.111 21H18.992C20.097 21 20.992 20.105 20.992 19V7.828C20.992 7.298 20.781 6.789 20.406 6.414L17.578 3.586C17.203 3.211 16.695 3 16.164 3Z"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M15.993 3V6.909C15.993 7.461 15.545 7.909 14.993 7.909H8.993C8.441 7.909 7.993 7.461 7.993 6.909V3"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M7 21V13.286C7 12.576 7.576 12 8.286 12H15.715C16.424 12 17 12.576 17 13.286V21"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function SearchIcon({
 	className,
 	id,
@@ -69,13 +96,12 @@ export function SearchIcon({
 }) {
 	return (
 		<svg
-			aria-label="Search"
+			className={className}
+			id={id}
 			width="24"
 			height="24"
 			viewBox="0 0 24 24"
 			fill="none"
-			className={className}
-			id={id}
 		>
 			<path
 				d="M15.7138 6.8382C18.1647 9.28913 18.1647 13.2629 15.7138 15.7138C13.2629 18.1647 9.28913 18.1647 6.8382 15.7138C4.38727 13.2629 4.38727 9.28913 6.8382 6.8382C9.28913 4.38727 13.2629 4.38727 15.7138 6.8382"
