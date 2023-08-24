@@ -335,18 +335,17 @@ li {
 	color: var(--secondary-text-color);
 }
 
-.orders-page {
+.main-content,
+.orders-page,
+.products-page {
 	padding: 48px;
 }
 
+.content-wrapper,
 .orders-detail-page,
 .orders-index-page {
 	max-width: 1280px;
 	margin: 0 auto 48px;
-}
-
-.products-page {
-	padding: 48px;
 }
 
 .products-index-page {
@@ -530,4 +529,31 @@ li {
 .login-form .primary {
 	margin-top: 16px;
 	margin-bottom: 12px;
+}
+
+.flex-form {
+	display: flex;
+	flex-wrap: wrap;
+
+	margin-left: -9px;
+	margin-right: -9px;
+}
+
+.flex-form .button {
+	margin-top: 24px;
+	margin-left: 9px;
+	margin-right: 9px;
+}
+
+.flex-form .input {
+	width: 100%;
+	flex: 0 1 auto;
+	margin-top: 20px;
+	margin-bottom: 0;
+	margin-left: 9px;
+	margin-right: 9px;
+}
+
+.flex-form .input.input--50 {
+	width: calc(50% - 18px);
 }

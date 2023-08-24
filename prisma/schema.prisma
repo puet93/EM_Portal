@@ -1,108 +1,108 @@
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-    provider        = "prisma-client-js"
-    previewFeatures = ["fullTextSearch"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 model User {
-    id        String    @id @default(cuid())
-    firstName String?
-    lastName  String?
-    email     String    @unique
-    role      Role      @default(USER)
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    password  Password?
-    notes     Note[]
+  id        String    @id @default(cuid())
+  firstName String?
+  lastName  String?
+  email     String    @unique
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  password  Password?
+  notes     Note[]
 }
 
 model Password {
-    hash String
+  hash String
 
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
 }
 
 model Note {
-    id    String @id @default(cuid())
-    title String
-    body  String
+  id    String @id @default(cuid())
+  title String
+  body  String
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
 }
 
 model Address {
-    id         String  @id @default(cuid())
-    line1      String
-    line2      String?
-    line3      String?
-    line4      String?
-    city       String
-    state      String
-    postalCode String
-    orders     Order[]
+  id         String  @id @default(cuid())
+  line1      String
+  line2      String?
+  line3      String?
+  line4      String?
+  city       String
+  state      String
+  postalCode String
+  orders     Order[]
 }
 
 model Order {
-    id        String      @id @default(cuid())
-    address   Address?    @relation(fields: [addressId], references: [id])
-    addressId String?
-    createdAt DateTime    @default(now())
-    notes     String?
-    status    OrderStatus @default(DRAFT)
-    items     OrderItem[]
+  id        String      @id @default(cuid())
+  address   Address?    @relation(fields: [addressId], references: [id])
+  addressId String?
+  createdAt DateTime    @default(now())
+  notes     String?
+  status    OrderStatus @default(DRAFT)
+  items     OrderItem[]
 }
 
 model OrderItem {
-    id        String          @id @default(uuid())
-    order     Order           @relation(fields: [orderId], references: [id])
-    orderId   String
-    product   RetailerProduct @relation(fields: [productId], references: [id])
-    productId String
-    quantity  Int             @default(1)
+  id        String          @id @default(uuid())
+  order     Order           @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   RetailerProduct @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int             @default(1)
 }
 
 model RetailerProduct {
-    id              String        @id @default(cuid())
-    sku             String        @unique
-    title           String
-    orderItems      OrderItem[]
-    vendorProduct   VendorProduct @relation(fields: [vendorProductId], references: [id])
-    vendorProductId String        @unique
+  id              String        @id @default(cuid())
+  sku             String        @unique
+  title           String
+  orderItems      OrderItem[]
+  vendorProduct   VendorProduct @relation(fields: [vendorProductId], references: [id])
+  vendorProductId String        @unique
 }
 
 model Vendor {
-    id       String          @id @default(cuid())
-    name     String          @unique
-    products VendorProduct[]
+  id       String          @id @default(cuid())
+  name     String          @unique
+  products VendorProduct[]
 }
 
 model VendorProduct {
-    id              String           @id @default(cuid())
-    itemNo          String           @unique
-    retailerProduct RetailerProduct?
-    vendor          Vendor           @relation(fields: [vendorId], references: [id])
-    vendorId        String
+  id              String           @id @default(cuid())
+  itemNo          String           @unique
+  retailerProduct RetailerProduct?
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  vendorId        String
 }
 
 enum OrderStatus {
-    DRAFT
-    NEW
-    PROCESSING
-    COMPLETE
-    CANCELLED
+  DRAFT
+  NEW
+  PROCESSING
+  COMPLETE
+  CANCELLED
 }
 
 enum Role {
-    ADMIN
-    SUPERADMIN
-    USER
+  ADMIN
+  SUPERADMIN
+  USER
 }

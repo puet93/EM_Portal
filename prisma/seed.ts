@@ -1,3 +1,4 @@
+import type { Role } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -11,34 +12,46 @@ async function seed() {
 		// no worries if it doesn't exist yet
 	});
 
-	const hashedPassword = await bcrypt.hash('eddyrules', 10);
+	const SUPERADMIN: Role = 'SUPERADMIN';
 
-	const user = await prisma.user.create({
-		data: {
-			email,
-			password: {
-				create: {
-					hash: hashedPassword,
+	await prisma.$transaction([
+		prisma.user.create({
+			data: {
+				email: 'eddie.bedrosian@edwardmartin.com',
+				password: {
+					create: { hash: await bcrypt.hash('Emeraldbay823', 10) },
 				},
+				role: SUPERADMIN,
 			},
-		},
-	});
-
-	await prisma.note.create({
-		data: {
-			title: 'My first note',
-			body: 'Hello, world!',
-			userId: user.id,
-		},
-	});
-
-	await prisma.note.create({
-		data: {
-			title: 'My second note',
-			body: 'Hello, world!',
-			userId: user.id,
-		},
-	});
+		}),
+		prisma.user.create({
+			data: {
+				email: 'eddy.tseng@edwardmartin.com',
+				password: {
+					create: { hash: await bcrypt.hash('eddyrules', 10) },
+				},
+				role: SUPERADMIN,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				email: 'greg.tracz@edwardmartin.com',
+				password: {
+					create: { hash: await bcrypt.hash('gregtracz', 10) },
+				},
+				role: SUPERADMIN,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				email: 'nicole.portman@edwardmartin.com',
+				password: {
+					create: { hash: await bcrypt.hash('nicoleportman', 10) },
+				},
+				role: SUPERADMIN,
+			},
+		}),
+	]);
 
 	console.log(`Database has been seeded. 🌱`);
 }

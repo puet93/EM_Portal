@@ -15,6 +15,7 @@ export default function OrderIndex() {
 			<header>
 				<h1 className="headline-h3">Orders</h1>
 			</header>
+
 			<Link className="primary button" to="new">
 				Create New Order
 			</Link>
