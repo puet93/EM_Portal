@@ -1,9 +1,11 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
+import { Link } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { createUser, getUserByEmail } from '~/models/user.server';
 import { validateEmail } from '~/utils';
+import { useLoaderData } from '@remix-run/react';
 
 export const action = async ({ request }: ActionArgs) => {
 	await requireUserId(request);
@@ -68,5 +70,34 @@ export const action = async ({ request }: ActionArgs) => {
 
 export const loader = async ({ request }: LoaderArgs) => {
 	await requireUserId(request);
-	return json({ users: await prisma.user.findMany() });
+	return json({
+		users: await prisma.user.findMany({
+			orderBy: { email: 'asc' },
+		}),
+	});
 };
+
+export default function UserPage() {
+	const data = useLoaderData<typeof loader>();
+
+	return (
+		<div className="content-wrapper">
+			<header>
+				<h1 className="headline-h3">Users</h1>
+				<Link to="new" className="primary button">
+					Create New User
+				</Link>
+			</header>
+
+			{data.users ? (
+				<ul>
+					{data.users.map((user) => (
+						<li key={user.id}>
+							<Link to={'/users/' + user.id}>{user.email}</Link>
+						</li>
+					))}
+				</ul>
+			) : null}
+		</div>
+	);
+}

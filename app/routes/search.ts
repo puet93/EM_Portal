@@ -8,7 +8,7 @@ export const action = async ({ request }: ActionArgs) => {
 	const searchQuery = formData.get('query');
 
 	if (typeof searchQuery !== 'string' || searchQuery.length === 0) {
-		return json({ results: [] });
+		return json({ results: null });
 	}
 
 	try {
@@ -60,6 +60,10 @@ export const action = async ({ request }: ActionArgs) => {
 		const results = [];
 		for (let i = 0; i < transactions.length; i++) {
 			results.push(...transactions[i]);
+		}
+
+		if (results.length === 0) {
+			return json({ results: null });
 		}
 
 		return json({

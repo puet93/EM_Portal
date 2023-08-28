@@ -7,6 +7,8 @@ import {
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
+import { useLoaderData } from '@remix-run/react';
+import { SearchIcon } from '~/components/Icons';
 
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
@@ -78,3 +80,54 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	});
 	return json({ products });
 };
+
+export default function RetailerProductPage() {
+	const data = useLoaderData<typeof loader>();
+
+	return (
+		<main className="products-page">
+			<div className="products-index-page">
+				<header>
+					<h1 className="headline-h3">Products</h1>
+				</header>
+				{data.products ? (
+					<>
+						<div className="search-bar">
+							<SearchIcon className="search-icon" id="search" />
+							<input
+								type="search"
+								className="search-input"
+								placeholder="Search doesn't work yet."
+							/>
+							<button type="button" className="primary button">
+								Search
+							</button>
+						</div>
+
+						<table>
+							<tbody>
+								<tr>
+									<th className="caption">Description</th>
+									<th className="caption">Vendor Item No.</th>
+								</tr>
+								{data.products.map((product) => (
+									<tr key={product.id}>
+										<td>
+											<div className="title">
+												{product.title}
+											</div>
+											<div className="caption">
+												{product.sku}
+											</div>
+										</td>
+										<td>{product.vendorProduct.itemNo}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</>
+				) : null}
+			</div>
+		</main>
+	);
+}
