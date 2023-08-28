@@ -5,7 +5,7 @@ import { prisma } from '~/db.server';
 import { createUser, getUserByEmail } from '~/models/user.server';
 import { validateEmail } from '~/utils';
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
 
 	if (request.method !== 'POST') {
