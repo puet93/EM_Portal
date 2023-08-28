@@ -51,7 +51,27 @@ export default function SettingsPage() {
 					<h1 className="headline-h3">Settings Page</h1>
 				</header>
 
-				<Form method="post">
+				<Form className="flex-form" method="post">
+					<div className="input input--50">
+						<label htmlFor="first-name">First Name</label>
+						<input
+							id="first-name"
+							name="firstName"
+							type="text"
+							defaultValue={data.user.firstName}
+						/>
+					</div>
+
+					<div className="input input--50">
+						<label htmlFor="last-name">Last Name</label>
+						<input
+							id="last-name"
+							name="lastName"
+							type="text"
+							defaultValue={data.user.lastName}
+						/>
+					</div>
+
 					<div className="input">
 						<label htmlFor="email">Email</label>
 						<input
@@ -62,29 +82,7 @@ export default function SettingsPage() {
 						/>
 					</div>
 
-					<div className="input">
-						<label htmlFor="first-name">First Name</label>
-						<input
-							id="first-name"
-							name="firstName"
-							type="text"
-							defaultValue={data.user.firstName}
-						/>
-					</div>
-
-					<div className="input">
-						<label htmlFor="last-name">Last Name</label>
-						<input
-							id="last-name"
-							name="lastName"
-							type="text"
-							defaultValue={data.user.lastName}
-						/>
-					</div>
-
-					<div className="form-actions">
-						<button className="primary button">Save</button>
-					</div>
+					<button className="primary button">Save</button>
 
 					{actionData?.message ? (
 						<div>{actionData.message}</div>

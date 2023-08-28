@@ -80,7 +80,7 @@ export default function ShippingAside() {
 					</label>
 					<input
 						type="text"
-						name="addressLine1"
+						name="line1"
 						id="ship-to-address-line-1"
 						defaultValue="823 Emerald Bay"
 					/>
@@ -92,7 +92,7 @@ export default function ShippingAside() {
 					</label>
 					<input
 						type="text"
-						name="addressLine2"
+						name="line2"
 						id="ship-to-address-line-2"
 					/>
 				</div>

@@ -70,7 +70,11 @@ export const action = async ({ request }: ActionArgs) => {
 
 export const loader = async ({ request }: LoaderArgs) => {
 	await requireUserId(request);
-	return json({ users: await prisma.user.findMany() });
+	return json({
+		users: await prisma.user.findMany({
+			orderBy: { email: 'asc' },
+		}),
+	});
 };
 
 export default function UserPage() {

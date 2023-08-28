@@ -102,7 +102,7 @@ export default function LoginPage() {
 						className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
 					/>
 					{actionData?.errors?.email ? (
-						<div className="pt-1 text-red-700" id="email-error">
+						<div className="error message" id="email-error">
 							{actionData.errors.email}
 						</div>
 					) : null}
@@ -127,8 +127,12 @@ export default function LoginPage() {
 						aria-describedby="password-error"
 						className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
 					/>
+
+					<div className="error message" id="password-error">
+						Hello There
+					</div>
 					{actionData?.errors?.password ? (
-						<div className="pt-1 text-red-700" id="password-error">
+						<div className="error message" id="password-error">
 							{actionData.errors.password}
 						</div>
 					) : null}
@@ -142,18 +146,8 @@ export default function LoginPage() {
 
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
-						<input
-							id="remember"
-							name="remember"
-							type="checkbox"
-							className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-						/>
-						<label
-							htmlFor="remember"
-							className="ml-2 block text-sm text-gray-900"
-						>
-							Remember me
-						</label>
+						<input id="remember" name="remember" type="checkbox" />
+						<label htmlFor="remember">Remember me</label>
 					</div>
 				</div>
 			</Form>
