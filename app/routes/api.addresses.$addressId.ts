@@ -25,10 +25,5 @@ export const action: ActionFunction = async ({ params, request }) => {
 		data: values,
 	});
 
-	// TODO: Remove
-	await new Promise((res) => {
-		setTimeout(res, 1000);
-	});
-
 	return json(null);
 };
