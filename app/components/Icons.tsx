@@ -1,25 +1,48 @@
-export function EditIcon() {
+export function ArrowLeftIcon() {
 	return (
 		<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
 			<path
-				d="M21 11V19C21 20.105 20.105 21 19 21H5C3.895 21 3 20.105 3 19V5C3 3.895 3.895 3 5 3H13"
-				stroke=""
+				d="M5 12H19"
 				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
+			<path
+				d="M10 7L5 12"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M10 17L5 12"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
+export function EditIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
 			<path
 				fillRule="evenodd"
 				clipRule="evenodd"
-				d="M20.707 6.12125L9.828 17.0002H7V14.1722L17.879 3.29325C18.27 2.90225 18.903 2.90225 19.293 3.29325L20.707 4.70725C21.098 5.09825 21.098 5.73125 20.707 6.12125Z"
-				stroke=""
+				d="M5.293 15.619L15.619 5.293C16.009 4.903 16.642 4.903 17.032 5.293L18.708 6.969C19.098 7.359 19.098 7.992 18.708 8.382L8.381 18.707C8.194 18.895 7.94 19 7.675 19H5V16.325C5 16.06 5.105 15.806 5.293 15.619Z"
 				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
 			<path
-				d="M16.09 5.08984L18.91 7.90984"
-				stroke=""
+				d="M13.75 7.16L16.84 10.25"
 				strokeWidth="1.5"
 				strokeLinecap="round"
 				strokeLinejoin="round"
@@ -30,7 +53,14 @@ export function EditIcon() {
 
 export function ImageIcon() {
 	return (
-		<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
 			<rect
 				x="3"
 				y="3"
@@ -62,7 +92,14 @@ export function ImageIcon() {
 
 export function SaveIcon() {
 	return (
-		<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
 			<path
 				fillRule="evenodd"
 				clipRule="evenodd"
@@ -102,6 +139,8 @@ export function SearchIcon({
 			height="24"
 			viewBox="0 0 24 24"
 			fill="none"
+			aria-hidden
+			focusable="false"
 		>
 			<path
 				d="M15.7138 6.8382C18.1647 9.28913 18.1647 13.2629 15.7138 15.7138C13.2629 18.1647 9.28913 18.1647 6.8382 15.7138C4.38727 13.2629 4.38727 9.28913 6.8382 6.8382C9.28913 4.38727 13.2629 4.38727 15.7138 6.8382"
@@ -123,7 +162,14 @@ export function SearchIcon({
 
 export function TrashIcon() {
 	return (
-		<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
 			<path
 				d="M5 7H19"
 				strokeWidth="1.5"
