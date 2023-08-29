@@ -52,7 +52,7 @@ model Address {
 }
 
 model Order {
-    id        String      @id @default(cuid())
+    id        String      @id @default(uuid())
     address   Address     @relation(fields: [addressId], references: [id])
     addressId String
     createdAt DateTime    @default(now())

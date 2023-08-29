@@ -9,7 +9,12 @@ import {
 } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { useEffect, useState } from 'react';
-import { EditIcon, ImageIcon, SearchIcon } from '~/components/Icons';
+import {
+	ArrowLeftIcon,
+	EditIcon,
+	ImageIcon,
+	SearchIcon,
+} from '~/components/Icons';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	const orderId = params.orderId;
@@ -148,8 +153,9 @@ export default function NewOrderDetailsPage() {
 	return (
 		<div className="new-order-page">
 			<header className="page-header">
-				<Link to="/orders" className="circle-icon-button">
-					Go Back
+				<Link to="/orders" className="circle-button circle-button--lg">
+					<span className="visually-hidden">Go Back</span>
+					<ArrowLeftIcon />
 				</Link>
 				<h1 className="headline-h3">Order {data.order.id}</h1>
 			</header>

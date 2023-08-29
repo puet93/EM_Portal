@@ -92,16 +92,24 @@ export default function RetailerProductPage() {
 				</header>
 				{data.products ? (
 					<>
-						<div className="search-bar">
-							<SearchIcon className="search-icon" id="search" />
-							<input
-								type="search"
-								className="search-input"
-								placeholder="Search doesn't work yet."
-							/>
-							<button type="button" className="primary button">
-								Search
-							</button>
+						<div className="table-toolbar">
+							<div className="search-bar">
+								<SearchIcon
+									className="search-icon"
+									id="search"
+								/>
+								<input
+									type="search"
+									className="search-input"
+									placeholder="Search doesn't work yet."
+								/>
+								<button
+									type="button"
+									className="primary button"
+								>
+									Search
+								</button>
+							</div>
 						</div>
 
 						<table>
