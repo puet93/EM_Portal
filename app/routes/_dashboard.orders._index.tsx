@@ -57,7 +57,7 @@ export default function OrderIndex() {
 				<tbody>
 					<tr>
 						<th className="caption">Name</th>
-						<th className="caption">Location</th>
+						<th className="caption">Order No.</th>
 						<th className="caption">Status</th>
 						<th>
 							<span className="visually-hidden">Actions</span>
@@ -74,16 +74,12 @@ export default function OrderIndex() {
 										<div className="title">
 											{order.address.line1}
 										</div>
-										<div className="caption">
-											{order.id}
-										</div>
+										{city && state && postalCode ? (
+											<div className="caption">{`${city}, ${state} ${postalCode}`}</div>
+										) : null}
 									</Link>
 								</td>
-								<td className="caption">
-									{city && state && postalCode
-										? `${city}, ${state} ${postalCode}`
-										: 'Unknown'}
-								</td>
+								<td className="caption">{order.id}</td>
 								<td>
 									<span
 										className={`${order.status.toLowerCase()} badge`}

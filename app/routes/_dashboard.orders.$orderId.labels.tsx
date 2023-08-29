@@ -33,12 +33,17 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 
 			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
 
-			doc.fontSize(9).text(label.product.vendorProduct.itemNo, 192, 158, {
-				width: 168,
-				align: 'right',
-			});
+			doc.fontSize(11).text(
+				label.product.vendorProduct.itemNo,
+				192,
+				158,
+				{
+					width: 168,
+					align: 'right',
+				}
+			);
 
-			doc.fontSize(10).text('www.edwardmartin.com', 24, 158, {
+			doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
 				width: 168,
 				align: 'left',
 			});
@@ -49,12 +54,17 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 
 			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
 
-			doc.fontSize(9).text(label.product.vendorProduct.itemNo, 192, 158, {
-				width: 168,
-				align: 'right',
-			});
+			doc.fontSize(11).text(
+				label.product.vendorProduct.itemNo,
+				192,
+				158,
+				{
+					width: 168,
+					align: 'right',
+				}
+			);
 
-			doc.fontSize(10).text('www.edwardmartin.com', 24, 158, {
+			doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
 				width: 168,
 				align: 'left',
 			});
