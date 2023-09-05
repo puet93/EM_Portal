@@ -23,6 +23,56 @@ export function ArrowLeftIcon() {
 	);
 }
 
+export function DocumentSyncIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<path
+				d="M18.0025 10.9996V7.82627C18.0025 7.29605 17.7914 6.78683 17.4162 6.41168L14.5871 3.5825C14.2119 3.20734 13.7027 2.99625 13.1725 2.99625H5.99749C4.89203 2.99625 3.99666 3.89163 3.99666 4.99709V19.0029C3.99666 20.1084 4.89203 21.0038 5.99749 21.0038H10.9996"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M19.4541 15.8286H21.0017V14.281"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M15.9936 19.176H14.446V20.7236"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M21.0037 18.6698C20.8397 19.147 20.5816 19.5972 20.1994 19.9783C18.8318 21.3459 16.6149 21.3459 15.2473 19.9783C15.0042 19.7352 14.8062 19.4641 14.6491 19.177"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M20.7977 15.8276C20.6406 15.5405 20.4435 15.2694 20.1994 15.0263C18.8318 13.6587 16.6149 13.6587 15.2473 15.0263C14.8662 15.4074 14.6041 15.8576 14.44 16.3348"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M18.0025 7.99834H14.0008C13.4486 7.99834 13.0004 7.55015 13.0004 6.99792V2.99625"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function EditIcon() {
 	return (
 		<svg

@@ -1,6 +1,5 @@
 import type { ActionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { useActionData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 
 export const action = async ({ request }: ActionArgs) => {

@@ -4,6 +4,7 @@ import {
 	unstable_parseMultipartFormData,
 	json,
 } from '@remix-run/node';
+import { Outlet } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
@@ -78,3 +79,11 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	});
 	return json({ products });
 };
+
+export default function RetailerProductsPage() {
+	return (
+		<main className="main-content">
+			<Outlet />
+		</main>
+	);
+}
