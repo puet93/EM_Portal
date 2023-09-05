@@ -722,6 +722,10 @@ li {
 	margin: 48px -6px 48px 0;
 }
 
+.table-toolbar > form {
+	width: 100%;
+}
+
 .table-toolbar-title {
 	font-size: 24px;
 	font-weight: 500;
