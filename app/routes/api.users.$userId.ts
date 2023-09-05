@@ -6,14 +6,28 @@ import { prisma } from '~/db.server';
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
 
-	if (request.method !== 'DELETE') {
-		return json(
-			{ errors: { message: 'Request method invalid' } },
-			{ status: 405 }
-		);
-	}
+	const userId = params.userId;
+	const formData = await request.formData();
+	const { ...values } = Object.fromEntries(formData);
 
-	return json({
-		user: await prisma.user.delete({ where: { id: params.userId } }),
-	});
+	switch (request.method) {
+		case 'PUT':
+			return json({
+				user: await prisma.user.update({
+					where: { id: userId },
+					data: { ...values },
+				}),
+			});
+		case 'DELETE':
+			return json({
+				user: await prisma.user.delete({
+					where: { id: userId },
+				}),
+			});
+		default:
+			return json(
+				{ errors: { message: 'Request method invalid' } },
+				{ status: 405 }
+			);
+	}
 };

@@ -36,31 +36,34 @@ export default function DashboardLayout() {
 							Orders
 						</NavLink>
 					</li>
-					<li>
-						<NavLink
-							className={({ isActive }) =>
-								isActive
-									? 'dashboard-nav-item active'
-									: 'dashboard-nav-item'
-							}
-							to="/products"
-						>
-							Products
-						</NavLink>
-					</li>
 					{data.user.role === 'SUPERADMIN' ? (
-						<li>
-							<NavLink
-								className={({ isActive }) =>
-									isActive
-										? 'dashboard-nav-item active'
-										: 'dashboard-nav-item'
-								}
-								to="/users"
-							>
-								Users
-							</NavLink>
-						</li>
+						<>
+							<li>
+								<NavLink
+									className={({ isActive }) =>
+										isActive
+											? 'dashboard-nav-item active'
+											: 'dashboard-nav-item'
+									}
+									to="/products"
+								>
+									Products
+								</NavLink>
+							</li>
+
+							<li>
+								<NavLink
+									className={({ isActive }) =>
+										isActive
+											? 'dashboard-nav-item active'
+											: 'dashboard-nav-item'
+									}
+									to="/users"
+								>
+									Users
+								</NavLink>
+							</li>
+						</>
 					) : null}
 					<li>
 						<NavLink

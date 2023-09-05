@@ -41,6 +41,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 export default function OrderIndex() {
 	const data = useLoaderData<typeof loader>();
+
 	return (
 		<div className="orders-index-page">
 			<header>
@@ -57,6 +58,7 @@ export default function OrderIndex() {
 				<tbody>
 					<tr>
 						<th className="caption">Name</th>
+						<th className="caption">Created</th>
 						<th className="caption">Order No.</th>
 						<th className="caption">Status</th>
 						<th>
@@ -67,6 +69,10 @@ export default function OrderIndex() {
 					{data.orders.map((order) => {
 						const address = order.address;
 						const { city, state, postalCode } = address;
+						const date = new Date(order.createdAt).toLocaleString(
+							'en-US'
+						);
+
 						return (
 							<tr key={order.id}>
 								<td>
@@ -79,6 +85,7 @@ export default function OrderIndex() {
 										) : null}
 									</Link>
 								</td>
+								<td>{date}</td>
 								<td className="caption">{order.id}</td>
 								<td>
 									<span
