@@ -22,8 +22,17 @@ export const action = async ({ request }: ActionArgs) => {
 	});
 };
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderArgs) => {
 	await requireUserId(request);
+
+	const url = new URL(request.url);
+	const name = url.searchParams.get('name');
+
+	if (typeof name === 'string' && name.length !== 0) {
+		const vendor = await prisma.vendor.findUnique({ where: { name } });
+		return json({ vendor });
+	}
+
 	const vendors = await prisma.vendor.findMany();
 	return json({ vendors });
 };
