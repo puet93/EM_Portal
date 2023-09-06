@@ -31,6 +31,7 @@ CREATE TABLE "Note" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" TEXT NOT NULL,
+    "orderId" TEXT,
 
     CONSTRAINT "Note_pkey" PRIMARY KEY ("id")
 );
@@ -54,7 +55,6 @@ CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
     "addressId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "notes" TEXT,
     "status" "OrderStatus" NOT NULL DEFAULT 'DRAFT',
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
@@ -92,6 +92,7 @@ CREATE TABLE "Vendor" (
 CREATE TABLE "VendorProduct" (
     "id" TEXT NOT NULL,
     "itemNo" TEXT NOT NULL,
+    "listPrice" DECIMAL(65,30),
     "vendorId" TEXT NOT NULL,
 
     CONSTRAINT "VendorProduct_pkey" PRIMARY KEY ("id")
@@ -120,6 +121,9 @@ ALTER TABLE "Password" ADD CONSTRAINT "Password_userId_fkey" FOREIGN KEY ("userI
 
 -- AddForeignKey
 ALTER TABLE "Note" ADD CONSTRAINT "Note_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Note" ADD CONSTRAINT "Note_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "Address"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
