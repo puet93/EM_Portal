@@ -2,16 +2,21 @@ import type { LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Outlet } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
+import { prisma } from '~/db.server';
 
 export const loader = async ({ request }: LoaderArgs) => {
 	await requireUserId(request);
-	return json({});
+	const vendors = await prisma.vendor.findMany();
+	return json({ vendors });
 };
 
-export default function UserPage() {
+export default function VendorDetailPage() {
 	return (
-		<main className="main-content">
+		<>
+			<header>
+				<h1>Florim</h1>
+			</header>
 			<Outlet />
-		</main>
+		</>
 	);
 }

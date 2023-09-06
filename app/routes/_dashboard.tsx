@@ -58,6 +58,19 @@ export default function DashboardLayout() {
 											? 'dashboard-nav-item active'
 											: 'dashboard-nav-item'
 									}
+									to="/vendors"
+								>
+									Vendors
+								</NavLink>
+							</li>
+
+							<li>
+								<NavLink
+									className={({ isActive }) =>
+										isActive
+											? 'dashboard-nav-item active'
+											: 'dashboard-nav-item'
+									}
 									to="/users"
 								>
 									Users

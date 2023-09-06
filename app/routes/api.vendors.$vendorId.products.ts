@@ -11,27 +11,49 @@ import { parseCSV } from '~/utils/csv';
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
 
-	const vendorId = params.vendorId;
-	const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+	const vendor = await prisma.vendor.findUnique({
+		where: { id: params.vendorId },
+	});
 
-	if (typeof vendorId !== 'string' || vendorId.length === 0) {
-		return json({ message: 'Invalid vendor' }, 500);
+	if (!vendor) {
+		return json({ message: 'Unable to locate vendor.' }, 500);
 	}
 
 	const handler = unstable_createMemoryUploadHandler();
 	const formData = await unstable_parseMultipartFormData(request, handler);
 	const file = formData.get('file') as File;
 	const parsedCSV: any[] = await parseCSV(file);
-	const data: { itemNo: string; vendorId: string }[] = parsedCSV.map(
-		(row) => ({
+	const data: { itemNo: string; listPrice: number; vendorId: string }[] =
+		parsedCSV.map((row) => ({
 			itemNo: row.itemNo,
-			vendorId: vendorId,
+			listPrice: row.listPrice,
+			vendorId: vendor.id,
+		}));
+
+	const vendorProducts = await prisma.$transaction(
+		data.map((item) => {
+			return prisma.vendorProduct.upsert({
+				where: {
+					itemNo: item.itemNo,
+					vendor,
+				},
+				update: {
+					itemNo: item.itemNo,
+					listPrice: item.listPrice,
+				},
+				create: {
+					itemNo: item.itemNo,
+					listPrice: item.listPrice,
+					vendorId: vendor.id,
+				},
+			});
 		})
 	);
 
 	return json({
+		count: vendorProducts.length,
 		vendor,
-		products: await prisma.vendorProduct.createMany({ data }),
+		vendorProducts,
 	});
 };
 
