@@ -324,7 +324,10 @@ li {
 }
 
 .dashboard-nav-item {
-	display: block;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+
 	background-color: transparent;
 	border: 0;
 	border-radius: 12px;
@@ -340,19 +343,29 @@ li {
 	transition: background-color 0.2s, color 0.2s;
 }
 
+.dashboard-nav-item svg {
+	margin-right: 16px;
+	stroke: var(--secondary-text-color);
+	transition: stroke 0.2s;
+}
+
+.dashboard-nav-item.active svg,
+.dashboard-nav-item:hover svg {
+	stroke: white;
+}
+
 .dashboard-nav-item,
 .dashboard-nav-item:visited {
 	color: var(--secondary-text-color);
 }
 
-.dashboard-nav-item.active {
-	background-color: #191b20;
+.dashboard-nav-item.active,
+.dashboard-nav-item:hover {
 	color: white;
 }
 
-.dashboard-nav-item:hover {
-	/* background-color: var(--primary-color); */
-	color: var(--primary-color);
+.dashboard-nav-item.active {
+	background-color: #191b20;
 }
 
 .form-actions {

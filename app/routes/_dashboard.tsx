@@ -2,6 +2,13 @@ import type { LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { requireUser } from '~/session.server';
+import {
+	DeliveryShipmentPackagesSearchIcon,
+	PalletBoxMoveRightIcon,
+	SettingsIcon,
+	ShoppingInvoiceListIcon,
+	UsersIcon,
+} from '~/components/Icons';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
@@ -33,6 +40,7 @@ export default function DashboardLayout() {
 							}
 							to="/orders"
 						>
+							<ShoppingInvoiceListIcon />
 							Orders
 						</NavLink>
 					</li>
@@ -47,6 +55,7 @@ export default function DashboardLayout() {
 									}
 									to="/products"
 								>
+									<DeliveryShipmentPackagesSearchIcon />
 									Products
 								</NavLink>
 							</li>
@@ -60,6 +69,7 @@ export default function DashboardLayout() {
 									}
 									to="/vendors"
 								>
+									<PalletBoxMoveRightIcon />
 									Vendors
 								</NavLink>
 							</li>
@@ -73,6 +83,7 @@ export default function DashboardLayout() {
 									}
 									to="/users"
 								>
+									<UsersIcon />
 									Users
 								</NavLink>
 							</li>
@@ -87,6 +98,7 @@ export default function DashboardLayout() {
 							}
 							to="/settings"
 						>
+							<SettingsIcon />
 							Settings
 						</NavLink>
 					</li>
