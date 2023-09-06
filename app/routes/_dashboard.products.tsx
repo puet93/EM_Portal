@@ -116,7 +116,7 @@ export default function RetailerProductPage() {
 								<th className="caption">Description</th>
 								<th className="caption">Vendor Item No.</th>
 							</tr>
-							{data.products.map((product) => (
+							{search.data.results.map((product) => (
 								<tr key={product.id}>
 									<td>
 										<div className="title">
