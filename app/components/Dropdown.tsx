@@ -1,17 +1,26 @@
 import type { MouseEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDownIcon } from './Icons';
 
 export default function Dropdown({
 	name,
 	options,
+	defaultValue,
 }: {
 	name: string;
 	options: { value: string; label: string }[];
+	defaultValue?: string;
 }) {
 	const [isMenuVisible, setIsMenuVisible] = useState(false);
-	const [value, setValue] = useState('');
+	const [value, setValue] = useState(defaultValue || '');
 	const [label, setLabel] = useState('');
+
+	useEffect(() => {
+		const label = options.find(
+			(option) => option.value === defaultValue
+		)?.label;
+		label && setLabel(label);
+	}, [defaultValue, options]);
 
 	function handleClick() {
 		setIsMenuVisible(!isMenuVisible);
