@@ -19,9 +19,14 @@ export default function Dropdown({
 
 	function handleSelection(event: MouseEvent<HTMLDivElement>) {
 		const el = event.currentTarget;
-		const label = el.dataset.label;
-		const value = el.dataset.value;
-		if (typeof value === 'string' && value.length > 0) {
+		const { value, label } = el.dataset;
+
+		if (
+			typeof value === 'string' &&
+			value.length > 0 &&
+			typeof label === 'string' &&
+			label.length > 0
+		) {
 			setValue(value);
 			setLabel(label);
 		} else {
