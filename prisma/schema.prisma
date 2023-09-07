@@ -53,6 +53,20 @@ model Address {
     orders     Order[]
 }
 
+model UnitOfMeasure {
+    name         String        @id
+    singular     String        @unique
+    abbreviation String        @unique
+    measurements Measurement[]
+}
+
+model Measurement {
+    id                String        @id @default(cuid())
+    value             Decimal
+    unitOfMeasure     UnitOfMeasure @relation(fields: [unitOfMeasureName], references: [name])
+    unitOfMeasureName String
+}
+
 model Order {
     id        String      @id @default(uuid())
     address   Address     @relation(fields: [addressId], references: [id])
