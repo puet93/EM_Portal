@@ -7,9 +7,12 @@
 	--primary-color-dark: #0d39eb;
 	--dark-color: #1b1d21;
 	--dark-card: #242731;
-	--dark-input-bg: rgba(25, 27, 32);
 
 	--error-color: #fa2c49;
+
+	--input-bg-color: rgba(25, 27, 32, 1);
+	--input-border-radius: 16px;
+	--input-shadow-color: rgba(36, 39, 49, 0.7);
 }
 
 html,
@@ -158,57 +161,6 @@ li {
 	padding: 4px 12px;
 }
 
-.input {
-	margin-top: 20px;
-	margin-bottom: 20px;
-}
-
-.input > label {
-	display: block;
-	font-size: 12px;
-	font-weight: 400;
-	line-height: calc(16 / 12);
-	margin-bottom: 16px;
-	color: #b2b3bd;
-}
-
-.input > input[type='email'],
-.input > input[type='password'],
-.input > input[type='search'],
-.input > input[type='text'] {
-	background-color: var(--dark-input-bg);
-	border: 0;
-	box-sizing: border-box;
-	color: white;
-	border-radius: 10px;
-	font-size: 14px;
-	line-height: calc(20 / 14);
-	padding: 12px 20px;
-	width: 100%;
-	outline: none;
-	box-shadow: 0 0 0 2px rgba(53, 93, 255, 0);
-	transition: box-shadow 0.15s;
-}
-
-.input > input:active,
-.input > input:focus {
-	box-shadow: 0 0 0 2px rgba(53, 93, 255, 1);
-}
-
-.input.input--sm > label {
-	margin-bottom: 10px;
-}
-
-.input.input--sm > input[type='email'],
-.input.input--sm > input[type='password'],
-.input.input--sm > input[type='search'],
-.input.input--sm > input[type='text'] {
-	border-radius: 6px;
-	font-size: 12px;
-	line-height: calc(16 / 12);
-	padding: 8px 10px;
-}
-
 .order-list-item {
 	display: flex;
 	justify-content: space-between;
@@ -262,7 +214,7 @@ li {
 }
 
 .search-input {
-	background-color: var(--dark-input-bg);
+	background-color: var(--input-bg-color);
 	border: none;
 	border-radius: 10px;
 	box-sizing: border-box;
@@ -793,7 +745,7 @@ li {
 }
 
 .circle-button:hover {
-	background-color: var(--dark-input-bg);
+	background-color: var(--input-bg-color);
 }
 
 .circle-button svg {
@@ -874,4 +826,128 @@ input::file-selector-button {
 	color: white;
 	padding: 20px;
 	box-sizing: border-box;
+}
+
+.dropdown,
+.dropdown-menu-item {
+	font-size: 14px;
+	font-weight: 500;
+	line-height: calc(24 / 14);
+
+	box-sizing: border-box;
+	padding: 16px 24px;
+}
+
+.dropdown,
+.dropdown-menu {
+	border-radius: var(--input-border-radius);
+}
+
+.dropdown {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: space-between;
+	align-items: center;
+	cursor: pointer;
+	background-color: var(--input-bg-color);
+	width: 170px;
+
+	position: relative;
+}
+
+.dropdown-text {
+	color: var(--secondary-text-color);
+}
+
+.dropdown-text.active {
+	color: white;
+}
+
+.dropdown-menu {
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 0;
+	right: 0;
+	background-color: var(--input-bg-color);
+	width: 100%;
+	padding-top: 6px;
+	padding-bottom: 6px;
+
+	box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+.dropdown-menu.hidden {
+	display: none;
+}
+
+.dropdown-menu-item {
+	color: var(--secondary-text-color);
+}
+
+.dropdown-menu-item.selected,
+.dropdown-menu-item.selected:hover {
+	color: var(--primary-color);
+}
+
+.dropdown-menu-item:hover {
+	color: white;
+}
+
+.dropdown i {
+	width: 20px;
+	height: 20px;
+	background-color: white;
+}
+
+.input {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+.input > label {
+	display: block;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: calc(16 / 12);
+	margin-bottom: 16px;
+	color: #b2b3bd;
+}
+
+.input > input[type='email'],
+.input > input[type='password'],
+.input > input[type='search'],
+.input > input[type='text'] {
+	background-color: var(--input-bg-color);
+	border: 0;
+	box-sizing: border-box;
+	color: white;
+	border-radius: 10px;
+	font-size: 14px;
+	line-height: calc(24 / 14);
+	padding: 16px 24px;
+	width: 100%;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(53, 93, 255, 0);
+	transition: box-shadow 0.15s;
+}
+
+.dropdown.active,
+.input > input:active,
+.input > input:focus {
+	box-shadow: 0 0 0 2px rgba(53, 93, 255, 1);
+}
+
+.input.input--sm > label {
+	margin-bottom: 10px;
+}
+
+.input.input--sm > input[type='email'],
+.input.input--sm > input[type='password'],
+.input.input--sm > input[type='search'],
+.input.input--sm > input[type='text'] {
+	border-radius: 6px;
+	font-size: 12px;
+	line-height: calc(16 / 12);
+	padding: 8px 10px;
 }

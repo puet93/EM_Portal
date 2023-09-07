@@ -112,6 +112,27 @@ export function BoxesDeliveryChangeMoveArrowIcon() {
 	);
 }
 
+export function ChevronDownIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<path
+				d="M16 10L12 14L8 10"
+				stroke="white"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function DeliveryShipmentPackagesSearchIcon() {
 	return (
 		<svg
