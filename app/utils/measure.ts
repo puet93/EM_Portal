@@ -1,12 +1,15 @@
 export function standardizeMeasure(measure: string): string {
 	switch (measure) {
+		case 'lbs':
+		case 'LBS':
+			return 'pounds';
 		case 'mm':
 			return 'millimeters';
-		case 'SF':
-			return 'square feet';
 		case 'PC':
 		case 'PCS':
 			return 'pieces';
+		case 'SF':
+			return 'square feet';
 		default:
 			throw new Error(`Unsupported unit of measure provided: ${measure}`);
 	}
