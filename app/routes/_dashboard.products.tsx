@@ -1,25 +1,29 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { SyntheticEvent } from 'react';
 import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,
 	json,
 } from '@remix-run/node';
+import { Form, useActionData, useFetcher } from '@remix-run/react';
+import { useState } from 'react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
-import { useFetcher, useLoaderData } from '@remix-run/react';
 import { SearchIcon } from '~/components/Icons';
+import FileDropInput from '~/components/FileDropInput';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ request }: ActionArgs) => {
 	await requireUserId(request);
 
 	const handler = unstable_createMemoryUploadHandler();
 	const formData = await unstable_parseMultipartFormData(request, handler);
+	const _action = formData.get('_action');
 	const file = formData.get('file') as File;
 	const parsedCSV: any[] = await parseCSV(file);
 
-	switch (request.method) {
-		case 'POST': {
+	switch (_action) {
+		case 'create': {
 			const data: { sku: string; title: string; itemNo: string }[] =
 				parsedCSV.map((row) => ({
 					sku: row.sku,
@@ -44,7 +48,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 
 			return json({ products });
 		}
-		case 'PUT': {
+		case 'update': {
 			const data: { sku: string; title: string }[] = parsedCSV.map(
 				(row) => ({
 					sku: row.sku,
@@ -64,26 +68,34 @@ export const action = async ({ params, request }: ActionArgs) => {
 				})
 			);
 
-			return json({ products });
+			return json({
+				success: true,
+				message: 'Products updated.',
+				products,
+			});
 		}
 		default:
 			return json({ message: 'Method not supported' }, 405);
 	}
 };
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderArgs) => {
 	await requireUserId(request);
-	const products = await prisma.retailerProduct.findMany({
-		include: {
-			vendorProduct: true,
-		},
-	});
-	return json({ products });
+	return json({});
 };
 
 export default function RetailerProductPage() {
-	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
 	const search = useFetcher();
+	const [filename, setFilename] = useState('');
+
+	function handleChange(event: SyntheticEvent): void {
+		var regex = /[^\\]*\.(\w+)$/;
+		const target = event.target as HTMLInputElement;
+		const match = target.value.match(regex);
+		const filename = match ? match[0] : '';
+		setFilename(filename);
+	}
 
 	return (
 		<main className="products-page">
@@ -91,6 +103,55 @@ export default function RetailerProductPage() {
 				<header>
 					<h1 className="headline-h3">Products</h1>
 				</header>
+
+				<Form replace method="post" encType="multipart/form-data">
+					<input type="hidden" value={filename} />
+
+					<div></div>
+					<FileDropInput
+						id="file"
+						name="file"
+						handleChange={handleChange}
+						accept=".csv"
+					/>
+
+					{actionData?.formError ? (
+						<div className="error message">
+							{actionData.formError}
+						</div>
+					) : null}
+
+					{actionData?.success && actionData.message ? (
+						<div className="success message">
+							{actionData.message}
+						</div>
+					) : null}
+
+					<button
+						className="button"
+						type="submit"
+						name="_action"
+						value="update"
+					>
+						Update
+					</button>
+				</Form>
+
+				{actionData?.products ? (
+					<table>
+						<tbody>
+							<tr>
+								<th>Title</th>
+							</tr>
+
+							{actionData.products.map((product) => (
+								<tr key={product.id}>
+									<td>{product.title}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				) : null}
 
 				<div className="table-toolbar">
 					<search.Form method="post" action="/search">
