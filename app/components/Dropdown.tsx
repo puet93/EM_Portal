@@ -9,7 +9,7 @@ export default function Dropdown({
 	name: string;
 	options: { value: string; label: string }[];
 }) {
-	const [isMenuVisible, setIsMenuVisible] = useState(true);
+	const [isMenuVisible, setIsMenuVisible] = useState(false);
 	const [value, setValue] = useState('');
 	const [label, setLabel] = useState('');
 

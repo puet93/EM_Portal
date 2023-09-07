@@ -12,7 +12,10 @@
 
 	--input-bg-color: rgba(25, 27, 32, 1);
 	--input-border-radius: 16px;
-	--input-shadow-color: rgba(36, 39, 49, 0.7);
+	--input-padding: 16px 24px;
+
+	--shadow-02: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+	--shadow-04: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
 }
 
 html,
@@ -111,13 +114,13 @@ li {
 	background-color: rgba(228, 228, 228, 0.1);
 	color: white;
 	border: 0;
-	border-radius: 10px;
+	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
 	cursor: pointer;
 	font-size: 14px;
 	font-weight: 500;
 	line-height: calc(24 / 14);
-	padding: 12px 24px;
+	padding: var(--input-padding);
 	text-align: center;
 	text-decoration: none;
 	white-space: nowrap;
@@ -216,7 +219,7 @@ li {
 .search-input {
 	background-color: var(--input-bg-color);
 	border: none;
-	border-radius: 10px;
+	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
 	color: white;
 	font-size: 14px;
@@ -282,7 +285,7 @@ li {
 
 	background-color: transparent;
 	border: 0;
-	border-radius: 12px;
+	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
 	cursor: pointer;
 	font-size: 14px;
@@ -493,7 +496,7 @@ li {
 
 .shipping-info {
 	background-color: var(--dark-card);
-	border-radius: 12px;
+	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
 	margin-top: 56px;
 	padding: 24px;
@@ -591,6 +594,7 @@ li {
 .flex-form {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: flex-end;
 
 	margin-left: -9px;
 	margin-right: -9px;
@@ -602,6 +606,7 @@ li {
 	margin-right: 9px;
 }
 
+.flex-form .dropdown,
 .flex-form .input {
 	width: 100%;
 	flex: 0 1 auto;
@@ -619,7 +624,7 @@ li {
 	font-size: 14px;
 	font-weight: 500;
 	line-height: calc(24 / 14);
-	border-radius: 12px;
+	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
 	padding: 12px;
 }
@@ -804,7 +809,7 @@ li {
 	width: 100%;
 	height: 100%;
 
-	border-radius: 16px;
+	border-radius: var(--input-border-radius);
 	position: relative;
 	overflow: hidden;
 }
@@ -829,9 +834,12 @@ input::file-selector-button {
 }
 
 .dropdown,
-.dropdown-menu-item {
+.dropdown-menu-item,
+.input > input[type='email'],
+.input > input[type='password'],
+.input > input[type='search'],
+.input > input[type='text'] {
 	font-size: 14px;
-	font-weight: 500;
 	line-height: calc(24 / 14);
 
 	box-sizing: border-box;
@@ -843,19 +851,28 @@ input::file-selector-button {
 	border-radius: var(--input-border-radius);
 }
 
+.dropdown,
+.dropdown-menu-item {
+	font-weight: 500;
+}
+
 .dropdown {
 	display: flex;
 	flex-direction: row-reverse;
 	justify-content: space-between;
 	align-items: center;
-	cursor: pointer;
+
 	background-color: var(--input-bg-color);
-	width: 170px;
+	cursor: pointer;
+	min-width: 170px;
 
 	position: relative;
 }
 
 .dropdown-text {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
 	color: var(--secondary-text-color);
 }
 
@@ -873,8 +890,7 @@ input::file-selector-button {
 	padding-top: 6px;
 	padding-bottom: 6px;
 
-	box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
-	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+	box-shadow: var(--shadow-02);
 }
 
 .dropdown-menu.hidden {
@@ -892,12 +908,6 @@ input::file-selector-button {
 
 .dropdown-menu-item:hover {
 	color: white;
-}
-
-.dropdown i {
-	width: 20px;
-	height: 20px;
-	background-color: white;
 }
 
 .input {
@@ -922,10 +932,7 @@ input::file-selector-button {
 	border: 0;
 	box-sizing: border-box;
 	color: white;
-	border-radius: 10px;
-	font-size: 14px;
-	line-height: calc(24 / 14);
-	padding: 16px 24px;
+	border-radius: var(--input-border-radius);
 	width: 100%;
 	outline: none;
 	box-shadow: 0 0 0 2px rgba(53, 93, 255, 0);
