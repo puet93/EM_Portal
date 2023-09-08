@@ -1,7 +1,7 @@
-export function combineArrays(arrays: any[][]): any[] {
-	const combined: any[] = [];
+export function combineArrays(arrays: any[]): any[] {
+	const combined = [];
 	for (let i = 0; i < arrays.length; i++) {
-		arrays.push(...arrays[i]);
+		combined.push(...arrays[i]);
 	}
 	return combined;
 }
