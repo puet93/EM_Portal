@@ -1,15 +1,27 @@
-export function standardizeMeasure(measure: string): string {
+export function standardizeMeasure(measure: string): {
+	name: string;
+	singular: string;
+	abbreviation: string;
+} {
 	switch (measure) {
 		case 'lbs':
 		case 'LBS':
-			return 'pounds';
+			return { name: 'pounds', singular: 'pound', abbreviation: 'lbs' };
 		case 'mm':
-			return 'millimeters';
+			return {
+				name: 'millimeters',
+				singular: 'millimeter',
+				abbreviation: 'mm',
+			};
 		case 'PC':
 		case 'PCS':
-			return 'pieces';
+			return { name: 'pieces', singular: 'piece', abbreviation: 'PCS' };
 		case 'SF':
-			return 'square feet';
+			return {
+				name: 'square feet',
+				singular: 'square foot',
+				abbreviation: 'sq ft',
+			};
 		default:
 			throw new Error(`Unsupported unit of measure provided: ${measure}`);
 	}
@@ -17,7 +29,11 @@ export function standardizeMeasure(measure: string): string {
 
 export function splitMeasurement(measurement: string): {
 	value: number;
-	unitOfMeasure: string;
+	unitOfMeasure: {
+		name: string;
+		singular: string;
+		abbreviation: string;
+	};
 } {
 	const valueRegex = measurement.match(/\d+/g);
 	const valueRegexMatch = valueRegex ? valueRegex[0] : null;
