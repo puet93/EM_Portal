@@ -85,12 +85,12 @@ model OrderItem {
 }
 
 model RetailerProduct {
-    id              String        @id @default(cuid())
-    sku             String        @unique
+    id              String         @id @default(cuid())
+    sku             String         @unique
     title           String
-    vendorProductId String        @unique
+    vendorProductId String?        @unique
     orderItems      OrderItem[]
-    vendorProduct   VendorProduct @relation(fields: [vendorProductId], references: [id])
+    vendorProduct   VendorProduct? @relation(fields: [vendorProductId], references: [id])
 }
 
 model Vendor {
