@@ -1,9 +1,9 @@
 import type { ActionFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { Form, useFetcher, useSubmit } from '@remix-run/react';
+import { useFetcher, useSubmit } from '@remix-run/react';
 import { prisma } from '~/db.server';
-import { useEffect, useState } from 'react';
-import { EditIcon, ImageIcon, SearchIcon } from '~/components/Icons';
+import { useState } from 'react';
+import { ImageIcon, SearchIcon } from '~/components/Icons';
 
 export const action: ActionFunction = async ({ params, request }) => {
 	const formData = await request.formData();

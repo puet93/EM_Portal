@@ -12,7 +12,6 @@ import {
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
-
 	return json({ user });
 };
 
