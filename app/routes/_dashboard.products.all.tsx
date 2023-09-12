@@ -1,11 +1,9 @@
 import type { LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 
 export const loader = async ({ request }: LoaderArgs) => {
-	await requireUserId(request);
 	const products = await prisma.retailerProduct.findMany({
 		include: {
 			vendorProduct: {
