@@ -35,7 +35,7 @@ export function splitMeasurement(measurement: string): {
 		abbreviation: string;
 	};
 } {
-	const valueRegex = measurement.match(/\d+/g);
+	const valueRegex = measurement.match(/\d+(\.\d+)?/g);
 	const valueRegexMatch = valueRegex ? valueRegex[0] : null;
 	const value = valueRegexMatch ? Number(valueRegexMatch) : null;
 

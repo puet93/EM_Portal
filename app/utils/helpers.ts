@@ -27,3 +27,24 @@ export function toCapitalCase(string: string) {
 	});
 	return capitalizedWords.join(' ');
 }
+
+export function unstable_splitSizeCell(cell: string) {
+	const regex = /^\d+(\.\d)?x\d+(\.\d)?$/gi;
+	const splits = cell.split(' ');
+	const size = splits[0].match(regex)[0];
+	const xString = RegExp('x', 'i');
+	const dimensions = size.split(xString);
+	return { width: dimensions[0], length: dimensions[1] };
+}
+
+export function calculatePricePerCarton(
+	listPrice: number,
+	factoryDiscount: number,
+	margin: number,
+	factor: number,
+	measurementValue: number
+): number {
+	const cost = listPrice * (1 - factoryDiscount);
+	const price = (cost / (1 - margin)) * factor * measurementValue;
+	return Number(price.toFixed(2));
+}

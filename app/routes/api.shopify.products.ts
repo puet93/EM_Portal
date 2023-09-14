@@ -4,23 +4,15 @@ import {
 	unstable_parseMultipartFormData,
 	json,
 } from '@remix-run/node';
-import { graphqlClient } from '~/utils/shopify.server';
+import { getMetafields, graphqlClient } from '~/utils/shopify.server';
 import { parseCSV } from '~/utils/csv';
 import { splitMeasurement } from '~/utils/measure';
 import fs from 'fs';
 import crypto from 'crypto';
-
-function calculatePricePerCarton(
-	listPrice: number,
-	factoryDiscount: number,
-	margin: number,
-	factor: number,
-	measurementValue: number
-): number {
-	const cost = listPrice * (1 - factoryDiscount);
-	const price = (cost / (1 - margin)) * factor * measurementValue;
-	return Number(price.toFixed(2));
-}
+import {
+	calculatePricePerCarton,
+	unstable_splitSizeCell,
+} from '~/utils/helpers';
 
 export const action: ActionFunction = async ({ request }) => {
 	// Get a list of products to sync from .csv file
@@ -105,24 +97,79 @@ export const action: ActionFunction = async ({ request }) => {
 		// Update new products from .csv files to Shopify. Products that don't exist are ignored.
 		case 'PUT': {
 			const data = parsedCSV.map((row) => {
-				const measurementPerCarton = splitMeasurement(
-					row.measurementPerCarton
-				);
-				const weightPerCarton = splitMeasurement(row.weightPerCarton);
+				// BASE MEASUREMENTS
+				let measurementPerCarton;
+				if (row.measurementPerCarton) {
+					measurementPerCarton = splitMeasurement(
+						row.measurementPerCarton
+					);
+				}
 
-				return {
-					sku: row.sku,
-					title: row.title,
-					price: calculatePricePerCarton(
+				// COLOR
+				let color;
+				if (row.color) {
+					color = row.color;
+				}
+
+				// WEIGHT
+				let weightPerCarton;
+				if (row.weightPerCarton) {
+					weightPerCarton = splitMeasurement(row.weightPerCarton);
+				}
+
+				// DIMENSIONS
+				let dimensions;
+				if (row.size) {
+					dimensions = unstable_splitSizeCell(row.size);
+				}
+
+				if (row.thickness) {
+					dimensions.thickness = splitMeasurement(row.thickness);
+				}
+
+				// TITLE
+				let title;
+				if (row.title) {
+					title = row.title;
+				}
+
+				// PRICE
+				let price;
+				if (row.listPrice && measurementPerCarton.value) {
+					price = calculatePricePerCarton(
 						row.listPrice,
 						0.45,
 						0.445,
 						1.7,
 						measurementPerCarton.value
-					),
-					weightPerCartonValue: weightPerCarton.value,
+					);
+				}
+
+				return {
+					sku: row.sku,
+					title: title || null,
+					description: row.description || null,
+					price: price || null,
+					color: color || null,
+					dimensions: dimensions || null,
+					measurementPerCarton: measurementPerCarton || null,
+					weightPerCartonValue:
+						weightPerCarton && weightPerCarton.value
+							? weightPerCarton.value
+							: null,
 				};
 			});
+
+			const metafieldsDict = getMetafields();
+			const metafieldKeys = [
+				metafieldsDict.width.key,
+				metafieldsDict.length.key,
+				metafieldsDict.thickness.key,
+				metafieldsDict.baseUom.key,
+				metafieldsDict.basePrice.key,
+				metafieldsDict.sellingMeasurementValue.key, // The 16 from '16 pieces'
+			];
+			const keys = JSON.stringify(metafieldKeys); // Used to build query
 
 			// See if product might already exist
 			const promises = data.map((row) => {
@@ -132,11 +179,20 @@ export const action: ActionFunction = async ({ request }) => {
 						node {
 						  id
 						  sku
-						  price
 						  product {
 							id
 							title
 							hasOnlyDefaultVariant
+							metafields(first:${metafieldKeys.length}, keys:${keys}) {
+								edges {
+									node {
+										id
+										key
+										value
+										type
+									}
+								}
+							}
 						  }
 						}
 					  }
@@ -150,8 +206,20 @@ export const action: ActionFunction = async ({ request }) => {
 							(res) => res.body.data.productVariants.edges[0].node
 						)
 						.then((res) => {
+							const metafields =
+								res.product.metafields.edges.length !== 0
+									? res.product.metafields.edges.map(
+											(item) => item.node
+									  )
+									: null;
+
 							resolve({
 								id: res.product.id,
+								title: row.title,
+								color: row.color,
+								dimensions: row.dimensions,
+								measurementPerCarton: row.measurementPerCarton,
+								metafields,
 								variants: [
 									{
 										id: res.id,
@@ -161,8 +229,9 @@ export const action: ActionFunction = async ({ request }) => {
 								],
 							});
 						})
-						.catch(() => {
+						.catch((e) => {
 							resolve({
+								errors: e.response.errors,
 								doesNotExist: true,
 								sku: row.sku,
 								title: row.title,
@@ -176,24 +245,254 @@ export const action: ActionFunction = async ({ request }) => {
 				(product) => product.doesNotExist !== true
 			);
 
+			/* ---------------- CREATE JSONL FILE ---------------- */
+
 			const productInputs: any[] = [];
 			const filename = `bulk-op-vars-${crypto.randomUUID()}`;
 			const filePath = `${__dirname}/tmp/${filename}.jsonl`;
 
+			/* ---------------- APPEND TO JSONL FILE ---------------- */
+
 			for (let i = 0; i < productsToUpdate.length; i++) {
-				const product = productsToUpdate[i];
-				const productInput = {
-					input: {
-						id: product.id,
-						variants: [
-							{
-								id: product.variants[0].id,
-								price: product.variants[0].price,
-								weight: product.variants[0].weight,
-							},
-						],
+				const productResponse: {
+					id: string;
+					title: string;
+					color: string;
+					dimensions: {
+						width: {
+							value: string;
+						};
+						length: {
+							value: string;
+						};
+						thickness: {
+							value: string;
+							unitOfMeasure: {
+								name: string;
+							};
+						};
+					};
+					measurementPerCarton: string;
+					metafields: any[];
+					variants: [
+						{
+							id: string;
+							price: string;
+							weight: string;
+						}
+					];
+				} = productsToUpdate[i];
+				const input = { id: productResponse.id };
+
+				// DESCRIPTION
+				if (productResponse.bodyHtml) {
+					// do something
+				}
+
+				// TITLE
+				if (productResponse.title) input.title = productResponse.title;
+
+				const variants = [
+					{
+						id: productResponse.variants[0].id,
+						price: productResponse.variants[0].price,
+						weight: productResponse.variants[0].weight,
 					},
-				};
+				];
+
+				// METAFIELDS
+				const metafieldInputs = [];
+				const { ...dimensions } = productResponse.dimensions;
+
+				// WIDTH
+				if (dimensions.width) {
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key === metafieldsDict.width.key
+						);
+
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: JSON.stringify({
+								value: dimensions.width,
+								unit: 'INCHES',
+							}),
+						});
+					} else {
+						// if the metafield does not already exist, create it
+						metafieldInputs.push({
+							namespace: 'custom',
+							key: 'width',
+							type: 'dimension',
+							value: JSON.stringify({
+								value: dimensions.width,
+								unit: 'INCHES',
+							}),
+						});
+					}
+				}
+
+				// LENGTH
+				if (dimensions.length) {
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key === metafieldsDict.length.key
+						);
+
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: JSON.stringify({
+								value: dimensions.length,
+								unit: 'INCHES',
+							}),
+						});
+					} else {
+						metafieldInputs.push({
+							namespace: 'custom',
+							key: 'length',
+							type: 'dimension',
+							value: JSON.stringify({
+								value: dimensions.length,
+								unit: 'INCHES',
+							}),
+						});
+					}
+				}
+
+				// THICKNESS
+				if (dimensions.thickness) {
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key === metafieldsDict.thickness.key
+						);
+
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: JSON.stringify({
+								value: dimensions.thickness.value,
+								unit: dimensions.thickness.unitOfMeasure.name.toUpperCase(),
+							}),
+						});
+					} else {
+						metafieldInputs.push({
+							namespace: 'custom',
+							key: 'thickness',
+							type: 'dimension',
+							value: JSON.stringify({
+								value: dimensions.thickness.value,
+								unit: dimensions.thickness.unitOfMeasure.name.toUpperCase(),
+							}),
+						});
+					}
+				}
+
+				// BASE UNIT OF MEASURE
+				if (productResponse.measurementPerCarton) {
+					const { unitOfMeasure } = splitMeasurement(
+						productResponse.measurementPerCarton
+					);
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key === metafieldsDict.baseUom.key
+						);
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: unitOfMeasure.singular,
+						});
+					} else {
+						metafieldInputs.push({
+							namespace: 'unit',
+							key: 'measure',
+							type: metafieldsDict.baseUom.type,
+							value: unitOfMeasure.singular,
+						});
+					}
+				}
+
+				// BASE PRICE
+				if (
+					productResponse.measurementPerCarton &&
+					productResponse.variants[0].price
+				) {
+					const price = productResponse.variants[0].price;
+					const { value } = splitMeasurement(
+						productResponse.measurementPerCarton
+					);
+					const basePrice = Number(price) / value;
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key === metafieldsDict.basePrice.key
+						);
+
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: JSON.stringify({
+								amount: basePrice.toFixed(2),
+								currency_code: 'USD',
+							}),
+						});
+					} else {
+						metafieldInputs.push({
+							namespace: 'unit',
+							key: 'price',
+							value: JSON.stringify({
+								amount: basePrice.toFixed(2),
+								currency_code: 'USD',
+							}),
+							type: metafieldsDict.basePrice.type,
+						});
+					}
+				}
+
+				// SELLING MEASUREMENT (i.e. square footage per box or pieces per box)
+				if (productResponse.measurementPerCarton) {
+					const { value } = splitMeasurement(
+						productResponse.measurementPerCarton
+					);
+					const metafield =
+						productResponse.metafields &&
+						productResponse.metafields.find(
+							(metafield) =>
+								metafield.key ===
+								metafieldsDict.sellingMeasurementValue.key
+						);
+
+					if (metafield) {
+						metafieldInputs.push({
+							id: metafield.id,
+							value: JSON.stringify(value),
+						});
+					} else {
+						metafieldInputs.push({
+							namespace: 'unit',
+							key: 'per_sales_unit',
+							value: JSON.stringify(value),
+							type: 'number_decimal',
+						});
+					}
+				}
+
+				// APPEND PROPERTIES TO PRODUCT INPUTS
+				if (variants) input.variants = variants;
+				if (metafieldInputs.length !== 0)
+					input.metafields = metafieldInputs;
+
+				const productInput = { input };
 				productInputs.push(productInput);
 				fs.appendFileSync(filePath, JSON.stringify(productInput));
 				fs.appendFileSync(filePath, '\n');
@@ -201,8 +500,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 			return json({
 				filename,
-				count: productsToUpdate.length,
-				productsToUpdate,
+				productInputs,
 			});
 		}
 		default:

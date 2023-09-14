@@ -38,3 +38,70 @@ const session = new Session({
 
 export const client = new shopify.clients.Rest({ session });
 export const graphqlClient = new shopify.clients.Graphql({ session });
+
+export const getMetafields = () => {
+	// How the value in dimensions should look like: {\"value\":24.0,\"unit\":\"INCHES\"}"
+	const metafieldKeys = {
+		width: {
+			key: 'custom.width',
+			type: 'dimension',
+		},
+
+		length: {
+			key: 'custom.length',
+			type: 'dimension',
+		},
+
+		thickness: {
+			key: 'custom.thickness',
+			type: 'dimension',
+		},
+
+		finish: {
+			key: 'custom.finish',
+			type: 'single_line_text_field',
+		},
+
+		material: {
+			key: 'filters.material',
+			type: 'list.single_line_text_field',
+		},
+
+		look: {
+			key: 'filters.look',
+			type: 'list.single_line_text_field',
+		},
+
+		// The given name of the color of the product (e.g. Ocean, Burnt Coffee, etc.)
+		color: {
+			key: 'custom.variation_value',
+			type: 'single_line_text_field',
+		},
+
+		// The color family or common color name of the product (e.g. black, white, blue, brown, beige, etc.)
+		colorBasic: {
+			key: 'filters.color_basic',
+			type: 'list.single_line_text_field',
+		},
+
+		// The price per unit of measure of the selling unit (e.g. the "$3.99' in  '$3.99 per square feet')
+		basePrice: {
+			key: 'unit.price',
+			type: 'money',
+		},
+
+		// baseUom - the base unit of measure of the selling unit (e.g. the 'sq ft' in '$3.99 per sq ft')
+		baseUom: {
+			key: 'unit.measure',
+			type: 'single_line_text_field',
+		},
+
+		// The number "16.00" in "16.00 sq ft per box"
+		sellingMeasurementValue: {
+			key: 'unit.per_sales_unit',
+			type: 'number_decimal',
+		},
+	};
+
+	return metafieldKeys;
+};
