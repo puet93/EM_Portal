@@ -272,7 +272,14 @@ export const action: ActionFunction = async ({ request }) => {
 							};
 						};
 					};
-					measurementPerCarton: string;
+					measurementPerCarton: {
+						value: number;
+						unitOfMeasure: {
+							name: string;
+							singular: string;
+							abbreviation: string;
+						};
+					};
 					metafields: any[];
 					variants: [
 						{
@@ -282,12 +289,19 @@ export const action: ActionFunction = async ({ request }) => {
 						}
 					];
 				} = productsToUpdate[i];
-				const input = { id: productResponse.id };
+				const input: {
+					id: string;
+					title?: string;
+					variants?: any[];
+					metafields?: any[];
+				} = {
+					id: productResponse.id,
+				};
 
 				// DESCRIPTION
-				if (productResponse.bodyHtml) {
-					// do something
-				}
+				// if (productResponse.bodyHtml) {
+				// 	// do something
+				// }
 
 				// TITLE
 				if (productResponse.title) input.title = productResponse.title;
@@ -396,10 +410,13 @@ export const action: ActionFunction = async ({ request }) => {
 				}
 
 				// BASE UNIT OF MEASURE
-				if (productResponse.measurementPerCarton) {
-					const { unitOfMeasure } = splitMeasurement(
-						productResponse.measurementPerCarton
-					);
+				if (
+					productResponse.measurementPerCarton &&
+					productResponse.measurementPerCarton?.unitOfMeasure
+				) {
+					const { unitOfMeasure } =
+						productResponse.measurementPerCarton;
+
 					const metafield =
 						productResponse.metafields &&
 						productResponse.metafields.find(
@@ -427,9 +444,7 @@ export const action: ActionFunction = async ({ request }) => {
 					productResponse.variants[0].price
 				) {
 					const price = productResponse.variants[0].price;
-					const { value } = splitMeasurement(
-						productResponse.measurementPerCarton
-					);
+					const { value } = productResponse.measurementPerCarton;
 					const basePrice = Number(price) / value;
 					const metafield =
 						productResponse.metafields &&
@@ -461,9 +476,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 				// SELLING MEASUREMENT (i.e. square footage per box or pieces per box)
 				if (productResponse.measurementPerCarton) {
-					const { value } = splitMeasurement(
-						productResponse.measurementPerCarton
-					);
+					const { value } = productResponse.measurementPerCarton;
 					const metafield =
 						productResponse.metafields &&
 						productResponse.metafields.find(
