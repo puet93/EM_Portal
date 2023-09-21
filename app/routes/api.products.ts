@@ -88,9 +88,11 @@ export const action: ActionFunction = async ({ request }) => {
 
 			const retailerProduct = await prisma.$transaction(
 				data.map((item) => {
-					return prisma.retailerProduct.create({
-						data: {
+					return prisma.retailerProduct.update({
+						where: {
 							sku: item.sku,
+						},
+						data: {
 							title: item.title,
 							vendorProduct: {
 								connectOrCreate: {
