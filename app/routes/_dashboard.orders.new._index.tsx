@@ -165,7 +165,10 @@ export default function NewOrderPage() {
 													</label>
 												</td>
 												<td>
-													{item.vendorProduct.itemNo}
+													{item.vendorProduct?.itemNo
+														? item.vendorProduct
+																.itemNo
+														: 'MISSING'}
 												</td>
 											</tr>
 										);
