@@ -22,7 +22,6 @@ export const action = async ({ params, request }: ActionArgs) => {
 
 	switch (request.method) {
 		case 'PUT': {
-			console.log('PUT');
 			const handler = unstable_createMemoryUploadHandler();
 			const formData = await unstable_parseMultipartFormData(
 				request,
@@ -31,74 +30,96 @@ export const action = async ({ params, request }: ActionArgs) => {
 			const file = formData.get('file') as File;
 			const parsedCSV: any[] = await parseCSV(file);
 			const data = parsedCSV.map((row) => {
-				const split = splitMeasurement(row.UoM);
+				// const split = splitMeasurement(row.UoM);
 
 				return {
 					itemNo: row.itemNo,
-					listPrice: row.listPrice,
-					vendorId: vendor.id,
-					measurementPerCarton: split,
+					// listPrice: row.listPrice,
+					// vendorId: vendor.id,
+					// measurementPerCarton: split,
+					color: row.color,
+					series: row.series,
+					description: row.size,
 				};
 			});
 
 			const vendorProducts = await prisma.$transaction(
 				data.map((item) => {
-					const { name, singular, abbreviation } =
-						item.measurementPerCarton.unitOfMeasure;
 					return prisma.vendorProduct.upsert({
 						where: {
 							itemNo: item.itemNo,
-							vendor,
+							vendor: vendor,
 						},
 						update: {
-							listPrice: item.listPrice,
-							measurementPerCarton: {
-								upsert: {
-									update: {
-										value: item.measurementPerCarton.value,
-										unitOfMeasure: {
-											connectOrCreate: {
-												where: { name },
-												create: {
-													name,
-													singular,
-													abbreviation,
-												},
-											},
-										},
-									},
-									create: {
-										value: item.measurementPerCarton.value,
-										unitOfMeasure: {
-											connectOrCreate: {
-												where: { name },
-												create: {
-													name,
-													singular,
-													abbreviation,
-												},
-											},
-										},
-									},
-								},
-							},
+							color: item.color,
+							seriesName: item.series,
+							description: item.description,
 						},
 						create: {
 							itemNo: item.itemNo,
-							listPrice: item.listPrice,
 							vendorId: vendor.id,
-						},
-						select: {
-							itemNo: true,
-							listPrice: true,
-							measurementPerCarton: {
-								select: {
-									value: true,
-									unitOfMeasure: true,
-								},
-							},
+							color: item.color,
+							seriesName: item.series,
+							description: item.description,
 						},
 					});
+
+					// const { name, singular, abbreviation } =
+					// 	item.measurementPerCarton.unitOfMeasure;
+					// return prisma.vendorProduct.upsert({
+					// 	where: {
+					// 		itemNo: item.itemNo,
+					// 		vendor,
+					// 	},
+					// 	update: {
+					// 		listPrice: item.listPrice,
+					// 		measurementPerCarton: {
+					// 			upsert: {
+					// 				update: {
+					// 					value: item.measurementPerCarton.value,
+					// 					unitOfMeasure: {
+					// 						connectOrCreate: {
+					// 							where: { name },
+					// 							create: {
+					// 								name,
+					// 								singular,
+					// 								abbreviation,
+					// 							},
+					// 						},
+					// 					},
+					// 				},
+					// 				create: {
+					// 					value: item.measurementPerCarton.value,
+					// 					unitOfMeasure: {
+					// 						connectOrCreate: {
+					// 							where: { name },
+					// 							create: {
+					// 								name,
+					// 								singular,
+					// 								abbreviation,
+					// 							},
+					// 						},
+					// 					},
+					// 				},
+					// 			},
+					// 		},
+					// 	},
+					// 	create: {
+					// 		itemNo: item.itemNo,
+					// 		listPrice: item.listPrice,
+					// 		vendorId: vendor.id,
+					// 	},
+					// 	select: {
+					// 		itemNo: true,
+					// 		listPrice: true,
+					// 		measurementPerCarton: {
+					// 			select: {
+					// 				value: true,
+					// 				unitOfMeasure: true,
+					// 			},
+					// 		},
+					// 	},
+					// });
 				})
 			);
 
