@@ -39,8 +39,37 @@ export default function ProductsPage() {
 										<div>{product.sku}</div>
 									</td>
 
-									{product.vendorProduct?.itemNo ? (
-										<td>{product.vendorProduct.itemNo}</td>
+									{product.vendorProduct ? (
+										<td>
+											<div>
+												{product.vendorProduct.itemNo
+													? product.vendorProduct
+															.itemNo
+													: 'Missing item number'}
+											</div>
+											<div>
+												{product.vendorProduct
+													.seriesName
+													? product.vendorProduct
+															.seriesName
+													: 'Missing series'}
+											</div>
+
+											<div>
+												{product.vendorProduct
+													.description
+													? product.vendorProduct
+															.description
+													: 'Missing size'}
+											</div>
+
+											<div>
+												{product.vendorProduct.color
+													? product.vendorProduct
+															.color
+													: 'Missing color'}
+											</div>
+										</td>
 									) : (
 										<td>
 											<span className="error indicator"></span>{' '}

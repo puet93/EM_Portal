@@ -11,6 +11,9 @@ import { parseCSV } from '~/utils/csv';
 import { useLoaderData } from '@remix-run/react';
 import { combineArrays, standardizeQueryString } from '~/utils/helpers';
 import { badRequest } from '~/utils/request.server';
+import { SearchIcon } from '~/components/Icons';
+
+import FileDropInput from '~/components/FileDropInput';
 
 export const loader = async ({ params, request }: LoaderArgs) => {
 	await requireUserId(request);
@@ -84,13 +87,13 @@ export const action = async ({ params, request }: ActionArgs) => {
 			}
 		}
 		case 'update': {
-			// const handler = unstable_createMemoryUploadHandler();
-			// const formData = await unstable_parseMultipartFormData(
-			// 	request,
-			// 	handler
-			// );
-			// const file = formData.get('file') as File;
-			// const parsedCSV: any[] = await parseCSV(file);
+			const handler = unstable_createMemoryUploadHandler();
+			const formData = await unstable_parseMultipartFormData(
+				request,
+				handler
+			);
+			const file = formData.get('file') as File;
+			const parsedCSV: any[] = await parseCSV(file);
 			// const data: {
 			// 	itemNo: string;
 			// 	listPrice: number;
@@ -135,22 +138,28 @@ export default function VendorProductsPage() {
 	return (
 		<>
 			<Form method="post">
-				<div className="input">
+				<div className="search-bar">
+					<SearchIcon className="search-icon" id="search-icon" />
 					<input
+						className="search-input"
 						type="search"
 						name="query"
 						defaultValue="Aniston 12x24"
 					/>
+					<button
+						className="primary button"
+						type="submit"
+						name="_action"
+						value="search"
+					>
+						Search
+					</button>
 				</div>
+			</Form>
 
-				<button
-					className="primary button"
-					type="submit"
-					name="_action"
-					value="search"
-				>
-					Search
-				</button>
+			<Form method="post">
+				<FileDropInput />
+				<button type="submit">Update</button>
 			</Form>
 
 			{actionData?.formError ? (
@@ -158,7 +167,7 @@ export default function VendorProductsPage() {
 			) : null}
 
 			{actionData?.results ? (
-				<table>
+				<table style={{ marginTop: '36px' }}>
 					<tbody>
 						<tr>
 							<th>Description</th>
@@ -175,7 +184,7 @@ export default function VendorProductsPage() {
 			) : null}
 
 			{!actionData && data.products ? (
-				<table>
+				<table style={{ marginTop: '36px' }}>
 					<tbody>
 						<tr>
 							<th>Description</th>

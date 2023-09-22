@@ -958,3 +958,14 @@ input::file-selector-button {
 	line-height: calc(16 / 12);
 	padding: 8px 10px;
 }
+
+.indicator {
+	display: inline-block;
+	border-radius: 999em;
+	width: 8px;
+	height: 8px;
+}
+
+.indicator.error {
+	background-color: var(--error-color);
+}

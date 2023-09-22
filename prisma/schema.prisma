@@ -108,6 +108,9 @@ model VendorProduct {
     vendor               Vendor           @relation(fields: [vendorId], references: [id])
     measurementPerCarton Measurement?     @relation(fields: [measurementId], references: [id])
     measurementId        String?
+    color                String?
+    description          String?
+    seriesName           String?
 }
 
 enum OrderStatus {
