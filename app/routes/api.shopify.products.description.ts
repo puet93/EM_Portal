@@ -18,14 +18,14 @@ export const action: ActionFunction = async ({ request }) => {
 
 	switch (request.method) {
 		case 'POST': {
+			const descriptionHtml =
+				'<p>Step into the world of elegance and luxury with Chantel, our marble look porcelain tile collection. Chantel, meaning stone in French, replicates natures most opulent stones but features the strength and durability benefits of porcelain. This collection is available in both matte and polished finishes, 4 neutral colors, 4 sizes (24x48, 24x24, 12x24 and 3x12) as well as a coordinating hexagon mosaic and herringbone mosaic. Elevate your home with the beauty of marble combined with the low-maintenance quality of color body porcelain. Enjoy the eye-catching allure of Chantel in your next residential or commercial project.</p>\n<ul>\n<li>Made in USA</li>\n<li>Made for Residential / Commercial Wall and Floor</li>\n<li>Great for Living Space, Kitchen, Bathroom and Shower</li>\n<li>Can Be Used Both Indoors and Outdoors with Proper Installation</li>\n<li>95% Local Sourced Materials Plus up to 45% Recycled Content</li>\n</ul>';
 			const data = parsedCSV.map((row) => {
 				return {
 					sku: row.sku,
-					description: row.description,
 				};
 			});
 
-			// See if product might already exist
 			const promises = data.map((row) => {
 				const query = `{
 					productVariants(first: 1, query: "sku:${row.sku}") {
@@ -35,7 +35,7 @@ export const action: ActionFunction = async ({ request }) => {
 						  product {
 							id
 							title
-							hasOnlyDefaultVariant
+							descriptionHtml
 						  }
 						}
 					  }
@@ -52,26 +52,22 @@ export const action: ActionFunction = async ({ request }) => {
 							resolve({
 								...res,
 								id: res.product.id,
-								descriptionHtml: row.description,
 							})
 						);
 				});
 			});
 
 			const shopifyResponse = await Promise.all(promises);
-			console.log(shopifyResponse);
 			const productInputs: any[] = [];
 			const filename = `bulk-op-vars-${crypto.randomUUID()}`;
 			const filePath = `${__dirname}/tmp/${filename}.jsonl`;
 
 			for (let i = 0; i < shopifyResponse.length; i++) {
 				const product = shopifyResponse[i];
-
 				const productInput = {
 					input: {
 						id: product.id,
-						descriptionHtml:
-							'<p>Introducing Tatum, a porcelain tile collection that emulates the beauty of travertine with an earth tone palette complementary of nearly every finish or color. This material warms up any space with a choice of two organic textures inspired by the different cutting techniques. Cross-cut, which emphasizes the cloud like patterns that make this natural material unique, and vein-cut, highlighting the linear lines of veining. Often used to evoke calm and serenity, Tatum is a timeless travertine look that will stay on trend for centuries.</p>\n<ul>\n<li>Made in USA</li>\n<li>Made for Residential / Commercial Wall and Floor</li>\n<li>Great for Living Space, Kitchen, Bathroom and Shower</li>\n<li>Can Be Used Both Indoors and Outdoors with Proper Installation</li>\n<li>95% Local Sourced Materials Plus up to 45% Recycled Content</li>\n</ul>',
+						descriptionHtml,
 					},
 				};
 				productInputs.push(productInput);
