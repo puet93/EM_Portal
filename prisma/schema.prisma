@@ -93,6 +93,15 @@ model RetailerProduct {
     vendorProduct   VendorProduct? @relation(fields: [vendorProductId], references: [id])
 }
 
+model Sample {
+    id             String          @id @default(cuid())
+    materialNo     String          @unique
+    seriesName     String
+    color          String
+    finish         String?
+    vendorProducts VendorProduct[]
+}
+
 model Vendor {
     id       String          @id @default(cuid())
     name     String          @unique
@@ -110,7 +119,10 @@ model VendorProduct {
     measurementId        String?
     color                String?
     description          String?
+    finish               String?
     seriesName           String?
+    sample               Sample?          @relation(fields: [sampleMaterialNo], references: [materialNo])
+    sampleMaterialNo     String?
 }
 
 enum OrderStatus {

@@ -534,6 +534,50 @@ export function ShoppingInvoiceListIcon() {
 	);
 }
 
+export function SwatchIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<path
+				d="M6.374 17.25C6.167 17.251 6 17.419 6 17.626C6 17.833 6.168 18 6.375 18C6.582 18 6.75 17.832 6.75 17.625C6.75 17.418 6.582 17.25 6.374 17.25"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				fill-rule="evenodd"
+				clip-rule="evenodd"
+				d="M6.5 21V21C4.567 21 3 19.433 3 17.5V5C3 3.895 3.895 3 5 3H8C9.105 3 10 3.895 10 5V17.5C10 19.433 8.433 21 6.5 21Z"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M8.97501 19.9752L18.686 10.2642C19.467 9.48324 19.467 8.21724 18.686 7.43624L16.565 5.31524C15.784 4.53424 14.518 4.53424 13.737 5.31524L10 9.05024"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M14.95 14H19C20.105 14 21 14.895 21 16V19C21 20.105 20.105 21 19 21H6.5"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function TrashIcon() {
 	return (
 		<svg

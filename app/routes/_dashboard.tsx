@@ -7,6 +7,7 @@ import {
 	PalletBoxMoveRightIcon,
 	SettingsIcon,
 	ShoppingInvoiceListIcon,
+	SwatchIcon,
 	UsersIcon,
 } from '~/components/Icons';
 
@@ -70,6 +71,20 @@ export default function DashboardLayout() {
 								>
 									<PalletBoxMoveRightIcon />
 									Vendors
+								</NavLink>
+							</li>
+
+							<li>
+								<NavLink
+									className={({ isActive }) =>
+										isActive
+											? 'dashboard-nav-item active'
+											: 'dashboard-nav-item'
+									}
+									to="/samples"
+								>
+									<SwatchIcon />
+									Samples
 								</NavLink>
 							</li>
 

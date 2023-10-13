@@ -8,6 +8,29 @@ import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
 import { splitMeasurement } from '~/utils/measure';
+import { badRequest } from '~/utils/request.server';
+
+export async function getPatchAttributes(file: File) {
+	const fileData = await file.text();
+	const table = fileData.split('\r\n').map((row) => row.split(','));
+	const header = table.shift();
+
+	if (!header) {
+		throw new Error('Unable to parse CSV file.');
+	}
+
+	console.log('HEADER', header);
+	return header;
+
+	// const data = table.map((row) => {
+	// 	return header.reduce(
+	// 		(obj, key, index) => Object.assign(obj, { [key]: row[index] }),
+	// 		{}
+	// 	);
+	// });
+
+	// return data;
+}
 
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
@@ -124,6 +147,37 @@ export const action = async ({ params, request }: ActionArgs) => {
 			);
 
 			return json({ vendorProducts });
+		}
+		case 'PATCH': {
+			const handler = unstable_createMemoryUploadHandler();
+			const formData = await unstable_parseMultipartFormData(
+				request,
+				handler
+			);
+
+			const file = formData.get('file') as File;
+			const parsedCSV: any[] = await parseCSV(file);
+
+			// const results = await prisma.$transaction(
+			// 	parsedCSV.map(({ itemNo, ...data }) => {
+			// 		return prisma.vendorProduct.findUnique({
+			// 			where: { itemNo, vendor },
+			// 			include: {},
+			// 		});
+			// 	})
+			// );
+			// // const unfound = results.filter((item) => item === null);
+
+			const patched = await prisma.$transaction(
+				parsedCSV.map(({ itemNo, ...data }) => {
+					return prisma.vendorProduct.update({
+						where: { itemNo, vendor },
+						data,
+					});
+				})
+			);
+
+			return json({ patched: patched });
 		}
 		default:
 			break;

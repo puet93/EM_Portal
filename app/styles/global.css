@@ -9,6 +9,8 @@
 	--dark-card: #242731;
 
 	--error-color: #fa2c49;
+	--warning-color: gold;
+	--success-color: lime;
 
 	--input-bg-color: rgba(25, 27, 32, 1);
 	--input-border-radius: 16px;
@@ -964,8 +966,18 @@ input::file-selector-button {
 	border-radius: 999em;
 	width: 8px;
 	height: 8px;
+
+	background-color: rgba(0, 0, 0, 0.5);
 }
 
 .indicator.error {
 	background-color: var(--error-color);
+}
+
+.indicator.warning {
+	background-color: var(--warning-color);
+}
+
+.indicator.success {
+	background-color: var(--success-color);
 }

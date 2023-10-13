@@ -1,5 +1,5 @@
 import { Outlet } from '@remix-run/react';
 
-export default function VendorProductsPage() {
+export default function SamplePage() {
 	return <Outlet />;
 }
