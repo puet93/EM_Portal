@@ -158,15 +158,18 @@ export const action = async ({ params, request }: ActionArgs) => {
 			const file = formData.get('file') as File;
 			const parsedCSV: any[] = await parseCSV(file);
 
-			// const results = await prisma.$transaction(
-			// 	parsedCSV.map(({ itemNo, ...data }) => {
-			// 		return prisma.vendorProduct.findUnique({
-			// 			where: { itemNo, vendor },
-			// 			include: {},
-			// 		});
-			// 	})
-			// );
-			// // const unfound = results.filter((item) => item === null);
+			const results = await prisma.$transaction(
+				parsedCSV.map(({ itemNo, ...data }) => {
+					return prisma.vendorProduct.findUnique({
+						where: { itemNo, vendor },
+					});
+				})
+			);
+			const unfound = results.filter((item) => item === null);
+
+			if (unfound.length !== 0) {
+				return json({ unfound: unfound.length });
+			}
 
 			const patched = await prisma.$transaction(
 				parsedCSV.map(({ itemNo, ...data }) => {

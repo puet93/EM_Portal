@@ -50,7 +50,10 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		};
 	}
 
-	const products = await prisma.vendorProduct.findMany({ where: fields });
+	const products = await prisma.vendorProduct.findMany({
+		where: fields,
+		orderBy: { seriesName: 'asc' },
+	});
 	return json({ products });
 };
 

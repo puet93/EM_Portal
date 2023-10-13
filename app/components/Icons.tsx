@@ -552,8 +552,8 @@ export function SwatchIcon() {
 				strokeLinejoin="round"
 			/>
 			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
+				fillRule="evenodd"
+				clipRule="evenodd"
 				d="M6.5 21V21C4.567 21 3 19.433 3 17.5V5C3 3.895 3.895 3 5 3H8C9.105 3 10 3.895 10 5V17.5C10 19.433 8.433 21 6.5 21Z"
 				stroke=""
 				strokeWidth="1.5"

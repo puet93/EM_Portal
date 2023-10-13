@@ -622,6 +622,30 @@ li {
 	width: calc(50% - 18px);
 }
 
+.inline-form {
+	display: flex;
+	align-items: flex-end;
+
+	margin-left: -9px;
+	margin-right: -9px;
+}
+
+.inline-form .dropdown,
+.inline-form .input {
+	width: 100%;
+	flex: 0 1 auto;
+	margin-top: 20px;
+	margin-left: 9px;
+	margin-right: 9px;
+}
+
+.inline-form .button {
+	margin-top: 24px;
+	margin-bottom: 20px;
+	margin-left: 9px;
+	margin-right: 9px;
+}
+
 .message {
 	font-size: 14px;
 	font-weight: 500;
@@ -959,6 +983,10 @@ input::file-selector-button {
 	font-size: 12px;
 	line-height: calc(16 / 12);
 	padding: 8px 10px;
+}
+
+.input.input--full-width {
+	width: 100%;
 }
 
 .indicator {

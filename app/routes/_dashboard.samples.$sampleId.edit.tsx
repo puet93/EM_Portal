@@ -1,6 +1,6 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { Form, Link, useActionData, useLoaderData } from '@remix-run/react';
+import { Form, Link, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
 
@@ -58,7 +58,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 export default function SampleDetailPage() {
 	const data = useLoaderData<typeof loader>();
-	const actionData = useActionData<typeof action>();
 
 	return (
 		<div>
@@ -77,7 +76,9 @@ export default function SampleDetailPage() {
 											type="checkbox"
 											name={product.id}
 											defaultChecked={
-												!product.sampleMaterialNo
+												!product.sampleMaterialNo &&
+												product.finish ===
+													data.sample.finish
 											}
 										/>
 									</td>
@@ -151,6 +152,7 @@ export default function SampleDetailPage() {
 											{product.finish}
 										</div>
 									</td>
+									<td>{product.thickness}</td>
 									<td>{product.itemNo}</td>
 								</tr>
 							))}
