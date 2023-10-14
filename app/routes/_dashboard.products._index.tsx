@@ -15,7 +15,6 @@ export default function ProductsPage() {
 						name="query"
 						id="query"
 						placeholder="Search"
-						defaultValue="tatum"
 					/>
 					<button className="primary button" type="submit">
 						Search
@@ -26,8 +25,9 @@ export default function ProductsPage() {
 			<table style={{ marginTop: '36px' }}>
 				<tbody>
 					<tr>
-						<th>Description</th>
-						<th>Item No</th>
+						<th>Edward Martin</th>
+						<th>Item No.</th>
+						<th>Sample Material No.</th>
 					</tr>
 
 					{search.data?.results &&
@@ -69,6 +69,20 @@ export default function ProductsPage() {
 															.color
 													: 'Missing color'}
 											</div>
+										</td>
+									) : (
+										<td>
+											<span className="error indicator"></span>{' '}
+											MISSING
+										</td>
+									)}
+
+									{product.vendorProduct?.sample ? (
+										<td>
+											{
+												product.vendorProduct?.sample
+													.materialNo
+											}
 										</td>
 									) : (
 										<td>

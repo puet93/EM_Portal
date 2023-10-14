@@ -29,7 +29,11 @@ export const action = async ({ request }: ActionArgs) => {
 					},
 				},
 				include: {
-					vendorProduct: true,
+					vendorProduct: {
+						include: {
+							sample: true,
+						},
+					},
 				},
 			}),
 			prisma.retailerProduct.findMany({
@@ -41,7 +45,11 @@ export const action = async ({ request }: ActionArgs) => {
 					},
 				},
 				include: {
-					vendorProduct: true,
+					vendorProduct: {
+						include: {
+							sample: true,
+						},
+					},
 				},
 			}),
 			prisma.retailerProduct.findMany({
@@ -51,7 +59,11 @@ export const action = async ({ request }: ActionArgs) => {
 					},
 				},
 				include: {
-					vendorProduct: true,
+					vendorProduct: {
+						include: {
+							sample: true,
+						},
+					},
 				},
 			}),
 		]);
