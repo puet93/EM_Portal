@@ -1,6 +1,6 @@
-import type { LoaderFunction } from '@remix-run/node';
-import { json } from '@remix-run/node';
-import { Link, Outlet, useLoaderData } from '@remix-run/react';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
+import { json, redirect } from '@remix-run/node';
+import { Form, Link, Outlet, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
@@ -18,6 +18,19 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	return json({ product });
 };
 
+export const action: ActionFunction = async ({ params, request }) => {
+	await requireUserId(request);
+	await prisma.vendorProduct.update({
+		where: { id: params.productId },
+		data: {
+			sample: {
+				disconnect: true,
+			},
+		},
+	});
+	return redirect('..');
+};
+
 export default function VendorProductsPage() {
 	const data = useLoaderData<typeof loader>();
 	const product = data.product;
@@ -32,15 +45,13 @@ export default function VendorProductsPage() {
 				<p>{product.itemNo}</p>
 
 				{product.sampleMaterialNo ? (
-					<p>
-						<span
-							className="success indicator"
-							style={{ marginRight: 8 }}
-						></span>
-						Has sample
-					</p>
+					<Form method="post">
+						<button className="button">Disconnect</button>
+					</Form>
 				) : (
-					<Link to="samples">Connect Samples</Link>
+					<Link className="button" to="samples">
+						Connect Samples
+					</Link>
 				)}
 			</div>
 

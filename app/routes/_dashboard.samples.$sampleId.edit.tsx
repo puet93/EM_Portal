@@ -1,165 +1,88 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { Form, Link, useLoaderData } from '@remix-run/react';
+import { Form, useLoaderData } from '@remix-run/react';
+import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
-import { badRequest } from '~/utils/request.server';
+import Input from '~/components/Input';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
+	await requireUserId(request);
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
 	});
-
-	if (!sample) return badRequest({ message: 'Unable to find sample.' });
-
-	const vendorProducts = await prisma.vendorProduct.findMany({
-		where: {
-			seriesName: {
-				contains: sample.seriesName,
-				mode: 'insensitive',
-			},
-			color: {
-				contains: sample.color,
-				mode: 'insensitive',
-			},
-		},
-		include: {
-			vendor: true,
-		},
-	});
-
-	console.log(vendorProducts);
-
-	return json({ vendorProducts, sample });
+	return json({ sample });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
+	await requireUserId(request);
 	const formData = await request.formData();
-	const entries = Object.fromEntries(formData);
-	const values = Object.keys(entries);
-	const vendorProductIds = [];
+	const seriesName = formData.get('seriesName');
+	const color = formData.get('color');
+	const finish = formData.get('finish');
+	const materialNo = formData.get('materialNo');
 
-	for (const value of values) {
-		vendorProductIds.push({ id: value });
-	}
-
-	if (vendorProductIds.length !== 0) {
+	if (
+		typeof seriesName === 'string' &&
+		typeof color === 'string' &&
+		typeof finish === 'string' &&
+		typeof materialNo === 'string'
+	) {
 		await prisma.sample.update({
-			where: { id: params.sampleId },
+			where: {
+				id: params.sampleId,
+			},
 			data: {
-				vendorProducts: {
-					connect: vendorProductIds,
-				},
+				seriesName,
+				color,
+				finish,
+				materialNo,
 			},
 		});
-	}
 
-	return redirect('..');
+		return redirect('..');
+	}
 };
 
 export default function SampleDetailPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<div>
-			<h2>Matching Vendor Products</h2>
-			{data.vendorProducts && (
-				<Form method="post" replace>
-					<button type="submit" className="button">
-						Save
-					</button>
-					<table>
-						<tbody>
-							{data.vendorProducts.map((product) => (
-								<tr key={product.id}>
-									<td>
-										<input
-											type="checkbox"
-											name={product.id}
-											defaultChecked={
-												!product.sampleMaterialNo &&
-												product.finish ===
-													data.sample.finish
-											}
-										/>
-									</td>
-									<td>
-										{!product.sampleMaterialNo ? (
-											<div>
-												<span
-													className="indicator"
-													style={{
-														marginRight: '8px',
-													}}
-												></span>
-												EMPTY
-											</div>
-										) : null}
+		<div className="foobar-sidebar">
+			<h1>Edit Sample Swatch</h1>
 
-										{product.sampleMaterialNo !== null &&
-										product.sampleMaterialNo !==
-											data.sample.materialNo ? (
-											<div>
-												<span
-													className="error indicator"
-													style={{
-														marginRight: '8px',
-													}}
-												></span>{' '}
-												DOES NOT MATCH
-											</div>
-										) : null}
+			<Form method="post" replace>
+				<Input
+					label="Series"
+					id="series"
+					name="seriesName"
+					defaultValue={data.sample.seriesName}
+				/>
 
-										{product.sampleMaterialNo !== null &&
-										product.sampleMaterialNo ===
-											data.sample.materialNo ? (
-											<div>
-												<span
-													className="success indicator"
-													style={{
-														marginRight: '8px',
-													}}
-												></span>{' '}
-												MATCH
-											</div>
-										) : null}
-									</td>
-									<td>
-										<Link
-											to={`/vendors/${product.vendor.id}/products/${product.id}`}
-										>
-											{product.seriesName}
-										</Link>
-										<div>
-											<span
-												className={
-													product.color !==
-													data.sample.color
-														? 'indicator error'
-														: 'indicator success'
-												}
-											></span>{' '}
-											{product.color}
-										</div>
-										<div>
-											<span
-												className={
-													product.finish !==
-													data.sample.finish
-														? 'indicator error'
-														: 'indicator success'
-												}
-											></span>{' '}
-											{product.finish}
-										</div>
-									</td>
-									<td>{product.thickness}</td>
-									<td>{product.itemNo}</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</Form>
-			)}
+				<Input
+					label="Color"
+					id="color"
+					name="color"
+					defaultValue={data.sample.color}
+				/>
+
+				<Input
+					label="Finish"
+					id="finish"
+					name="finish"
+					defaultValue={data.sample.finish}
+				/>
+
+				<Input
+					label="Material No."
+					id="material-number"
+					name="materialNo"
+					defaultValue={data.sample.materialNo}
+				/>
+
+				<button type="submit" className="button">
+					Update
+				</button>
+			</Form>
 		</div>
 	);
 }
