@@ -7,6 +7,7 @@ import {
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
+import { badRequest } from '~/utils/request.server';
 
 export const action = async ({ params, request }: ActionArgs) => {
 	await requireUserId(request);
@@ -28,19 +29,12 @@ export const action = async ({ params, request }: ActionArgs) => {
 			);
 			const file = formData.get('file') as File;
 			const parsedCSV: any[] = await parseCSV(file);
-			const data = parsedCSV.map((row) => {
-				// const split = splitMeasurement(row.UoM);
-
-				return {
-					itemNo: row.itemNo,
-					// listPrice: row.listPrice,
-					// vendorId: vendor.id,
-					// measurementPerCarton: split,
-					color: row.color,
-					series: row.series,
-					description: row.size,
-				};
-			});
+			const data = parsedCSV.map((row) => ({
+				itemNo: row.itemNo,
+				color: row.color,
+				series: row.series,
+				description: row.size,
+			}));
 
 			const vendorProducts = await prisma.$transaction(
 				data.map((item) => {
@@ -159,13 +153,19 @@ export const action = async ({ params, request }: ActionArgs) => {
 			return json({ patched: patched });
 		}
 		case 'DELETE': {
-			const deleted = await prisma.vendorProduct.deleteMany({
-				where: {
-					seriesName: 'Dawson',
-				},
-			});
+			const formData = await request.formData();
+			const seriesName = formData.get('seriesName');
 
-			return json({ deleted });
+			if (typeof seriesName === 'string' && seriesName.length !== 0) {
+				const deleted = await prisma.vendorProduct.deleteMany({
+					where: { seriesName },
+				});
+				return json({ deleted });
+			}
+
+			return badRequest({
+				message: 'You must provide a series to delete.',
+			});
 		}
 		default:
 			break;
