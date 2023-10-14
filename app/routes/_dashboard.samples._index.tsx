@@ -15,7 +15,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	if (seriesName) {
 		fields['series'] = seriesName;
-
 		query['seriesName'] = {
 			contains: seriesName,
 			mode: 'insensitive',
@@ -102,24 +101,20 @@ export default function SamplesPage() {
 									)}
 								</td>
 								<td>
-									<Link to={`${sample.id}/edit`}>
+									<Link to={sample.id}>
 										{sample.materialNo}
 									</Link>
 								</td>
 								<td>
-									<Link to={`${sample.id}/edit`}>
+									<Link to={sample.id}>
 										{sample.seriesName}
 									</Link>
 								</td>
 								<td>
-									<Link to={`${sample.id}/edit`}>
-										{sample.color}
-									</Link>
+									<Link to={sample.id}>{sample.color}</Link>
 								</td>
 								<td>
-									<Link to={`${sample.id}/edit`}>
-										{sample.finish}
-									</Link>
+									<Link to={sample.id}>{sample.finish}</Link>
 								</td>
 							</tr>
 						))}
