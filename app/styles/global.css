@@ -1009,3 +1009,49 @@ input::file-selector-button {
 .indicator.success {
 	background-color: var(--success-color);
 }
+
+.foobar {
+	display: flex;
+}
+
+.foobar-main-content {
+	width: 100%;
+	margin-right: 96px;
+}
+
+.foobar-sidebar {
+	min-width: 270px;
+	max-width: 340px;
+	width: 100%;
+}
+
+.foobar-card-list {
+	display: flex;
+}
+
+.foobar-card-list .foobar-card {
+	margin-top: 24px;
+	margin-right: 24px;
+}
+
+.foobar-card {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+
+	background-color: var(--dark-card);
+	border-radius: 14px;
+	box-sizing: border-box;
+	width: 270px;
+	height: 100%;
+	padding: 24px;
+}
+
+.foobar-card .title {
+	margin-top: 0;
+}
+
+.foobar-card .caption {
+	margin-top: auto;
+	margin-bottom: 0;
+}
