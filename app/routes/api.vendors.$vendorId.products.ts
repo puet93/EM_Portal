@@ -156,7 +156,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 			const formData = await request.formData();
 			const seriesName = formData.get('seriesName');
 
-			if (typeof seriesName === 'string' && seriesName.length !== 0) {
+			if (typeof seriesName === 'string') {
 				const deleted = await prisma.vendorProduct.deleteMany({
 					where: { seriesName },
 				});
