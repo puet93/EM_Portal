@@ -19,7 +19,11 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 				include: {
 					product: {
 						include: {
-							vendorProduct: true,
+							vendorProduct: {
+								include: {
+									sample: true,
+								},
+							},
 						},
 					},
 				},
@@ -27,7 +31,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		},
 	});
 
-	console.log(order);
+	console.log('ORDER', order);
 
 	return json({ order });
 };
@@ -76,7 +80,7 @@ export default function OrderPage() {
 					<tr>
 						<th className="caption">Item</th>
 						<th className="caption">Florim Item No.</th>
-						<th></th>
+						<th className="caption">Material No</th>
 					</tr>
 					{data.order?.items.map((item) => (
 						<tr key={item.id}>
@@ -87,9 +91,19 @@ export default function OrderPage() {
 
 							<td>{item.product.vendorProduct.itemNo}</td>
 							<td>
-								{/* <button className="button button--sm">
-									Print Label
-								</button> */}
+								{item.product.vendorProduct.sample
+									?.materialNo ? (
+									item.product.vendorProduct.sample
+										?.materialNo
+								) : (
+									<div>
+										<span
+											className="error indicator"
+											style={{ marginRight: 12 }}
+										></span>
+										Missing sample swatch
+									</div>
+								)}
 							</td>
 						</tr>
 					))}

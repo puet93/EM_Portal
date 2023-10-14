@@ -1027,11 +1027,13 @@ input::file-selector-button {
 
 .foobar-card-list {
 	display: flex;
+	flex-wrap: wrap;
 }
 
 .foobar-card-list .foobar-card {
 	margin-top: 24px;
 	margin-right: 24px;
+	margin-bottom: 24px;
 }
 
 .foobar-card {

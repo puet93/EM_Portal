@@ -34,7 +34,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
 
 			doc.fontSize(11).text(
-				label.product.vendorProduct.itemNo,
+				label.product.vendorProduct.sample.materialNo,
 				192,
 				158,
 				{
@@ -55,7 +55,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
 
 			doc.fontSize(11).text(
-				label.product.vendorProduct.itemNo,
+				label.product.vendorProduct.sample.materialNo,
 				192,
 				158,
 				{

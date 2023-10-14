@@ -24,7 +24,11 @@ export async function getOrder(orderId: string) {
 							id: true,
 							sku: true,
 							title: true,
-							vendorProduct: true,
+							vendorProduct: {
+								include: {
+									sample: true,
+								},
+							},
 						},
 					},
 				},
