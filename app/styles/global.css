@@ -244,7 +244,7 @@ li {
 	grid-template-columns: minmax(270px, 320px) auto;
 	grid-template-rows: 100px 1fr;
 
-	min-height: 100vh;
+	height: 100vh;
 }
 
 .dashboard-nav,
@@ -275,9 +275,10 @@ li {
 	padding-right: 80px;
 }
 
-.dashbard-nav-list {
+.dashboard-nav-list {
 	display: flex;
 	flex-direction: column;
+	min-height: 100%;
 }
 
 .dashboard-nav-item {
@@ -298,6 +299,19 @@ li {
 	white-space: nowrap;
 
 	transition: background-color 0.2s, color 0.2s;
+}
+
+.closed.dashboard {
+	grid-template-columns: min-content auto;
+}
+
+.closed .dashboard-nav-item svg {
+	margin-right: 0;
+}
+
+.closed .dashboard-nav-item__label {
+	width: 0;
+	opacity: 0;
 }
 
 .dashboard-nav-item svg {
@@ -377,6 +391,7 @@ li {
 .orders-page,
 .products-page {
 	padding: 48px;
+	overflow-y: auto;
 }
 
 .content-wrapper,
@@ -634,16 +649,14 @@ li {
 .inline-form .input {
 	width: 100%;
 	flex: 0 1 auto;
-	margin-top: 20px;
-	margin-left: 9px;
-	margin-right: 9px;
 }
 
+.inline-form .input,
 .inline-form .button {
 	margin-top: 24px;
-	margin-bottom: 20px;
-	margin-left: 9px;
 	margin-right: 9px;
+	margin-bottom: 0;
+	margin-left: 9px;
 }
 
 .message {
@@ -713,7 +726,7 @@ li {
 .table-toolbar {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
+	align-items: flex-end;
 
 	margin: 48px -6px 48px 0;
 }
@@ -734,6 +747,10 @@ li {
 
 .table-toolbar .primary.button {
 	margin-left: auto;
+}
+
+.table-toolbar > .inline-form + .primary.button {
+	margin-left: 24px;
 }
 
 .table-row-actions {
