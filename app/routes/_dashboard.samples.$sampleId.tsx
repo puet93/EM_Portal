@@ -4,9 +4,14 @@ import { Form, Link, Outlet, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
+import Input from '~/components/Input';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
+
+	const searchParams = new URL(request.url).searchParams;
+	const entries = Object.fromEntries(searchParams);
+	const query = entries.query;
 
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
@@ -23,22 +28,38 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 		},
 	});
 
-	const vendorProducts = await prisma.vendorProduct.findMany({
-		where: {
-			seriesName: {
-				contains: sample.seriesName,
-				mode: 'insensitive',
+	let vendorProducts;
+	if (query) {
+		vendorProducts = await prisma.vendorProduct.findMany({
+			where: {
+				seriesName: {
+					contains: query,
+					mode: 'insensitive',
+				},
+				sampleMaterialNo: null,
 			},
-			color: {
-				contains: sample.color,
-				mode: 'insensitive',
+			include: {
+				vendor: true,
 			},
-			sampleMaterialNo: null,
-		},
-		include: {
-			vendor: true,
-		},
-	});
+		});
+	} else {
+		vendorProducts = await prisma.vendorProduct.findMany({
+			where: {
+				seriesName: {
+					contains: sample.seriesName,
+					mode: 'insensitive',
+				},
+				color: {
+					contains: sample.color,
+					mode: 'insensitive',
+				},
+				sampleMaterialNo: null,
+			},
+			include: {
+				vendor: true,
+			},
+		});
+	}
 
 	return json({ connected, vendorProducts, sample });
 };
@@ -79,8 +100,10 @@ export default function SampleDetailPage() {
 
 				<div style={{ marginTop: 24, marginBottom: 24 }}>
 					<p className="title">
-						{data.sample.seriesName} {data.sample.color}{' '}
-						{data.sample.finish}
+						<Link to="edit">
+							{data.sample.seriesName} {data.sample.color}{' '}
+							{data.sample.finish}
+						</Link>
 					</p>
 					<p className="caption">{data.sample.materialNo}</p>
 				</div>
@@ -224,7 +247,18 @@ export default function SampleDetailPage() {
 							</tbody>
 						</table>
 					</Form>
-				) : null}
+				) : (
+					<Form method="get" className="inline-form">
+						<Input
+							label="Search for vendor products"
+							name="query"
+							id="query"
+						/>
+						<button type="submit" className="primary button">
+							Search
+						</button>
+					</Form>
+				)}
 			</div>
 
 			<Outlet />

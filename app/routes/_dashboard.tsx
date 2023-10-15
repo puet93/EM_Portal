@@ -1,28 +1,59 @@
 import type { LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Form, NavLink, Outlet, useLoaderData } from '@remix-run/react';
+import {
+	Form,
+	NavLink,
+	Outlet,
+	useFetcher,
+	useLoaderData,
+} from '@remix-run/react';
 import { requireUser } from '~/session.server';
 import {
 	DeliveryShipmentPackagesSearchIcon,
 	PalletBoxMoveRightIcon,
 	SettingsIcon,
 	ShoppingInvoiceListIcon,
+	SidebarMinusIcon,
+	SidebarPlusIcon,
 	SwatchIcon,
 	UsersIcon,
 } from '~/components/Icons';
 
+import { userPrefs } from '../cookies.server';
+
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
-	return json({ user });
+	const cookieHeader = request.headers.get('Cookie');
+	const cookie = await userPrefs.parse(cookieHeader);
+
+	if (cookie && cookie.hasOwnProperty('sidebarIsOpen')) {
+		return json({ user, sidebarIsOpen: cookie.sidebarIsOpen });
+	} else {
+		return json(
+			{ user, sidebarIsOpen: true },
+			{
+				headers: {
+					'Set-Cookie': await userPrefs.serialize({
+						sidebarIsOpen: true,
+					}),
+				},
+			}
+		);
+	}
 };
 
 export default function DashboardLayout() {
+	const fetcher = useFetcher();
 	const data = useLoaderData<typeof loader>();
 
+	if (fetcher.formData?.has('sidebar')) {
+		data.sidebarIsOpen = fetcher.formData.get('sidebar') === 'open';
+	}
+
 	return (
-		<div className="dashboard">
+		<div className={data.sidebarIsOpen ? `dashboard` : `dashboard closed`}>
 			<header className="dashboard-header">
-				<h1>Edward Martin Label Printer</h1>
+				<h1>Edward Martin</h1>
 				<Form method="post" action="/logout">
 					<button className="button" type="submit">
 						Logout
@@ -41,7 +72,9 @@ export default function DashboardLayout() {
 							to="/orders"
 						>
 							<ShoppingInvoiceListIcon />
-							Orders
+							<span className="dashboard-nav-item__label">
+								Orders
+							</span>
 						</NavLink>
 					</li>
 					{data.user.role === 'SUPERADMIN' ? (
@@ -56,7 +89,9 @@ export default function DashboardLayout() {
 									to="/products"
 								>
 									<DeliveryShipmentPackagesSearchIcon />
-									Products
+									<span className="dashboard-nav-item__label">
+										Products
+									</span>
 								</NavLink>
 							</li>
 
@@ -70,7 +105,9 @@ export default function DashboardLayout() {
 									to="/vendors"
 								>
 									<PalletBoxMoveRightIcon />
-									Vendors
+									<span className="dashboard-nav-item__label">
+										Vendors
+									</span>
 								</NavLink>
 							</li>
 
@@ -84,7 +121,9 @@ export default function DashboardLayout() {
 									to="/samples"
 								>
 									<SwatchIcon />
-									Samples
+									<span className="dashboard-nav-item__label">
+										Samples
+									</span>
 								</NavLink>
 							</li>
 
@@ -98,7 +137,9 @@ export default function DashboardLayout() {
 									to="/users"
 								>
 									<UsersIcon />
-									Users
+									<span className="dashboard-nav-item__label">
+										Users
+									</span>
 								</NavLink>
 							</li>
 						</>
@@ -113,8 +154,30 @@ export default function DashboardLayout() {
 							to="/settings"
 						>
 							<SettingsIcon />
-							Settings
+							<span className="dashboard-nav-item__label">
+								Settings
+							</span>
 						</NavLink>
+					</li>
+					<li style={{ marginTop: 'auto' }}>
+						<fetcher.Form method="post" action="/sidebar">
+							<button
+								className="dashboard-nav-item"
+								name="sidebar"
+								value={data.sidebarIsOpen ? 'close' : 'open'}
+							>
+								{data.sidebarIsOpen ? (
+									<SidebarMinusIcon />
+								) : (
+									<SidebarPlusIcon />
+								)}
+								<span className="dashboard-nav-item__label">
+									{data.sidebarIsOpen
+										? 'Collapse Sidebar'
+										: 'Expand Sidebar'}
+								</span>
+							</button>
+						</fetcher.Form>
 					</li>
 				</ul>
 			</nav>

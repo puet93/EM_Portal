@@ -3,29 +3,54 @@ import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { EditIcon, TrashIcon } from '~/components/Icons';
-import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
-import { OrderStatus } from '@prisma/client';
+import type { OrderStatus } from '@prisma/client';
+
+const statusFilters = [
+	{ label: 'Draft', value: 'DRAFT' },
+	{ label: 'New', value: 'NEW' },
+	{ label: 'Processing', value: 'PROCESSING' },
+	{ label: 'Complete', value: 'COMPLETE' },
+	{ label: 'Cancelled', value: 'CANCELLED' },
+];
 
 export const loader = async ({ request }: LoaderArgs) => {
 	const searchParams = new URL(request.url).searchParams;
-	let filters: OrderStatus[] = ['DRAFT', 'NEW'];
-	let statusArray: OrderStatus[] = [];
+	let filters = ['DRAFT', 'NEW'];
+	let newFilters = [];
+	let name = '';
 
 	for (const [key, value] of searchParams) {
 		if (key === 'status') {
-			statusArray.push(value as OrderStatus);
+			newFilters.push(value);
+			continue;
+		}
+
+		if (key === 'name') {
+			name = value;
+			continue;
 		}
 	}
 
-	if (statusArray.length !== 0) {
-		filters = statusArray;
+	if (newFilters.length !== 0) {
+		filters = newFilters;
 	}
+
+	const addresses = await prisma.address.findMany({
+		where: {
+			line1: {
+				contains: name,
+			},
+		},
+	});
 
 	const orders = await prisma.order.findMany({
 		where: {
 			status: {
-				in: filters,
+				in: filters as OrderStatus[],
+			},
+			address: {
+				id: { in: addresses?.map((address) => address.id) },
 			},
 		},
 		include: {
@@ -35,7 +60,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 			createdAt: 'desc',
 		},
 	});
-	return json({ orders, filters });
+	return json({ orders, filters, name });
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -74,58 +99,27 @@ export default function OrderIndex() {
 					<fieldset style={{ display: 'flex' }}>
 						<legend>Status</legend>
 
-						<label>
-							<input
-								type="checkbox"
-								name="status"
-								value="DRAFT"
-								defaultChecked={data.filters.includes('DRAFT')}
-							/>
-							Draft
-						</label>
-						<label>
-							<input
-								type="checkbox"
-								name="status"
-								value="NEW"
-								defaultChecked={data.filters.includes('NEW')}
-							/>
-							New
-						</label>
-						<label>
-							<input
-								type="checkbox"
-								name="status"
-								value="PROCESSING"
-								defaultChecked={data.filters.includes(
-									'PROCESSING'
-								)}
-							/>
-							Processing
-						</label>
-						<label>
-							<input
-								type="checkbox"
-								name="status"
-								value="COMPLETE"
-								defaultChecked={data.filters.includes(
-									'COMPLETE'
-								)}
-							/>
-							Complete
-						</label>
-						<label>
-							<input
-								type="checkbox"
-								name="status"
-								value="CANCELLED"
-								defaultChecked={data.filters.includes(
-									'CANCELLED'
-								)}
-							/>
-							Cancelled
-						</label>
+						{statusFilters.map(({ label, value }) => (
+							<label key={value}>
+								<input
+									type="checkbox"
+									name="status"
+									value={value}
+									defaultChecked={data.filters.includes(
+										value
+									)}
+								/>
+								{label}
+							</label>
+						))}
 					</fieldset>
+
+					<Input
+						label="Search by name"
+						name="name"
+						id="name"
+						defaultValue={data.name}
+					/>
 
 					<button className="button" type="submit">
 						Filter
