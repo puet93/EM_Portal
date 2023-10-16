@@ -354,16 +354,36 @@ li {
 	margin-bottom: 40px;
 }
 
+.headline-h5 {
+	font-size: 24px;
+	font-weight: 500;
+	line-height: calc(32 / 24);
+}
+
 .headline-h6 {
 	font-size: 18px;
+	font-style: normal;
 	font-weight: 400;
 	line-height: calc(24 / 18);
 
 	margin-bottom: 32px;
 }
 
+.headline-h5 + .text {
+	margin-top: 24px;
+}
+
+.text {
+	font-size: 14px;
+	font-weight: 400;
+	font-style: normal;
+	line-height: calc(24 / 14);
+}
+
 .title {
 	font-size: 16px;
+	font-style: normal;
+	font-weight: 400;
 	line-height: calc(24 / 16);
 }
 

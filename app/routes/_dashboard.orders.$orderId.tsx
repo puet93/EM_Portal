@@ -42,17 +42,20 @@ export default function OrderPage() {
 	return (
 		<div className="orders-detail-page">
 			<header className="page-header">
-				<Link to="/orders" className="circle-button circle-button--lg">
+				{/* <Link to="/orders" className="circle-button circle-button--lg">
 					<span className="visually-hidden">Go Back</span>
 					<ArrowLeftIcon />
-				</Link>
-				<h1 className="headline-h3">Order ID: {data.order?.id}</h1>
+				</Link> */}
+				<div>
+					<h1 className="headline-h3">Sample Order</h1>
+					<p className="caption">{data.order?.id}</p>
+				</div>
 			</header>
 
 			{data.order.address ? (
 				<>
-					<div className="title">Ship To</div>
-					<address className="caption">
+					<h2 className="headline-h5">Ship To</h2>
+					<address className="text">
 						{data.order.address.line1}
 						<br />
 						{data.order.address.line2}
@@ -64,7 +67,7 @@ export default function OrderPage() {
 			) : null}
 
 			<div className="table-toolbar">
-				<h2 className="table-toolbar-title">Samples</h2>
+				<h2 className="headline-h5">Line Items</h2>
 				<Link
 					className="primary button"
 					to="labels"
