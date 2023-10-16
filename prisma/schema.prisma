@@ -95,6 +95,7 @@ model RetailerProduct {
 
 model Sample {
     id             String          @id @default(cuid())
+    gid            String?         @unique
     materialNo     String          @unique
     seriesName     String
     color          String
