@@ -81,6 +81,7 @@ export default function OrderPage() {
 						<th className="caption">Item</th>
 						<th className="caption">Florim Item No.</th>
 						<th className="caption">Material No</th>
+						<th className="caption">Quantity</th>
 					</tr>
 					{data.order?.items.map((item) => (
 						<tr key={item.id}>
@@ -105,6 +106,7 @@ export default function OrderPage() {
 									</div>
 								)}
 							</td>
+							<td>{item.quantity}</td>
 						</tr>
 					))}
 				</tbody>

@@ -37,7 +37,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	});
 
 	const items = order?.items.map((item) => {
-		return item.product;
+		const newItem = { ...item.product, quantity: item.quantity };
+		return newItem;
 	});
 
 	const mutatedOrder = { ...order, items };
@@ -63,7 +64,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 	}
 
 	const parsedStatus = JSON.parse(status);
-	const parsedCart: { id: string }[] = JSON.parse(cart);
+	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
 
 	const updatedOrder = await prisma.$transaction([
 		prisma.orderItem.deleteMany({
@@ -74,7 +75,10 @@ export const action: ActionFunction = async ({ params, request }) => {
 			data: {
 				status: parsedStatus,
 				items: {
-					create: parsedCart.map((item) => ({ productId: item.id })),
+					create: parsedCart.map((item) => ({
+						productId: item.id,
+						quantity: Number(item.quantity),
+					})),
 				},
 			},
 		}),
@@ -99,10 +103,6 @@ export default function NewOrderDetailsPage() {
 			setIsEditing(false);
 		}
 	}, [address]);
-
-	useEffect(() => {
-		console.log('STATUS', status);
-	}, [status]);
 
 	function handleDiscard() {
 		setCart(initialCart);
@@ -424,7 +424,12 @@ export default function NewOrderDetailsPage() {
 
 				<ul className="sample-cart-list">
 					{cart.map(
-						(item: { id: string; sku: string; title: string }) => (
+						(item: {
+							id: string;
+							sku: string;
+							title: string;
+							quantity: number;
+						}) => (
 							<li className="sample-cart-item" key={item.id}>
 								<div className="sample-cart-img">
 									<ImageIcon />
@@ -434,6 +439,39 @@ export default function NewOrderDetailsPage() {
 										{item.title}
 									</div>
 									<div className="caption-2">{item.sku}</div>
+								</div>
+								<div>
+									<label>
+										<span>Quantity</span>
+										<input
+											type="number"
+											name={`quantity-${item.sku}`}
+											onChange={(e) => {
+												const newCartItems = cart.map(
+													(cartItem) => {
+														if (
+															cartItem.id !==
+															item.id
+														) {
+															return cartItem;
+														} else {
+															return {
+																...cartItem,
+																quantity:
+																	Number(
+																		e.target
+																			.value
+																	),
+															};
+														}
+													}
+												);
+
+												setCart(newCartItems);
+											}}
+											defaultValue={item.quantity}
+										/>
+									</label>
 								</div>
 								<button
 									aria-label="Delete"

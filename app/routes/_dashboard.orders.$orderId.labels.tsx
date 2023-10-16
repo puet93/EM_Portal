@@ -29,45 +29,110 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		const label = pages[i];
 
 		if (i === 0) {
-			doc.fontSize(16).text(label.product.title, 24, 24, { width: 336 });
+			// If first page
 
-			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
+			// If first page quantity is more than 1
+			if (label.quantity !== 1) {
+				const firstPage = label.quantity;
 
-			doc.fontSize(11).text(
-				label.product.vendorProduct.sample.materialNo,
-				192,
-				158,
-				{
-					width: 168,
-					align: 'right',
+				for (var j = label.quantity; j > 0; j--) {
+					if (j === firstPage) {
+						doc.fontSize(16).text(label.product.title, 24, 24, {
+							width: 336,
+						});
+
+						doc.fontSize(12)
+							.moveDown(0.25)
+							.text(`SKU: ${label.product.sku}`);
+
+						doc.fontSize(11).text(
+							label.product.vendorProduct.sample.materialNo,
+							192,
+							158,
+							{
+								width: 168,
+								align: 'right',
+							}
+						);
+
+						doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
+							width: 168,
+							align: 'left',
+						});
+					} else {
+						doc.addPage(pageOptions)
+							.fontSize(16)
+							.text(label.product.title, 24, 24, { width: 336 });
+
+						doc.fontSize(12)
+							.moveDown(0.25)
+							.text(`SKU: ${label.product.sku}`);
+
+						doc.fontSize(11).text(
+							label.product.vendorProduct.sample.materialNo,
+							192,
+							158,
+							{
+								width: 168,
+								align: 'right',
+							}
+						);
+
+						doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
+							width: 168,
+							align: 'left',
+						});
+					}
 				}
-			);
+			} else {
+				doc.fontSize(16).text(label.product.title, 24, 24, {
+					width: 336,
+				});
 
-			doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
-				width: 168,
-				align: 'left',
-			});
+				doc.fontSize(12)
+					.moveDown(0.25)
+					.text(`SKU: ${label.product.sku}`);
+
+				doc.fontSize(11).text(
+					label.product.vendorProduct.sample.materialNo,
+					192,
+					158,
+					{
+						width: 168,
+						align: 'right',
+					}
+				);
+
+				doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
+					width: 168,
+					align: 'left',
+				});
+			}
 		} else {
-			doc.addPage(pageOptions)
-				.fontSize(16)
-				.text(label.product.title, 24, 24, { width: 336 });
+			for (var j = label.quantity; j > 0; j--) {
+				doc.addPage(pageOptions)
+					.fontSize(16)
+					.text(label.product.title, 24, 24, { width: 336 });
 
-			doc.fontSize(12).moveDown(0.25).text(`SKU: ${label.product.sku}`);
+				doc.fontSize(12)
+					.moveDown(0.25)
+					.text(`SKU: ${label.product.sku}`);
 
-			doc.fontSize(11).text(
-				label.product.vendorProduct.sample.materialNo,
-				192,
-				158,
-				{
+				doc.fontSize(11).text(
+					label.product.vendorProduct.sample.materialNo,
+					192,
+					158,
+					{
+						width: 168,
+						align: 'right',
+					}
+				);
+
+				doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
 					width: 168,
-					align: 'right',
-				}
-			);
-
-			doc.fontSize(12).text('www.edwardmartin.com', 24, 158, {
-				width: 168,
-				align: 'left',
-			});
+					align: 'left',
+				});
+			}
 		}
 	}
 	doc.end();
