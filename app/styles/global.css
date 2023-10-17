@@ -1049,17 +1049,29 @@ input::file-selector-button {
 
 .foobar {
 	display: flex;
+	align-items: flex-start;
 }
 
 .foobar-main-content {
 	width: 100%;
-	margin-right: 96px;
+	margin-right: 32px;
+}
+
+@media screen and (min-width: 1440px) {
+	.foobar-main-content {
+		margin-right: 80px;
+	}
 }
 
 .foobar-sidebar {
 	min-width: 270px;
-	max-width: 340px;
+	max-width: 448px;
 	width: 100%;
+
+	background-color: #353945;
+	border-radius: 24px;
+	box-sizing: border-box;
+	padding: 32px;
 }
 
 .foobar-card-list {
