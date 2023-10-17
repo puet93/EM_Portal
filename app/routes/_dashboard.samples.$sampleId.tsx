@@ -171,6 +171,8 @@ export const action: ActionFunction = async ({ params, request }) => {
 							.id,
 					},
 				});
+
+				return json({ message: 'Sample created on Shopify.' });
 			}
 
 			if (productExists && existingSamples.length === 1) {
@@ -212,8 +214,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 					],
 				});
 			}
-
-			break;
 		default:
 			return badRequest({ message: 'Invalid action' });
 	}
@@ -233,7 +233,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 	// 	});
 	// }
 
-	return json({});
+	// return json({});
 };
 
 export default function SampleDetailPage() {
@@ -267,7 +267,7 @@ export default function SampleDetailPage() {
 
 				<div style={{ marginTop: 24, marginBottom: 24 }}>
 					<h2 className="headline-h5"></h2>
-					<Form method="post" className="inline-form">
+					<Form method="post" className="inline-form" replace>
 						<Input
 							id="title"
 							name="title"

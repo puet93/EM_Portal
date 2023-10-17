@@ -19,10 +19,30 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	if (seriesName) {
 		fields['series'] = seriesName;
-		query['seriesName'] = {
-			contains: seriesName,
-			mode: 'insensitive',
-		};
+
+		query['OR'] = [
+			{
+				seriesName: {
+					contains: seriesName,
+					mode: 'insensitive',
+				},
+			},
+			{
+				seriesAlias: {
+					contains: seriesName,
+					mode: 'insensitive',
+				},
+			},
+		];
+		// query['seriesName'] = {
+		// 	contains: seriesName,
+		// 	mode: 'insensitive',
+		// };
+
+		// query['seriesAlias'] = {
+		// 	contains: seriesName,
+		// 	mode: 'insensitive',
+		// };
 	}
 
 	if (finish) {
@@ -44,6 +64,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const samples = await prisma.sample.findMany({
 		where: query,
 		include: { vendorProducts: true },
+		orderBy: [{ seriesName: 'asc' }, { color: 'asc' }],
 	});
 
 	return json({ samples, fields });
