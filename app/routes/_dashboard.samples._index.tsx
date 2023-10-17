@@ -220,8 +220,7 @@ export default function SamplesPage() {
 								<th>Series</th>
 								<th>Color</th>
 								<th>Finish</th>
-								<th></th>
-								<th>Connected</th>
+								<th style={{ textAlign: 'center' }}>Shopify</th>
 							</tr>
 							{data.samples.map((sample) => (
 								<tr className="row" key={sample.id}>
@@ -252,22 +251,13 @@ export default function SamplesPage() {
 											{sample.finish}
 										</Link>
 									</td>
-
-									<td>
-										<button
-											type="submit"
-											name="sample"
-											value={sample.id}
-										>
-											Sync with Shopify
-										</button>
-									</td>
-
 									<td style={{ textAlign: 'center' }}>
 										{sample.gid ? (
 											<span className="success indicator"></span>
 										) : (
-											<span className="indicator"></span>
+											<Link to={`${sample.id}/edit`}>
+												Edit
+											</Link>
 										)}
 									</td>
 								</tr>

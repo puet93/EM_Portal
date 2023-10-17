@@ -1,6 +1,12 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { Form, Link, Outlet, useLoaderData } from '@remix-run/react';
+import {
+	Form,
+	Link,
+	Outlet,
+	useActionData,
+	useLoaderData,
+} from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
@@ -76,8 +82,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 	// const vendorProductIds = [];
 	// const { _action, ...fields } = values;
 
-	console.log('FIELDS', fields);
-
 	switch (_action) {
 		case 'sync':
 			const sample = await prisma.sample.findUnique({
@@ -85,17 +89,17 @@ export const action: ActionFunction = async ({ params, request }) => {
 			});
 
 			if (!sample) {
-				return badRequest({ message: 'Unable to find sample' });
+				return badRequest({
+					errors: ['Unable to locate sample in database.'],
+				});
 			}
-
-			// See if sample exists on Shopify
 
 			let shopifyResponse;
 			try {
 				shopifyResponse = await graphqlClient.query({
 					data: `
 						{
-							productVariants(first: 1, query: "sku:${sample.materialNo}") {
+							productVariants(first: 10, query: "sku:${sample.materialNo}") {
 								edges {
 									node {
 										product {
@@ -109,7 +113,9 @@ export const action: ActionFunction = async ({ params, request }) => {
 					`,
 				});
 			} catch (e) {
-				return badRequest({ message: 'Bad request' });
+				return badRequest({
+					errors: ['Unable to query Shopify for sample product.'],
+				});
 			}
 
 			const responseBody = shopifyResponse.body;
@@ -119,14 +125,10 @@ export const action: ActionFunction = async ({ params, request }) => {
 				});
 			}
 
-			const productExists =
-				responseBody.data?.productVariants?.edges.length !== 0;
+			const existingSamples = responseBody.data?.productVariants?.edges;
+			const productExists = existingSamples.length !== 0;
 
-			if (productExists) {
-				// IF EXISTS, UPDATE
-				console.log('PRODUCT EXISTS');
-			} else {
-				// ELSE, CREATE
+			if (!productExists) {
 				const newShopifyProduct = await graphqlClient.query({
 					data: `
 						mutation productCreate {
@@ -162,12 +164,55 @@ export const action: ActionFunction = async ({ params, request }) => {
 					`,
 				});
 
-				console.log('NEW', newShopifyProduct.body.data);
+				await prisma.sample.update({
+					where: { id: sample.id },
+					data: {
+						gid: newShopifyProduct.body.data.productCreate.product
+							.id,
+					},
+				});
 			}
 
-			break;
-		case 'update':
-			console.log('Action: UPDATE');
+			if (productExists && existingSamples.length === 1) {
+				const product = existingSamples[0].node.product;
+
+				// Update title on Shopify
+				await graphqlClient.query({
+					data: `
+						mutation sampleUpdate {
+							productUpdate(
+								input: {id: "${product.id}", title: "${fields.title}"}
+							) {
+								product {
+									id
+									title
+								}
+							}
+						}
+					`,
+				});
+
+				// Update GID on database
+				await prisma.sample.update({
+					where: { id: sample.id },
+					data: {
+						gid: existingSamples[0].node.product.id,
+					},
+				});
+
+				return json({
+					message: 'Sample synced with Shopify.',
+				});
+			}
+
+			if (productExists && existingSamples.length > 1) {
+				return badRequest({
+					errors: [
+						`${existingSamples.length} instances of this product already exist.`,
+					],
+				});
+			}
+
 			break;
 		default:
 			return badRequest({ message: 'Invalid action' });
@@ -193,6 +238,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 export default function SampleDetailPage() {
 	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
 
 	return (
 		<div className="foobar">
@@ -208,9 +254,15 @@ export default function SampleDetailPage() {
 					</p>
 					<p className="caption">{data.sample.materialNo}</p>
 
-					<p>Series Alias: {data.sample.seriesAlias}</p>
-					<p>Color Alias: {data.sample.colorAlias}</p>
-					<p>Shopify ID: {data.sample.gid}</p>
+					<div>
+						<p>Series Alias: {data.sample.seriesAlias}</p>
+						<p>Color Alias: {data.sample.colorAlias}</p>
+						<p>Shopify ID: {data.sample.gid}</p>
+
+						<Link to="edit" className="button">
+							Edit
+						</Link>
+					</div>
 				</div>
 
 				<div style={{ marginTop: 24, marginBottom: 24 }}>
@@ -219,7 +271,7 @@ export default function SampleDetailPage() {
 						<Input
 							id="title"
 							name="title"
-							label="Suggest title"
+							label="Suggested title"
 							defaultValue={`${data.sample.seriesAlias} ${data.sample.finish} ${data.sample.colorAlias} 4x4 Tile Sample`}
 						/>
 						<button
@@ -231,6 +283,19 @@ export default function SampleDetailPage() {
 							Sync with Shopify
 						</button>
 					</Form>
+
+					{actionData && !actionData.errors ? (
+						<div className="success message">
+							{actionData.message}
+						</div>
+					) : null}
+
+					{actionData?.errors &&
+						actionData.errors.map((error) => (
+							<div key={error} className="error message">
+								{error}
+							</div>
+						))}
 				</div>
 
 				{data.connected && data.connected.length !== 0 ? (
