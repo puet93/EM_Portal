@@ -98,7 +98,9 @@ model Sample {
     gid            String?         @unique
     materialNo     String          @unique
     seriesName     String
+    seriesAlias    String?
     color          String
+    colorAlias     String?
     finish         String?
     vendorProducts VendorProduct[]
 }
