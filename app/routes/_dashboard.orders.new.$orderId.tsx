@@ -469,7 +469,11 @@ export default function NewOrderDetailsPage() {
 
 												setCart(newCartItems);
 											}}
-											defaultValue={item.quantity}
+											defaultValue={
+												item.quantity
+													? item.quantity
+													: 1
+											}
 										/>
 									</label>
 								</div>
