@@ -5,6 +5,7 @@ import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import Input from '~/components/Input';
+import { graphqlClient } from '~/utils/shopify.server';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
@@ -25,6 +26,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 		},
 		include: {
 			vendor: true,
+			retailerProduct: true,
 		},
 	});
 
@@ -68,26 +70,125 @@ export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 
 	const formData = await request.formData();
-	const entries = Object.fromEntries(formData);
-	const values = Object.keys(entries);
-	const vendorProductIds = [];
+	const { _action, ...fields } = Object.fromEntries(formData);
+	// const entries = Object.fromEntries(formData);
+	// const values = Object.entries(entries);
+	// const vendorProductIds = [];
+	// const { _action, ...fields } = values;
 
-	for (const value of values) {
-		vendorProductIds.push({ id: value });
+	console.log('FIELDS', fields);
+
+	switch (_action) {
+		case 'sync':
+			const sample = await prisma.sample.findUnique({
+				where: { id: params.sampleId },
+			});
+
+			if (!sample) {
+				return badRequest({ message: 'Unable to find sample' });
+			}
+
+			// See if sample exists on Shopify
+
+			let shopifyResponse;
+			try {
+				shopifyResponse = await graphqlClient.query({
+					data: `
+						{
+							productVariants(first: 1, query: "sku:${sample.materialNo}") {
+								edges {
+									node {
+										product {
+											id
+											title
+										}
+									}
+								}
+							}
+						}
+					`,
+				});
+			} catch (e) {
+				return badRequest({ message: 'Bad request' });
+			}
+
+			const responseBody = shopifyResponse.body;
+			if (!responseBody) {
+				return badRequest({
+					message: 'Unable to get product on Shopify',
+				});
+			}
+
+			const productExists =
+				responseBody.data?.productVariants?.edges.length !== 0;
+
+			if (productExists) {
+				// IF EXISTS, UPDATE
+				console.log('PRODUCT EXISTS');
+			} else {
+				// ELSE, CREATE
+				const newShopifyProduct = await graphqlClient.query({
+					data: `
+						mutation productCreate {
+							productCreate(input: {
+								title: "${fields.title}",
+								status: DRAFT,
+								tags: ["sample"],
+								templateSuffix: "sample",
+								variants: [{ sku: "${sample.materialNo}" }]
+							}) {
+								product {
+									id
+									title
+									tags
+									status
+									vendor
+									templateSuffix
+									variants(first: 1) {
+										edges {
+											node {
+												id
+												title
+											}
+										}
+									}
+								}
+								userErrors {
+									field
+									message
+								}
+							}
+						}
+					`,
+				});
+
+				console.log('NEW', newShopifyProduct.body.data);
+			}
+
+			break;
+		case 'update':
+			console.log('Action: UPDATE');
+			break;
+		default:
+			return badRequest({ message: 'Invalid action' });
 	}
 
-	if (vendorProductIds.length !== 0) {
-		await prisma.sample.update({
-			where: { id: params.sampleId },
-			data: {
-				vendorProducts: {
-					connect: vendorProductIds,
-				},
-			},
-		});
-	}
+	// for (const value of values) {
+	// 	vendorProductIds.push({ id: value });
+	// }
 
-	return redirect('..');
+	// if (vendorProductIds.length !== 0) {
+	// 	await prisma.sample.update({
+	// 		where: { id: params.sampleId },
+	// 		data: {
+	// 			vendorProducts: {
+	// 				connect: vendorProductIds,
+	// 			},
+	// 		},
+	// 	});
+	// }
+
+	return json({});
 };
 
 export default function SampleDetailPage() {
@@ -106,6 +207,30 @@ export default function SampleDetailPage() {
 						</Link>
 					</p>
 					<p className="caption">{data.sample.materialNo}</p>
+
+					<p>Series Alias: {data.sample.seriesAlias}</p>
+					<p>Color Alias: {data.sample.colorAlias}</p>
+					<p>Shopify ID: {data.sample.gid}</p>
+				</div>
+
+				<div style={{ marginTop: 24, marginBottom: 24 }}>
+					<h2 className="headline-h5"></h2>
+					<Form method="post" className="inline-form">
+						<Input
+							id="title"
+							name="title"
+							label="Suggest title"
+							defaultValue={`${data.sample.seriesAlias} ${data.sample.finish} ${data.sample.colorAlias} 4x4 Tile Sample`}
+						/>
+						<button
+							className="button"
+							type="submit"
+							name="_action"
+							value="sync"
+						>
+							Sync with Shopify
+						</button>
+					</Form>
 				</div>
 
 				{data.connected && data.connected.length !== 0 ? (
@@ -118,14 +243,25 @@ export default function SampleDetailPage() {
 										className="foobar-card"
 										to={`/vendors/${product.vendor.id}/products/${product.id}`}
 									>
-										<p className="title">
-											{product.seriesName}{' '}
-											{product.description}{' '}
-											{product.finish} {product.color}
-										</p>
-										<p className="caption">
-											{product.itemNo}
-										</p>
+										<div>
+											<p className="text">
+												{product.retailerProduct.title}{' '}
+											</p>
+											<p className="caption-2">
+												{product.retailerProduct.sku}
+											</p>
+										</div>
+
+										<div>
+											<p className="text">
+												{product.seriesName}{' '}
+												{product.description}{' '}
+												{product.finish} {product.color}
+											</p>
+											<p className="caption-2">
+												{product.itemNo}
+											</p>
+										</div>
 									</Link>
 								</li>
 							))}
