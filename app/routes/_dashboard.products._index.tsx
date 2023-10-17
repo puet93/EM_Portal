@@ -1,8 +1,17 @@
-import { useFetcher } from '@remix-run/react';
+import type { LoaderFunction } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { Link, useFetcher } from '@remix-run/react';
 import { SearchIcon } from '~/components/Icons';
+import { requireUserId } from '~/session.server';
+
+export const loader: LoaderFunction = async ({ request }) => {
+	await requireUserId(request);
+	return json({});
+};
 
 export default function ProductsPage() {
 	const search = useFetcher();
+
 	return (
 		<>
 			<search.Form method="post" action="/search">
@@ -35,8 +44,10 @@ export default function ProductsPage() {
 							return (
 								<tr key={product.id}>
 									<td>
-										<div>{product.title}</div>
-										<div>{product.sku}</div>
+										<Link to={product.id}>
+											<div>{product.title}</div>
+											<div>{product.sku}</div>
+										</Link>
 									</td>
 
 									{product.vendorProduct ? (
