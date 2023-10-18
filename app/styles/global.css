@@ -55,7 +55,8 @@ table {
 	width: 100%;
 }
 
-tr:nth-child(2n + 1) {
+thead tr,
+tr:nth-child(2n) {
 	background-color: #242731;
 }
 
@@ -387,6 +388,7 @@ li {
 	line-height: calc(24 / 16);
 }
 
+th,
 .caption {
 	font-size: 13px;
 	font-style: normal;
@@ -746,7 +748,7 @@ li {
 .table-toolbar {
 	display: flex;
 	justify-content: space-between;
-	align-items: flex-end;
+	align-items: center;
 
 	margin: 48px -6px 48px 0;
 }
@@ -756,17 +758,16 @@ li {
 }
 
 .table-toolbar-title {
-	font-size: 24px;
-	font-weight: 500;
-	line-height: calc(32 / 24);
+	flex-grow: 1;
 }
 
-.table-toolbar .button {
-	margin: 0 6px;
-}
-
-.table-toolbar .primary.button {
+.table-toolbar-actions {
+	display: flex;
 	margin-left: auto;
+}
+
+.table-toolbar-actions .button {
+	margin: 0 8px;
 }
 
 .table-toolbar > .inline-form + .primary.button {

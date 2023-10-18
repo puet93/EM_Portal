@@ -132,17 +132,18 @@ export default function OrderIndex() {
 			</div>
 
 			<table>
-				<tbody>
+				<thead>
 					<tr>
-						<th className="caption">Name</th>
-						<th className="caption">Created</th>
-						<th className="caption">Order No.</th>
-						<th className="caption">Status</th>
+						<th>Name</th>
+						<th>Created</th>
+						<th>Order No.</th>
+						<th>Status</th>
 						<th>
 							<span className="visually-hidden">Actions</span>
 						</th>
 					</tr>
-
+				</thead>
+				<tbody>
 					{data.orders.map((order) => {
 						const address = order.address;
 						const { city, state, postalCode } = address;
