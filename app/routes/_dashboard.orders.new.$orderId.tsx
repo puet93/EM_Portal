@@ -127,6 +127,21 @@ export default function NewOrderDetailsPage() {
 		);
 	}
 
+	function handleQtyChange(e, item) {
+		const newCartItems = cart.map((cartItem) => {
+			if (cartItem.id !== item.id) {
+				return cartItem;
+			} else {
+				return {
+					...cartItem,
+					quantity: e.target.value,
+				};
+			}
+		});
+
+		setCart(newCartItems);
+	}
+
 	function handleChange(e, item: { id: string }) {
 		if (e.target.checked) {
 			setCart([...cart, item]);
@@ -429,63 +444,47 @@ export default function NewOrderDetailsPage() {
 							sku: string;
 							title: string;
 							quantity: number;
-						}) => (
-							<li className="sample-cart-item" key={item.id}>
-								<div className="sample-cart-img">
-									<ImageIcon />
-								</div>
-								<div>
-									<div className="caption caption--bold">
-										{item.title}
-									</div>
-									<div className="caption-2">{item.sku}</div>
-								</div>
-								<div>
-									<label>
-										<span>Quantity</span>
-										<input
-											type="number"
-											name={`quantity-${item.sku}`}
-											onChange={(e) => {
-												const newCartItems = cart.map(
-													(cartItem) => {
-														if (
-															cartItem.id !==
-															item.id
-														) {
-															return cartItem;
-														} else {
-															return {
-																...cartItem,
-																quantity:
-																	Number(
-																		e.target
-																			.value
-																	),
-															};
-														}
-													}
-												);
+						}) => {
+							if (!item.quantity) {
+								item.quantity = 1;
+							}
 
-												setCart(newCartItems);
-											}}
-											defaultValue={
-												item.quantity
-													? item.quantity
-													: 1
-											}
-										/>
-									</label>
-								</div>
-								<button
-									aria-label="Delete"
-									className="sample-cart-delete-button"
-									onClick={() => {
-										removeFromCart(item);
-									}}
-								></button>
-							</li>
-						)
+							return (
+								<li className="sample-cart-item" key={item.id}>
+									<div className="sample-cart-img">
+										<ImageIcon />
+									</div>
+									<div>
+										<div className="caption caption--bold">
+											{item.title}
+										</div>
+										<div className="caption-2">
+											{item.sku}
+										</div>
+									</div>
+									<div>
+										<label>
+											<span>Quantity</span>
+											<input
+												type="number"
+												name={`quantity-${item.sku}`}
+												onChange={(e) => {
+													handleQtyChange(e, item);
+												}}
+												defaultValue={item.quantity}
+											/>
+										</label>
+									</div>
+									<button
+										aria-label="Delete"
+										className="sample-cart-delete-button"
+										onClick={() => {
+											removeFromCart(item);
+										}}
+									></button>
+								</li>
+							);
+						}
 					)}
 				</ul>
 			</aside>
