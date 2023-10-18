@@ -1,7 +1,6 @@
-import type { LoaderArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Link, useLoaderData } from '@remix-run/react';
-import { ArrowLeftIcon } from '~/components/Icons';
+import { Form, Link, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 
 export const loader = async ({ params, request }: LoaderArgs) => {
@@ -30,10 +29,16 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 			},
 		},
 	});
-
-	console.log('ORDER', order);
-
 	return json({ order });
+};
+
+export const action: ActionFunction = async ({ params, request }) => {
+	await prisma.order.update({
+		where: { id: params.orderId },
+		data: { status: 'PROCESSING' },
+	});
+
+	return json({});
 };
 
 export default function OrderPage() {
@@ -42,10 +47,6 @@ export default function OrderPage() {
 	return (
 		<div className="orders-detail-page">
 			<header className="page-header">
-				{/* <Link to="/orders" className="circle-button circle-button--lg">
-					<span className="visually-hidden">Go Back</span>
-					<ArrowLeftIcon />
-				</Link> */}
 				<div>
 					<h1 className="headline-h3">Sample Order</h1>
 					<p className="caption">{data.order?.id}</p>
@@ -67,33 +68,55 @@ export default function OrderPage() {
 			) : null}
 
 			<div className="table-toolbar">
-				<h2 className="headline-h5">Line Items</h2>
-				<Link
-					className="primary button"
-					to="labels"
-					target="_blank"
-					reloadDocument
-				>
-					Print Labels
-				</Link>
+				<h2 className="table-toolbar-title headline-h5">Line Items</h2>
+
+				<div className="table-toolbar-actions">
+					{/* <Form method="post">
+						<button
+							className="button"
+							type="submit"
+							name="_action"
+							value="setStatus"
+						>
+							Mark as Processing
+						</button>
+					</Form> */}
+
+					<Link
+						className="primary button"
+						to="labels"
+						target="_blank"
+						reloadDocument
+					>
+						Print Labels
+					</Link>
+				</div>
 			</div>
 
 			<table>
-				<tbody>
+				<thead>
 					<tr>
-						<th className="caption">Item</th>
-						<th className="caption">Florim Item No.</th>
-						<th className="caption">Material No</th>
-						<th className="caption">Quantity</th>
+						<th>Item</th>
+						<th>Florim Item No.</th>
+						<th>Material No</th>
+						<th>Quantity</th>
 					</tr>
+				</thead>
+
+				<tbody>
 					{data.order?.items.map((item) => (
 						<tr key={item.id}>
 							<td>
-								<h3 className="title">{item.product.title}</h3>
+								<p className="title">{item.product.title}</p>
 								<p className="caption">{item.product.sku}</p>
 							</td>
 
-							<td>{item.product.vendorProduct.itemNo}</td>
+							<td>
+								<p>{item.product.vendorProduct.seriesName}</p>
+								<p>{item.product.vendorProduct.color}</p>
+								<p>{item.product.vendorProduct.finish}</p>
+								<p>{item.product.vendorProduct.itemNo}</p>
+							</td>
 							<td>
 								{item.product.vendorProduct.sample
 									?.materialNo ? (
