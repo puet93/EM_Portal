@@ -74,13 +74,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
-
 	const formData = await request.formData();
 	const { _action, ...fields } = Object.fromEntries(formData);
-	// const entries = Object.fromEntries(formData);
-	// const values = Object.entries(entries);
-	// const vendorProductIds = [];
-	// const { _action, ...fields } = values;
 
 	switch (_action) {
 		case 'sync':
@@ -214,26 +209,43 @@ export const action: ActionFunction = async ({ params, request }) => {
 					],
 				});
 			}
+		case 'connect': {
+			const values = formData.getAll('productId');
+			const vendorProductIds = [];
+			for (const value of values) {
+				vendorProductIds.push({ id: value });
+			}
+
+			if (vendorProductIds.length !== 0) {
+				await prisma.sample.update({
+					where: { id: params.sampleId },
+					data: {
+						vendorProducts: {
+							connect: vendorProductIds,
+						},
+					},
+				});
+			}
+			return json({ message: 'Connected' });
+		}
+		case 'metafield': {
+			const skus = formData.getAll('connected');
+			const sampleGID = formData.get('sampleGID');
+
+			const metafields = [];
+			for (const sku of skus) {
+				const metafield = await upsertSampleToProductMetafield(
+					sku,
+					sampleGID
+				);
+				metafields.push(metafield);
+			}
+
+			return json({ metafields });
+		}
 		default:
 			return badRequest({ message: 'Invalid action' });
 	}
-
-	// for (const value of values) {
-	// 	vendorProductIds.push({ id: value });
-	// }
-
-	// if (vendorProductIds.length !== 0) {
-	// 	await prisma.sample.update({
-	// 		where: { id: params.sampleId },
-	// 		data: {
-	// 			vendorProducts: {
-	// 				connect: vendorProductIds,
-	// 			},
-	// 		},
-	// 	});
-	// }
-
-	// return json({});
 };
 
 export default function SampleDetailPage() {
@@ -299,38 +311,86 @@ export default function SampleDetailPage() {
 				</div>
 
 				{data.connected && data.connected.length !== 0 ? (
-					<div style={{ marginTop: 24, marginBottom: 24 }}>
-						<h2>Connected Sample Swatches</h2>
-						<ul className="foobar-card-list">
-							{data.connected.map((product) => (
-								<li key={product.id}>
-									<Link
-										className="foobar-card"
-										to={`/vendors/${product.vendor.id}/products/${product.id}`}
-									>
-										<div>
-											<p className="text">
-												{product.retailerProduct.title}{' '}
-											</p>
-											<p className="caption-2">
-												{product.retailerProduct.sku}
-											</p>
-										</div>
+					<div style={{ marginTop: 48, marginBottom: 48 }}>
+						<Form method="post">
+							<input
+								type="hidden"
+								name="sampleGID"
+								value={data.sample.gid}
+							/>
+							<div
+								style={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+								}}
+							>
+								<h2 className="headline-h5">
+									Connected Sample Swatches
+								</h2>
 
-										<div>
-											<p className="text">
-												{product.seriesName}{' '}
-												{product.description}{' '}
-												{product.finish} {product.color}
-											</p>
-											<p className="caption-2">
-												{product.itemNo}
-											</p>
-										</div>
-									</Link>
-								</li>
-							))}
-						</ul>
+								<button
+									className="primary button"
+									name="_action"
+									value="metafield"
+								>
+									Metafield
+								</button>
+							</div>
+
+							{actionData?.metafields &&
+								actionData.metafields.map((metafield) => (
+									<div
+										className="success message"
+										key={metafield.id}
+									>
+										{metafield.id}
+									</div>
+								))}
+
+							<ul className="foobar-card-list">
+								{data.connected.map((product) => (
+									<li key={product.id}>
+										<input
+											type="hidden"
+											name="connected"
+											value={product.retailerProduct.sku}
+										/>
+										<Link
+											className="foobar-card"
+											to={`/vendors/${product.vendor.id}/products/${product.id}`}
+										>
+											<div>
+												<p className="text">
+													{
+														product.retailerProduct
+															.title
+													}{' '}
+												</p>
+												<p className="caption-2">
+													{
+														product.retailerProduct
+															.sku
+													}
+												</p>
+											</div>
+
+											<div>
+												<p className="text">
+													{product.seriesName}{' '}
+													{product.description}{' '}
+													{product.finish}{' '}
+													{product.color}
+												</p>
+												<p className="caption-2">
+													{product.itemNo}
+												</p>
+											</div>
+										</Link>
+									</li>
+								))}
+							</ul>
+						</Form>
 					</div>
 				) : (
 					<div className="error message">
@@ -350,18 +410,38 @@ export default function SampleDetailPage() {
 							}}
 						>
 							<h2>Possible Matching Products</h2>
-							<button type="submit" className="primary button">
-								Save
+							<button
+								type="submit"
+								className="primary button"
+								name="_action"
+								value="connect"
+							>
+								Connect
 							</button>
 						</div>
 						<table>
+							<thead>
+								<tr>
+									<th>
+										<input
+											type="checkbox"
+											defaultChecked={false}
+										/>
+									</th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+								</tr>
+							</thead>
 							<tbody>
 								{data.vendorProducts.map((product) => (
 									<tr key={product.id}>
 										<td>
 											<input
 												type="checkbox"
-												name={product.id}
+												name="productId"
+												value={product.id}
 												defaultChecked={
 													!product.sampleMaterialNo &&
 													product.finish ===
@@ -465,4 +545,83 @@ export default function SampleDetailPage() {
 			<Outlet />
 		</div>
 	);
+}
+
+async function getProductFromSKU(sku: String) {
+	const queryString = `{
+		productVariants(first: 1, query: "sku:${sku}") {
+			edges {
+				node {
+					product {
+						id
+						title
+						metafields(first: 1, keys: ["pdp.sample"]) {
+							edges {
+								node {
+									id
+									type
+									namespace
+									key
+									value
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}`;
+
+	const shopifyResponse = await graphqlClient.query({ data: queryString });
+	const product =
+		shopifyResponse?.body?.data?.productVariants?.edges[0]?.node?.product;
+
+	if (!product) {
+		return null;
+	}
+
+	return product;
+}
+
+async function upsertSampleToProductMetafield(sku, sampleGID) {
+	// Get the Product GID
+	const product = await getProductFromSKU(sku);
+
+	if (!product) {
+		return badRequest({});
+	}
+
+	// If product already has sample
+	let metafield;
+	if (product.metafields.edges.length !== 0) {
+		metafield = product.metafields.edges[0].node;
+		return metafield;
+	}
+
+	// Update product metafield with Sample's Shopify GID
+	const response = await graphqlClient.query({
+		data: `
+			mutation productMetafieldSampleCreate {
+				productUpdate(
+					input: {id: "${product.id}", metafields: [{key: "sample", namespace: "pdp", type: "product_reference", value: "${sampleGID}"}]}
+				) {
+					product {
+						id
+						title
+						metafield(namespace: "pdp", key: "sample") {
+							id
+							key
+							namespace
+							type
+							value
+						}
+					}
+				}
+			}
+		`,
+	});
+
+	console.log(response.body.data);
+
+	return response.body.data;
 }

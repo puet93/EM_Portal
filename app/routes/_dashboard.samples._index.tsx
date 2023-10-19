@@ -1,7 +1,6 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, Link, useActionData, useLoaderData } from '@remix-run/react';
-import { useEffect } from 'react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import Input from '~/components/Input';
@@ -34,15 +33,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 				},
 			},
 		];
-		// query['seriesName'] = {
-		// 	contains: seriesName,
-		// 	mode: 'insensitive',
-		// };
-
-		// query['seriesAlias'] = {
-		// 	contains: seriesName,
-		// 	mode: 'insensitive',
-		// };
 	}
 
 	if (finish) {
@@ -73,125 +63,86 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
-	const sampleId = formData.get('sample');
+	const _action = formData.get('_action');
 
-	if (typeof sampleId !== 'string') {
-		return badRequest({ message: 'Invalid sample ID' });
-	}
+	switch (_action) {
+		case 'metafields': {
+			const metafieldQuery = formData.get('metafieldQuery');
 
-	const sample = await prisma.sample.findUnique({
-		where: {
-			id: sampleId,
-		},
-		include: {
-			vendorProducts: {
-				include: {
-					retailerProduct: true,
-				},
-			},
-		},
-	});
-
-	if (!sample) {
-		return badRequest({ message: 'Unable to find sample.' });
-	}
-
-	if (!sample.seriesAlias || !sample.finish || !sample.colorAlias) {
-		return badRequest({ message: 'Unable to construct title' });
-	}
-
-	const title = `${sample.seriesAlias} ${sample.finish} ${sample.colorAlias} 4x4 Tile Sample`;
-	const queryString = `
-		mutation productCreate {
-			productCreate(input: {
-				title: "${title}",
-				status: DRAFT,
-				tags: ["sample"],
-				templateSuffix: "sample",
-				variants: [{ sku: "${sample.materialNo}" }]
-			}) {
-				product {
-					id
-					title
-					tags
-					status
-					vendor
-					templateSuffix
-					variants(first: 1) {
+			const response = await graphqlClient.query({
+				data: `{
+					products(first: 250, query: "title:${metafieldQuery}* AND status:ACTIVE AND tag_not:sample") {
 						edges {
 							node {
-								id
-								title
+							id
+							title
+								metafield(namespace: "pdp", key: "sample") {
+									id
+									value
+								}
 							}
 						}
 					}
-				}
-				userErrors {
-					field
-					message
-				}
-			}
-		}
-	`;
-
-	const searchResponse = await graphqlClient.query({
-		data: `
-			{
-				productVariants(first: 10, query:"sku:${sample.materialNo}") {
-					edges {
-						node {
-							id
-							title
-						}
-					}
-				}
-			}
-		`,
-	});
-
-	console.log(`SEARCH RES for ${sample.materialNo}`, searchResponse.body);
-
-	if (searchResponse.body?.data?.productVariants.edges.length === 0) {
-		console.log('WARNING: PRODUCT EXISTS. TRY UPDATING INSTEAD.');
-
-		try {
-			const response = await graphqlClient.query({
-				data: queryString,
+				}`,
 			});
-			console.log('GID', response.body);
-			const gid = response.body.data.productCreate.product.id;
-			await prisma.sample.update({
-				where: { id: sampleId },
-				data: { gid },
-			});
-		} catch (e) {
-			console.log('Unable to create product on Shopify for some reason.');
+
+			const productCount = response.body.data.products.edges.length;
+			const products = response.body.data.products.edges.map(
+				(product) => product.node
+			);
+
+			const needToConnect = products.filter(
+				(product) => product.metafield === null
+			);
+
+			return json({ empty: needToConnect, productCount });
 		}
-
-		return json({});
-	}
-
-	if (searchResponse.body?.data?.productVariants.edges.length === 1) {
-		// UPDATE
-		console.log('WARNING: PRODUCT EXISTS. TRY UPDATING INSTEAD.');
-		return json({});
-	}
-
-	if (searchResponse.body?.data?.productVariants.edges.length > 1) {
-		// DELETE EXISTING PRODUCTS ON SHOPIFY FIRST
-		console.log(
-			'WARNING: More than one product exists. Please resolve on Shopify before proceeding.'
-		);
-		return json({});
+		default:
+			return badRequest({ message: 'Invalid action' });
 	}
 };
 
 export default function SamplesPage() {
 	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
 
 	return (
 		<div>
 			<h1 className="headline-h3">Samples List</h1>
+
+			<div className="table-toolbar">
+				<Form method="post" className="inline-form">
+					<Input
+						label="Series"
+						id="metafield-query"
+						name="metafieldQuery"
+						defaultValue={data.fields.series}
+					/>
+
+					<button
+						className="button"
+						type="submit"
+						name="_action"
+						value="metafields"
+					>
+						Check Series
+					</button>
+				</Form>
+			</div>
+
+			{actionData && actionData.empty?.length === 0 ? (
+				<div className="success message">
+					Contgrats! {actionData.empty.length} out of{' '}
+					{actionData.productCount} products without samples.
+				</div>
+			) : null}
+
+			{actionData && actionData.empty?.length >= 1 ? (
+				<div className="warning message">
+					{actionData.empty.length} out of {actionData.productCount}{' '}
+					products with samples.
+				</div>
+			) : null}
 
 			<div className="table-toolbar">
 				<Form

@@ -38,11 +38,13 @@ export default function VendorProductsPage() {
 	return (
 		<div style={{ display: 'flex' }}>
 			<div style={{ flexGrow: 1 }}>
-				<h2>
-					{product.seriesName} {product.description} {product.color}{' '}
-					{product.finish}
-				</h2>
-				<p>{product.itemNo}</p>
+				<Link to="edit">
+					<h2>
+						{product.seriesName} {product.description}{' '}
+						{product.color} {product.finish}
+					</h2>
+					<p>{product.itemNo}</p>
+				</Link>
 
 				{product.sampleMaterialNo ? (
 					<Form method="post">
