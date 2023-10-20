@@ -40,6 +40,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 		where: {
 			line1: {
 				contains: name,
+				mode: 'insensitive',
 			},
 		},
 	});
