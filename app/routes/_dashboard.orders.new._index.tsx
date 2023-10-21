@@ -60,8 +60,6 @@ export default function NewOrderPage() {
 			address: JSON.stringify(address),
 		};
 
-		console.log('fields', fields);
-
 		submit(fields, {
 			method: 'post',
 			encType: 'application/x-www-form-urlencoded',

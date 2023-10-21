@@ -24,6 +24,22 @@ export const action = async ({ request }: ActionArgs) => {
 		const transactions = await prisma.$transaction([
 			prisma.retailerProduct.findMany({
 				where: {
+					vendorProduct: {
+						sample: {
+							materialNo: query,
+						},
+					},
+				},
+				include: {
+					vendorProduct: {
+						include: {
+							sample: true,
+						},
+					},
+				},
+			}),
+			prisma.retailerProduct.findMany({
+				where: {
 					sku: {
 						search: query,
 					},

@@ -48,42 +48,54 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	const formData = await request.formData();
 	const _action = formData.get('_action');
-	const cart = formData.get('cart');
-	const status = formData.get('status');
 
-	if (_action === 'clear') {
-		return null;
+	switch (_action) {
+		case 'clear': {
+			return null;
+		}
+		case 'search': {
+			return json({});
+		}
+		default: {
+			const cart = formData.get('cart');
+			const status = formData.get('status');
+
+			if (_action === 'clear') {
+				return null;
+			}
+
+			if (typeof cart !== 'string' || cart.length === 0) {
+				return json({ error: 'Unable to read cart.' });
+			}
+
+			if (typeof status !== 'string' || status.length === 0) {
+				return json({ error: 'Unable to read status.' });
+			}
+
+			const parsedStatus = JSON.parse(status);
+			const parsedCart: { id: string; quantity: string }[] =
+				JSON.parse(cart);
+
+			const updatedOrder = await prisma.$transaction([
+				prisma.orderItem.deleteMany({
+					where: { orderId: params.orderId },
+				}),
+				prisma.order.update({
+					where: { id: params.orderId },
+					data: {
+						status: parsedStatus,
+						items: {
+							create: parsedCart.map((item) => ({
+								productId: item.id,
+								quantity: Number(item.quantity),
+							})),
+						},
+					},
+				}),
+			]);
+			return json({ updatedOrder });
+		}
 	}
-
-	if (typeof cart !== 'string' || cart.length === 0) {
-		return json({ error: 'Unable to read cart.' });
-	}
-
-	if (typeof status !== 'string' || status.length === 0) {
-		return json({ error: 'Unable to read status.' });
-	}
-
-	const parsedStatus = JSON.parse(status);
-	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
-
-	const updatedOrder = await prisma.$transaction([
-		prisma.orderItem.deleteMany({
-			where: { orderId: params.orderId },
-		}),
-		prisma.order.update({
-			where: { id: params.orderId },
-			data: {
-				status: parsedStatus,
-				items: {
-					create: parsedCart.map((item) => ({
-						productId: item.id,
-						quantity: Number(item.quantity),
-					})),
-				},
-			},
-		}),
-	]);
-	return json({ updatedOrder });
 };
 
 export default function NewOrderDetailsPage() {
@@ -190,7 +202,12 @@ export default function NewOrderDetailsPage() {
 							autoComplete="off"
 						/>
 
-						<button className="button" type="submit">
+						<button
+							className="button"
+							type="submit"
+							name="_action"
+							value="search"
+						>
 							Search
 						</button>
 					</div>
@@ -204,6 +221,9 @@ export default function NewOrderDetailsPage() {
 									<th className="caption"></th>
 									<th className="caption">Product</th>
 									<th className="caption">Florim Item No.</th>
+									<th className="caption">
+										Sample Material No.
+									</th>
 								</tr>
 
 								{search.data.results.map(
@@ -248,6 +268,13 @@ export default function NewOrderDetailsPage() {
 												</td>
 												<td>
 													{item.vendorProduct.itemNo}
+												</td>
+												<td>
+													{item.vendorProduct.sample
+														? item.vendorProduct
+																.sample
+																.materialNo
+														: null}
 												</td>
 											</tr>
 										);
