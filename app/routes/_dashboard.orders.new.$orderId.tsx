@@ -178,343 +178,361 @@ export default function NewOrderDetailsPage() {
 	}
 
 	return (
-		<div className="new-order-page">
+		<>
 			<header className="page-header">
-				<Link to="/orders" className="circle-button circle-button--lg">
-					<span className="visually-hidden">Go Back</span>
-					<ArrowLeftIcon />
-				</Link>
 				<h1 className="headline-h3">Order {data.order.id}</h1>
 			</header>
 
-			<section>
-				<h2 className="headline-h6">Search for items</h2>
-				<search.Form method="post" action="/search" replace>
-					<div className="search-bar">
-						<SearchIcon className="search-icon" id="search-icon" />
-						<input
-							aria-labelledby="search-icon"
-							className="search-input"
-							type="search"
-							name="query"
-							id="query"
-							placeholder="Search"
-							autoComplete="off"
-						/>
+			<div className="foobar">
+				<section className="foobar-main-content">
+					<h2 className="headline-h6">Search for items</h2>
+					<search.Form method="post" action="/search" replace>
+						<div className="search-bar">
+							<SearchIcon
+								className="search-icon"
+								id="search-icon"
+							/>
+							<input
+								aria-labelledby="search-icon"
+								className="search-input"
+								type="search"
+								name="query"
+								id="query"
+								placeholder="Search"
+								autoComplete="off"
+							/>
 
+							<button
+								className="button"
+								type="submit"
+								name="_action"
+								value="search"
+							>
+								Search
+							</button>
+						</div>
+					</search.Form>
+
+					{search.data ? (
+						search.data.results ? (
+							<table className="new-order-search-results">
+								<thead>
+									<tr>
+										<th></th>
+										<th>Product</th>
+										<th>Florim Item No.</th>
+										<th>Material No.</th>
+									</tr>
+								</thead>
+								<tbody>
+									{search.data.results.map(
+										(item: {
+											id: string;
+											title: string;
+											sku: string;
+											vendorProduct: { itemNo: string };
+										}) => {
+											const checked = isAlreadyInCart(
+												item,
+												cart
+											);
+
+											return (
+												<tr key={item.id}>
+													<td>
+														<input
+															id={`${item.id}-checkbox`}
+															type="checkbox"
+															onChange={(e) => {
+																handleChange(
+																	e,
+																	item
+																);
+															}}
+															defaultChecked={
+																checked
+															}
+														/>
+													</td>
+													<td>
+														<label
+															className="checkbox-label"
+															htmlFor={`${item.id}-checkbox`}
+														>
+															<div className="title">
+																{item.title}
+															</div>
+															<div className="caption">
+																{item.sku}
+															</div>
+														</label>
+													</td>
+													<td>
+														{
+															item.vendorProduct
+																.itemNo
+														}
+													</td>
+													<td>
+														{item.vendorProduct
+															.sample
+															? item.vendorProduct
+																	.sample
+																	.materialNo
+															: null}
+													</td>
+												</tr>
+											);
+										}
+									)}
+								</tbody>
+							</table>
+						) : (
+							<div>No results</div>
+						)
+					) : null}
+				</section>
+
+				<aside className="foobar-sidebar sample-cart">
+					<h2 className="headline-h6">Selected Samples</h2>
+
+					<div className="sample-cart-actions">
 						<button
-							className="button"
-							type="submit"
-							name="_action"
-							value="search"
+							className={
+								navigation.state !== 'submitting'
+									? 'primary button full-width'
+									: 'deactive button full-width'
+							}
+							disabled={navigation.state === 'submitting'}
+							onClick={handleSubmit}
 						>
-							Search
+							{navigation.state === 'submitting'
+								? 'Saving...'
+								: 'Save'}
+						</button>
+
+						<button onClick={handleDiscard} className="button">
+							Discard Changes
 						</button>
 					</div>
-				</search.Form>
 
-				{search.data ? (
-					search.data.results ? (
-						<table className="new-order-search-results">
-							<tbody>
-								<tr>
-									<th className="caption"></th>
-									<th className="caption">Product</th>
-									<th className="caption">Florim Item No.</th>
-									<th className="caption">
-										Sample Material No.
-									</th>
-								</tr>
-
-								{search.data.results.map(
-									(item: {
-										id: string;
-										title: string;
-										sku: string;
-										vendorProduct: { itemNo: string };
-									}) => {
-										const checked = isAlreadyInCart(
-											item,
-											cart
-										);
-
-										return (
-											<tr key={item.id}>
-												<td>
-													<input
-														id={`${item.id}-checkbox`}
-														type="checkbox"
-														onChange={(e) => {
-															handleChange(
-																e,
-																item
-															);
-														}}
-														defaultChecked={checked}
-													/>
-												</td>
-												<td>
-													<label
-														className="checkbox-label"
-														htmlFor={`${item.id}-checkbox`}
-													>
-														<div className="title">
-															{item.title}
-														</div>
-														<div className="caption">
-															{item.sku}
-														</div>
-													</label>
-												</td>
-												<td>
-													{item.vendorProduct.itemNo}
-												</td>
-												<td>
-													{item.vendorProduct.sample
-														? item.vendorProduct
-																.sample
-																.materialNo
-														: null}
-												</td>
-											</tr>
-										);
-									}
-								)}
-							</tbody>
-						</table>
-					) : (
-						<div>No results</div>
-					)
-				) : null}
-			</section>
-
-			<aside className="sample-cart">
-				<h2 className="headline-h6">Selected Samples</h2>
-
-				<div className="sample-cart-actions">
-					<button
-						className={
-							navigation.state !== 'submitting'
-								? 'primary button full-width'
-								: 'deactive button full-width'
-						}
-						disabled={navigation.state === 'submitting'}
-						onClick={handleSubmit}
-					>
-						{navigation.state === 'submitting'
-							? 'Saving...'
-							: 'Save'}
-					</button>
-
-					<button onClick={handleDiscard} className="button">
-						Discard Changes
-					</button>
-				</div>
-
-				<div className="input">
-					<label htmlFor="status">Status</label>
-					<select
-						name="status"
-						id="status"
-						value={status}
-						onChange={(e) => {
-							setStatus(e.target.value);
-						}}
-					>
-						<option value="DRAFT">Draft</option>
-						<option value="NEW">New</option>
-						<option value="PROCESSING">Processing</option>
-						<option value="COMPLETE">Complete</option>
-						<option value="CANCELLED">Cancelled</option>
-					</select>
-				</div>
-
-				<div className="shipping-info">
-					<header className="shipping-info-header">
-						<h2 className="headline-h6">Ship To</h2>
-
-						{isEditing ? (
-							<button
-								className="close-button"
-								onClick={() => {
-									setIsEditing(false);
-								}}
-							>
-								Cancel
-							</button>
-						) : (
-							<button
-								className="icon-button"
-								aria-label="Edit address"
-								onClick={handleEditClick}
-							>
-								<EditIcon />
-							</button>
-						)}
-					</header>
-
-					{isEditing ? (
-						<address.Form
-							method="post"
-							action={`/api/addresses/${data.order.address.id}`}
+					<div className="input">
+						<label htmlFor="status">Status</label>
+						<select
+							name="status"
+							id="status"
+							value={status}
+							onChange={(e) => {
+								setStatus(e.target.value);
+							}}
 						>
-							<div className="input input--sm">
-								<label htmlFor="name">Name</label>
-								<input
-									type="text"
-									autoComplete="name"
-									id="name"
-									name="line1"
-									defaultValue={data.order.address.line1}
-								/>
-							</div>
+							<option value="DRAFT">Draft</option>
+							<option value="NEW">New</option>
+							<option value="PROCESSING">Processing</option>
+							<option value="COMPLETE">Complete</option>
+							<option value="CANCELLED">Cancelled</option>
+						</select>
+					</div>
 
-							<div className="input input--sm">
-								<label htmlFor="address-line1">
-									Street Address
-								</label>
-								<input
-									type="text"
-									autoComplete="address-line1"
-									id="address-line1"
-									name="line2"
-									defaultValue={data.order.address.line2}
-								/>
-							</div>
+					<div className="shipping-info">
+						<header className="shipping-info-header">
+							<h2 className="headline-h6">Ship To</h2>
 
-							<div className="input input--sm">
-								<label htmlFor="address-line2">
-									Suite, Unit, Apt #
-								</label>
-								<input
-									type="text"
-									autoComplete="address-line2"
-									id="address-line2"
-									name="line3"
-									defaultValue={data.order.address.line3}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="address-level2">City</label>
-								<input
-									type="text"
-									id="address-level2"
-									autoComplete="address-level2"
-									name="city"
-									defaultValue={data.order.address.city}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="address-level1">State</label>
-								<input
-									type="text"
-									id="address-level1"
-									autoComplete="address-level1"
-									name="state"
-									defaultValue={data.order.address.state}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="postal-code">ZIP Code</label>
-								<input
-									type="text"
-									id="postal-code"
-									autoComplete="postal-code"
-									name="postalCode"
-									defaultValue={data.order.address.postalCode}
-								/>
-							</div>
-
-							{address.state === 'submitting' ? (
+							{isEditing ? (
 								<button
-									type="submit"
-									className="deactive button full-width"
-									disabled
+									className="close-button"
+									onClick={() => {
+										setIsEditing(false);
+									}}
 								>
-									Saving...
+									Cancel
 								</button>
 							) : (
 								<button
-									type="submit"
-									className="primary button full-width"
+									className="icon-button"
+									aria-label="Edit address"
+									onClick={handleEditClick}
 								>
-									Save
+									<EditIcon />
 								</button>
 							)}
-						</address.Form>
-					) : null}
+						</header>
 
-					{!isEditing ? (
-						<address>
-							{data.order.address.line1}
-							<br />
-							{data.order.address.line2}
-							<br />
-							{data.order.address.line3 ? (
-								<>
-									{data.order.address.line3}
-									<br />
-								</>
-							) : null}
-							{`${data.order.address.city}, ${data.order.address.state} ${data.order.address.postalCode}`}
-						</address>
-					) : null}
-				</div>
+						{isEditing ? (
+							<address.Form
+								method="post"
+								action={`/api/addresses/${data.order.address.id}`}
+							>
+								<div className="input input--sm">
+									<label htmlFor="name">Name</label>
+									<input
+										type="text"
+										autoComplete="name"
+										id="name"
+										name="line1"
+										defaultValue={data.order.address.line1}
+									/>
+								</div>
 
-				<ul className="sample-cart-list">
-					{cart.map(
-						(item: {
-							id: string;
-							sku: string;
-							title: string;
-							quantity: number;
-						}) => {
-							if (!item.quantity) {
-								item.quantity = 1;
-							}
+								<div className="input input--sm">
+									<label htmlFor="address-line1">
+										Street Address
+									</label>
+									<input
+										type="text"
+										autoComplete="address-line1"
+										id="address-line1"
+										name="line2"
+										defaultValue={data.order.address.line2}
+									/>
+								</div>
 
-							return (
-								<li className="sample-cart-item" key={item.id}>
-									<div className="sample-cart-img">
-										<ImageIcon />
-									</div>
-									<div>
-										<div className="caption caption--bold">
-											{item.title}
-										</div>
-										<div className="caption-2">
-											{item.sku}
-										</div>
-									</div>
-									<div>
-										<label>
-											<span>Quantity</span>
-											<input
-												type="number"
-												name={`quantity-${item.sku}`}
-												onChange={(e) => {
-													handleQtyChange(e, item);
-												}}
-												defaultValue={item.quantity}
-											/>
-										</label>
-									</div>
+								<div className="input input--sm">
+									<label htmlFor="address-line2">
+										Suite, Unit, Apt #
+									</label>
+									<input
+										type="text"
+										autoComplete="address-line2"
+										id="address-line2"
+										name="line3"
+										defaultValue={data.order.address.line3}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="address-level2">City</label>
+									<input
+										type="text"
+										id="address-level2"
+										autoComplete="address-level2"
+										name="city"
+										defaultValue={data.order.address.city}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="address-level1">
+										State
+									</label>
+									<input
+										type="text"
+										id="address-level1"
+										autoComplete="address-level1"
+										name="state"
+										defaultValue={data.order.address.state}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="postal-code">
+										ZIP Code
+									</label>
+									<input
+										type="text"
+										id="postal-code"
+										autoComplete="postal-code"
+										name="postalCode"
+										defaultValue={
+											data.order.address.postalCode
+										}
+									/>
+								</div>
+
+								{address.state === 'submitting' ? (
 									<button
-										aria-label="Delete"
-										className="sample-cart-delete-button"
-										onClick={() => {
-											removeFromCart(item);
-										}}
-									></button>
-								</li>
-							);
-						}
-					)}
-				</ul>
-			</aside>
-		</div>
+										type="submit"
+										className="deactive button full-width"
+										disabled
+									>
+										Saving...
+									</button>
+								) : (
+									<button
+										type="submit"
+										className="primary button full-width"
+									>
+										Save
+									</button>
+								)}
+							</address.Form>
+						) : null}
+
+						{!isEditing ? (
+							<address>
+								{data.order.address.line1}
+								<br />
+								{data.order.address.line2}
+								<br />
+								{data.order.address.line3 ? (
+									<>
+										{data.order.address.line3}
+										<br />
+									</>
+								) : null}
+								{`${data.order.address.city}, ${data.order.address.state} ${data.order.address.postalCode}`}
+							</address>
+						) : null}
+					</div>
+
+					<ul className="sample-cart-list">
+						{cart.map(
+							(item: {
+								id: string;
+								sku: string;
+								title: string;
+								quantity: number;
+							}) => {
+								if (!item.quantity) {
+									item.quantity = 1;
+								}
+
+								return (
+									<li
+										className="sample-cart-item"
+										key={item.id}
+									>
+										<div className="sample-cart-img">
+											<ImageIcon />
+										</div>
+										<div>
+											<div className="caption caption--bold">
+												{item.title}
+											</div>
+											<div className="caption-2">
+												{item.sku}
+											</div>
+										</div>
+										<div>
+											<label>
+												<span>Quantity</span>
+												<input
+													type="number"
+													name={`quantity-${item.sku}`}
+													onChange={(e) => {
+														handleQtyChange(
+															e,
+															item
+														);
+													}}
+													defaultValue={item.quantity}
+												/>
+											</label>
+										</div>
+										<button
+											aria-label="Delete"
+											className="sample-cart-delete-button"
+											onClick={() => {
+												removeFromCart(item);
+											}}
+										></button>
+									</li>
+								);
+							}
+						)}
+					</ul>
+				</aside>
+			</div>
+		</>
 	);
 }
