@@ -300,6 +300,57 @@ export function ImageIcon() {
 	);
 }
 
+export function MoonIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<path
+				fillRule="evenodd"
+				clipRule="evenodd"
+				d="M12.0189 12.0191C14.1705 9.80711 14.681 6.47336 13.2899 3.71891C13.2053 3.54525 13.2284 3.33837 13.3494 3.18773C13.4703 3.03709 13.6673 2.96972 13.8551 3.01475C15.5125 3.41314 17.0278 4.26137 18.2339 5.46596C21.8535 8.99173 21.9299 14.7841 18.4046 18.4041C14.7848 21.9294 8.99267 21.8536 5.46637 18.2347C4.26195 17.0286 3.41366 15.5136 3.01487 13.8564C2.96982 13.6685 3.03718 13.4715 3.18782 13.3506C3.33846 13.2297 3.54534 13.2065 3.719 13.2911C6.47348 14.6825 9.80752 14.1715 12.0189 12.0191Z"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M3.219 10.2925L3.214 10.2975L3.209 10.2925L3.214 10.2875L3.219 10.2925"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M4.541 7.06006L4.536 7.06506L4.531 7.06006L4.536 7.05506L4.541 7.06006"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M6.9994 4.57959L6.9944 4.58459L6.9894 4.57959L6.9944 4.57459L6.9994 4.57959"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M10.2203 3.22949L10.2153 3.23449L10.2103 3.22949L10.2153 3.22449L10.2203 3.22949"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function PalletBoxMoveRightIcon() {
 	return (
 		<svg

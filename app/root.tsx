@@ -1,4 +1,3 @@
-// import { cssBundleHref } from '@remix-run/css-bundle';
 import type { LinksFunction, LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import {
@@ -9,9 +8,9 @@ import {
 	Scripts,
 	ScrollRestoration,
 } from '@remix-run/react';
-
+import clsx from 'clsx';
+import { ThemeProvider, useTheme } from './utils/theme-provider';
 import { getUser } from '~/session.server';
-
 import styles from '~/styles/global.css';
 
 export const links: LinksFunction = () => {
@@ -22,9 +21,11 @@ export const loader = async ({ request }: LoaderArgs) => {
 	return json({ user: await getUser(request) });
 };
 
-export default function App() {
+function App() {
+	const [theme] = useTheme();
+
 	return (
-		<html lang="en" className="h-full">
+		<html lang="en" className={clsx(theme)}>
 			<head>
 				<meta charSet="utf-8" />
 				<meta
@@ -41,5 +42,13 @@ export default function App() {
 				<LiveReload />
 			</body>
 		</html>
+	);
+}
+
+export default function AppWithProviders() {
+	return (
+		<ThemeProvider>
+			<App />
+		</ThemeProvider>
 	);
 }

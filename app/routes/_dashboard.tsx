@@ -10,6 +10,7 @@ import {
 import { requireUser } from '~/session.server';
 import {
 	DeliveryShipmentPackagesSearchIcon,
+	MoonIcon,
 	PalletBoxMoveRightIcon,
 	SettingsIcon,
 	ShoppingInvoiceListIcon,
@@ -19,6 +20,7 @@ import {
 	UsersIcon,
 } from '~/components/Icons';
 
+import { Theme, useTheme } from '~/utils/theme-provider';
 import { userPrefs } from '../cookies.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -49,6 +51,13 @@ export default function DashboardLayout() {
 	if (fetcher.formData?.has('sidebar')) {
 		data.sidebarIsOpen = fetcher.formData.get('sidebar') === 'open';
 	}
+
+	const [, setTheme] = useTheme();
+	const toggleTheme = () => {
+		setTheme((prevTheme) =>
+			prevTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT
+		);
+	};
 
 	return (
 		<div className={data.sidebarIsOpen ? `dashboard` : `dashboard closed`}>
@@ -159,6 +168,7 @@ export default function DashboardLayout() {
 							</span>
 						</NavLink>
 					</li>
+
 					<li style={{ marginTop: 'auto' }}>
 						<fetcher.Form method="post" action="/sidebar">
 							<button
@@ -178,6 +188,18 @@ export default function DashboardLayout() {
 								</span>
 							</button>
 						</fetcher.Form>
+					</li>
+
+					<li>
+						<button
+							className="dashboard-nav-item"
+							onClick={toggleTheme}
+						>
+							<MoonIcon />
+							<span className="dashboard-nav-item__label">
+								Toggle Dark Mode
+							</span>
+						</button>
 					</li>
 				</ul>
 			</nav>
