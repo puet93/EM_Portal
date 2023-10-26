@@ -50,9 +50,14 @@ export const loader = async ({ request }: LoaderArgs) => {
 			status: {
 				in: filters as OrderStatus[],
 			},
-			address: {
-				id: { in: addresses?.map((address) => address.id) },
-			},
+			OR: [
+				{ id: { contains: name } },
+				{
+					address: {
+						id: { in: addresses?.map((address) => address.id) },
+					},
+				},
+			],
 		},
 		include: {
 			address: true,
@@ -116,14 +121,14 @@ export default function OrderIndex() {
 					</fieldset>
 
 					<Input
-						label="Search by name"
+						label="Search by name or order number"
 						name="name"
 						id="name"
 						defaultValue={data.name}
 					/>
 
 					<button className="button" type="submit">
-						Filter
+						Search
 					</button>
 				</Form>
 
