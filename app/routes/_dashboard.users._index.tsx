@@ -1,14 +1,13 @@
 import type { ActionArgs, LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Link } from '@remix-run/react';
-import { requireUserId } from '~/session.server';
+import { Link, useLoaderData } from '@remix-run/react';
+import { requireSuperAdmin } from '~/session.server';
 import { prisma } from '~/db.server';
 import { createUser, getUserByEmail } from '~/models/user.server';
 import { validateEmail } from '~/utils';
-import { useLoaderData } from '@remix-run/react';
 
 export const action = async ({ request }: ActionArgs) => {
-	await requireUserId(request);
+	await requireSuperAdmin(request);
 
 	if (request.method !== 'POST') {
 		return json(
@@ -69,7 +68,7 @@ export const action = async ({ request }: ActionArgs) => {
 };
 
 export const loader = async ({ request }: LoaderArgs) => {
-	await requireUserId(request);
+	await requireSuperAdmin(request);
 	return json({
 		users: await prisma.user.findMany({
 			orderBy: { email: 'asc' },
