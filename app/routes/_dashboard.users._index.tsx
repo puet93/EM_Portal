@@ -83,19 +83,38 @@ export default function UserPage() {
 		<div className="content-wrapper">
 			<header>
 				<h1 className="headline-h3">Users</h1>
+			</header>
+
+			<div className="table-toolbar">
 				<Link to="new" className="primary button">
 					Create New User
 				</Link>
-			</header>
+			</div>
 
 			{data.users ? (
-				<ul>
-					{data.users.map((user) => (
-						<li key={user.id}>
-							<Link to={'/users/' + user.id}>{user.email}</Link>
-						</li>
-					))}
-				</ul>
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Email</th>
+						</tr>
+					</thead>
+					<tbody>
+						{data.users.map((user) => (
+							<tr key={user.id}>
+								<td>
+									<Link to={'/users/' + user.id}>
+										<p className="title">
+											{user.firstName} {user.lastName}
+										</p>
+										<p className="caption">{user.role}</p>
+									</Link>
+								</td>
+								<td>{user.email}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			) : null}
 		</div>
 	);
