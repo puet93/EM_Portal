@@ -124,7 +124,6 @@ export function ChevronDownIcon() {
 		>
 			<path
 				d="M16 10L12 14L8 10"
-				stroke="white"
 				strokeWidth="2"
 				strokeLinecap="round"
 				strokeLinejoin="round"

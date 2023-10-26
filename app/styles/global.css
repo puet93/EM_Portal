@@ -2,6 +2,7 @@
 
 :root {
 	--neutral-1: #141416;
+	--neutral-2-30: #18191d;
 	--neutral-2: #23262f;
 	--neutral-3: #353945;
 	--neutral-4: #777e90;
@@ -45,10 +46,10 @@ html {
 }
 
 html.dark {
-	--background-color: var(--neutral-2);
+	--background-color: var(--neutral-2-30);
 	--text-color: var(--neutral-8);
 
-	--secondary-bg-color: var(--neutral-3);
+	--secondary-bg-color: var(--neutral-2);
 	--secondary-text-color: var(--neutral-4);
 
 	--divider: 1px solid var(--neutral-3);
@@ -1022,6 +1023,10 @@ input::file-selector-button {
 	position: relative;
 }
 
+.dropdown svg {
+	stroke: var(--text-color);
+}
+
 .dropdown-text {
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -1030,7 +1035,7 @@ input::file-selector-button {
 }
 
 .dropdown-text.active {
-	color: white;
+	color: var(--text-color);
 }
 
 .dropdown-menu {
@@ -1060,7 +1065,7 @@ input::file-selector-button {
 }
 
 .dropdown-menu-item:hover {
-	color: white;
+	color: var(--text-color);
 }
 
 .input {
