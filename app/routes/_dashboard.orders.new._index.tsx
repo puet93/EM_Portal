@@ -2,7 +2,7 @@ import type { ActionFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import { useFetcher, useSubmit } from '@remix-run/react';
 import { prisma } from '~/db.server';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 
@@ -19,12 +19,15 @@ export const action: ActionFunction = async ({ params, request }) => {
 		return json({ error: 'Unable to get address.' });
 	}
 
-	const parsedCart: { id: string }[] = JSON.parse(cart);
+	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
 	const parsedAddress = JSON.parse(address);
 	const order = await prisma.order.create({
 		data: {
 			items: {
-				create: parsedCart.map((item) => ({ productId: item.id })),
+				create: parsedCart.map((item) => ({
+					productId: item.id,
+					quantity: Number(item.quantity),
+				})),
 			},
 			address: {
 				create: parsedAddress,
@@ -65,6 +68,21 @@ export default function NewOrderPage() {
 			method: 'post',
 			encType: 'application/x-www-form-urlencoded',
 		});
+	}
+
+	function handleQtyChange(quantity, item) {
+		const newCartItems = cart.map((cartItem) => {
+			if (cartItem.id !== item.id) {
+				return cartItem;
+			} else {
+				return {
+					...cartItem,
+					quantity: quantity,
+				};
+			}
+		});
+
+		setCart(newCartItems);
 	}
 
 	function handleChange(e, item: { id: string }) {
@@ -339,11 +357,11 @@ export default function NewOrderPage() {
 
 									<Counter
 										min={1}
-										name="foobar"
-										defaultValue={1}
-										onChange={() => {
-											console.log('foobar');
+										name={`quantity-${item.sku}`}
+										onChange={(quantity) => {
+											handleQtyChange(quantity, item);
 										}}
+										defaultValue={1}
 									/>
 
 									<button
