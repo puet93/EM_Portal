@@ -3,7 +3,8 @@ import { json, redirect } from '@remix-run/node';
 import { useFetcher, useSubmit } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { useState } from 'react';
-import { ImageIcon, SearchIcon } from '~/components/Icons';
+import { SearchIcon, TrashIcon } from '~/components/Icons';
+import Counter from '~/components/Counter';
 
 export const action: ActionFunction = async ({ params, request }) => {
 	const formData = await request.formData();
@@ -329,24 +330,31 @@ export default function NewOrderPage() {
 								title: string;
 							}) => (
 								<li className="sample-cart-item" key={item.id}>
-									<div className="sample-cart-img">
-										<ImageIcon />
-									</div>
-									<div>
-										<div className="caption caption--bold">
-											{item.title}
-										</div>
-										<div className="caption-2">
+									<div className="sample-cart-item__description">
+										<div className="">{item.title}</div>
+										<div className="caption">
 											{item.sku}
 										</div>
 									</div>
+
+									<Counter
+										min={1}
+										name="foobar"
+										defaultValue={1}
+										onChange={() => {
+											console.log('foobar');
+										}}
+									/>
+
 									<button
 										aria-label="Delete"
 										className="sample-cart-delete-button"
 										onClick={() => {
 											removeFromCart(item);
 										}}
-									></button>
+									>
+										<TrashIcon />
+									</button>
 								</li>
 							)
 						)}

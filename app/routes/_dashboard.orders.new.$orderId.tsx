@@ -1,7 +1,6 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
-	Link,
 	useFetcher,
 	useLoaderData,
 	useNavigation,
@@ -9,12 +8,7 @@ import {
 } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { useEffect, useState } from 'react';
-import {
-	ArrowLeftIcon,
-	EditIcon,
-	ImageIcon,
-	SearchIcon,
-} from '~/components/Icons';
+import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
@@ -493,23 +487,10 @@ export default function NewOrderDetailsPage() {
 										className="sample-cart-item"
 										key={item.id}
 									>
-										<div>
-											<div className="caption caption--bold">
-												{item.title}
-											</div>
-
-											<div>
-												<div className="caption-2">
-													{item.sku}
-												</div>
-
-												<button
-													onClick={() =>
-														removeFromCart(item)
-													}
-												>
-													Delete
-												</button>
+										<div className="sample-cart-item__description">
+											<div className="">{item.title}</div>
+											<div className="caption">
+												{item.sku}
 											</div>
 										</div>
 
@@ -522,13 +503,15 @@ export default function NewOrderDetailsPage() {
 											defaultValue={item.quantity}
 										/>
 
-										{/* <button
+										<button
 											aria-label="Delete"
 											className="sample-cart-delete-button"
 											onClick={() => {
 												removeFromCart(item);
 											}}
-										></button> */}
+										>
+											<TrashIcon />
+										</button>
 									</li>
 								);
 							}
