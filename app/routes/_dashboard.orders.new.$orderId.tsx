@@ -15,6 +15,7 @@ import {
 	ImageIcon,
 	SearchIcon,
 } from '~/components/Icons';
+import Counter from '~/components/Counter';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	const orderId = params.orderId;
@@ -139,14 +140,14 @@ export default function NewOrderDetailsPage() {
 		);
 	}
 
-	function handleQtyChange(e, item) {
+	function handleQtyChange(quantity, item) {
 		const newCartItems = cart.map((cartItem) => {
 			if (cartItem.id !== item.id) {
 				return cartItem;
 			} else {
 				return {
 					...cartItem,
-					quantity: e.target.value,
+					quantity: quantity,
 				};
 			}
 		});
@@ -492,40 +493,42 @@ export default function NewOrderDetailsPage() {
 										className="sample-cart-item"
 										key={item.id}
 									>
-										<div className="sample-cart-img">
-											<ImageIcon />
-										</div>
 										<div>
 											<div className="caption caption--bold">
 												{item.title}
 											</div>
-											<div className="caption-2">
-												{item.sku}
+
+											<div>
+												<div className="caption-2">
+													{item.sku}
+												</div>
+
+												<button
+													onClick={() =>
+														removeFromCart(item)
+													}
+												>
+													Delete
+												</button>
 											</div>
 										</div>
-										<div>
-											<label>
-												<span>Quantity</span>
-												<input
-													type="number"
-													name={`quantity-${item.sku}`}
-													onChange={(e) => {
-														handleQtyChange(
-															e,
-															item
-														);
-													}}
-													defaultValue={item.quantity}
-												/>
-											</label>
-										</div>
-										<button
+
+										<Counter
+											min={1}
+											name={`quantity-${item.sku}`}
+											onChange={(quantity) => {
+												handleQtyChange(quantity, item);
+											}}
+											defaultValue={item.quantity}
+										/>
+
+										{/* <button
 											aria-label="Delete"
 											className="sample-cart-delete-button"
 											onClick={() => {
 												removeFromCart(item);
 											}}
-										></button>
+										></button> */}
 									</li>
 								);
 							}
