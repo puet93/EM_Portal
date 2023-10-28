@@ -1,5 +1,5 @@
-import type { KeyboardEvent, MouseEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import type { KeyboardEvent, MouseEvent, SyntheticEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDownIcon } from './Icons';
 
 export default function Dropdown({
@@ -14,13 +14,7 @@ export default function Dropdown({
 	const [isMenuVisible, setIsMenuVisible] = useState(false);
 	const [value, setValue] = useState(defaultValue || '');
 	const [label, setLabel] = useState('');
-
-	const handleKeyUp = useCallback((event: KeyboardEvent) => {
-		if (event.code === 'Escape') {
-			window.removeEventListener('keyup', handleKeyUp);
-			setIsMenuVisible(false);
-		}
-	}, []);
+	const ref = useRef(null);
 
 	useEffect(() => {
 		const label = options.find(
@@ -29,15 +23,39 @@ export default function Dropdown({
 		label && setLabel(label);
 	}, [defaultValue, options]);
 
-	useEffect(() => {
-		if (isMenuVisible) {
-			window.addEventListener('keyup', handleKeyUp);
-		}
-	}, [handleKeyUp, isMenuVisible]);
+	const handleEventListeners = useCallback(
+		(e: SyntheticEvent | KeyboardEvent) => {
+			if (e instanceof KeyboardEvent && e.code === 'Escape') {
+				// console.log('ESCAPE');
+				window.removeEventListener('click', handleEventListeners);
+				window.removeEventListener('keyup', handleEventListeners);
+				setIsMenuVisible(false);
+				return;
+			}
+
+			if (ref.current && !ref.current.contains(e.target)) {
+				// console.log('OUTSIDE CLICK');
+				window.removeEventListener('click', handleEventListeners);
+				window.removeEventListener('keyup', handleEventListeners);
+				setIsMenuVisible(false);
+				return;
+			}
+		},
+		[]
+	);
 
 	function handleClick() {
-		window.removeEventListener('keyup', handleKeyUp);
-		setIsMenuVisible(!isMenuVisible);
+		if (!isMenuVisible) {
+			// console.log('IF');
+			window.addEventListener('click', handleEventListeners);
+			window.addEventListener('keyup', handleEventListeners);
+			setIsMenuVisible(true);
+		} else {
+			// console.log('ELSE');
+			window.removeEventListener('click', handleEventListeners);
+			window.removeEventListener('keyup', handleEventListeners);
+			setIsMenuVisible(false);
+		}
 	}
 
 	function handleSelection(event: MouseEvent<HTMLDivElement>) {
@@ -63,6 +81,7 @@ export default function Dropdown({
 			className={isMenuVisible ? 'dropdown active' : 'dropdown'}
 			onClick={handleClick}
 			tabIndex={0}
+			ref={ref}
 		>
 			<input type="hidden" name={name} value={value} />
 			<ChevronDownIcon />
