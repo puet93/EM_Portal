@@ -1223,3 +1223,9 @@ input::file-selector-button {
 .counter__button:hover {
 	stroke: var(--primary-color);
 }
+
+.wrapper {
+	max-width: 1920px;
+	margin-left: auto;
+	margin-right: auto;
+}

@@ -2,7 +2,7 @@ import type { ActionFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import { useFetcher, useSubmit } from '@remix-run/react';
 import { prisma } from '~/db.server';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 
@@ -105,7 +105,7 @@ export default function NewOrderPage() {
 	}
 
 	return (
-		<>
+		<div className="wrapper">
 			<header className="page-header">
 				<h1 className="headline-h3">Create Order</h1>
 			</header>
@@ -379,6 +379,6 @@ export default function NewOrderPage() {
 					</ul>
 				</aside>
 			</div>
-		</>
+		</div>
 	);
 }
