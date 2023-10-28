@@ -1,5 +1,5 @@
-import type { MouseEvent } from 'react';
-import { useEffect, useState } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ChevronDownIcon } from './Icons';
 
 export default function Dropdown({
@@ -15,6 +15,13 @@ export default function Dropdown({
 	const [value, setValue] = useState(defaultValue || '');
 	const [label, setLabel] = useState('');
 
+	const handleKeyUp = useCallback((event: KeyboardEvent) => {
+		if (event.code === 'Escape') {
+			window.removeEventListener('keyup', handleKeyUp);
+			setIsMenuVisible(false);
+		}
+	}, []);
+
 	useEffect(() => {
 		const label = options.find(
 			(option) => option.value === defaultValue
@@ -22,7 +29,14 @@ export default function Dropdown({
 		label && setLabel(label);
 	}, [defaultValue, options]);
 
+	useEffect(() => {
+		if (isMenuVisible) {
+			window.addEventListener('keyup', handleKeyUp);
+		}
+	}, [handleKeyUp, isMenuVisible]);
+
 	function handleClick() {
+		window.removeEventListener('keyup', handleKeyUp);
 		setIsMenuVisible(!isMenuVisible);
 	}
 
