@@ -251,6 +251,19 @@ export const action: ActionFunction = async ({ params, request }) => {
 export default function SampleDetailPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
+	const { seriesAlias, colorAlias, finish } = data.sample;
+
+	let suggestedTitle = '';
+
+	if (seriesAlias && colorAlias) {
+		suggestedTitle = seriesAlias;
+	}
+	if (suggestedTitle && finish) {
+		suggestedTitle = suggestedTitle + ' ' + finish;
+	}
+	if (suggestedTitle) {
+		suggestedTitle = suggestedTitle + ' ' + colorAlias + ' 4x4 Tile Sample';
+	}
 
 	return (
 		<div className="foobar">
@@ -284,7 +297,7 @@ export default function SampleDetailPage() {
 							id="title"
 							name="title"
 							label="Suggested title"
-							defaultValue={`${data.sample.seriesAlias} ${data.sample.finish} ${data.sample.colorAlias} 4x4 Tile Sample`}
+							defaultValue={suggestedTitle}
 						/>
 						<button
 							className="button"

@@ -16,31 +16,16 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
-	const seriesName = formData.get('seriesName');
-	const color = formData.get('color');
-	const finish = formData.get('finish');
-	const materialNo = formData.get('materialNo');
+	const entries = Object.fromEntries(formData);
 
-	if (
-		typeof seriesName === 'string' &&
-		typeof color === 'string' &&
-		typeof finish === 'string' &&
-		typeof materialNo === 'string'
-	) {
-		await prisma.sample.update({
-			where: {
-				id: params.sampleId,
-			},
-			data: {
-				seriesName,
-				color,
-				finish,
-				materialNo,
-			},
-		});
+	await prisma.sample.update({
+		where: {
+			id: params.sampleId,
+		},
+		data: entries,
+	});
 
-		return redirect('..');
-	}
+	return redirect('..');
 };
 
 export default function SampleDetailPage() {
@@ -77,6 +62,20 @@ export default function SampleDetailPage() {
 					id="material-number"
 					name="materialNo"
 					defaultValue={data.sample.materialNo}
+				/>
+
+				<Input
+					label="Series Alias"
+					id="series-alias"
+					name="seriesAlias"
+					defaultValue={data.sample.seriesAlias}
+				/>
+
+				<Input
+					label="Color Alias"
+					id="color-alias"
+					name="colorAlias"
+					defaultValue={data.sample.colorAlias}
 				/>
 
 				<button type="submit" className="button">
