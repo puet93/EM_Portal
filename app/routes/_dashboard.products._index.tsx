@@ -13,7 +13,7 @@ export default function ProductsPage() {
 	const search = useFetcher();
 
 	return (
-		<>
+		<div className="wrapper">
 			<search.Form method="post" action="/search">
 				<div className="search-bar">
 					<SearchIcon className="search-icon" id="search-icon" />
@@ -32,13 +32,15 @@ export default function ProductsPage() {
 			</search.Form>
 
 			<table style={{ marginTop: '36px' }}>
-				<tbody>
+				<thead>
 					<tr>
 						<th>Edward Martin</th>
 						<th>Item No.</th>
 						<th>Sample Material No.</th>
 					</tr>
+				</thead>
 
+				<tbody>
 					{search.data?.results &&
 						search.data.results.map((product: any) => {
 							return (
@@ -106,6 +108,6 @@ export default function ProductsPage() {
 						})}
 				</tbody>
 			</table>
-		</>
+		</div>
 	);
 }

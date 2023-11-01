@@ -1,6 +1,6 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
-import { Form, useLoaderData } from '@remix-run/react';
+import { Form, Outlet, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
@@ -27,19 +27,27 @@ export default function ProductDetailPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<>
-			<h1 className="headline-h3">Product Details</h1>
-			<div className="text">{data.product.title}</div>
+		<div className="wrapper">
+			<header>
+				<h1 className="headline-h3">Product Details</h1>
+				<div className="text">{data.product.title}</div>
+			</header>
 
-			<Form method="post">
-				<Input
-					label="Title"
-					id="title"
-					name="title"
-					defaultValue={data.product.title}
-				/>
-				<button className="primary button">Update</button>
-			</Form>
-		</>
+			<div className="foobar">
+				<section className="foobar-main-content">
+					<Form method="post">
+						<Input
+							label="Title"
+							id="title"
+							name="title"
+							defaultValue={data.product.title}
+						/>
+						<button className="primary button">Update</button>
+					</Form>
+				</section>
+
+				<Outlet />
+			</div>
+		</div>
 	);
 }
