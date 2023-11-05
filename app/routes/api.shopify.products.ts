@@ -14,6 +14,71 @@ import {
 	unstable_splitSizeCell,
 } from '~/utils/helpers';
 
+async function filterExistingProducts(data) {
+	const promises = data.map((row) => {
+		const query = `{
+			productVariants(first: 1, query: "sku:${row.sku}") {
+				edges {
+					node {
+						id
+						sku
+						product {
+							id
+							title
+						}
+					}
+				}
+			}
+		}`;
+
+		return new Promise((resolve) => {
+			graphqlClient
+				.query({ data: query })
+				.then((res) => res.body.data.productVariants.edges[0].node)
+				.then((res) => resolve(res))
+				.catch(() => {
+					resolve({
+						doesNotExist: true,
+						...row,
+					});
+				});
+		});
+	});
+	const shopifyResponse = await Promise.all(promises);
+	const newProducts = shopifyResponse.filter(
+		(product) => product.doesNotExist === true
+	);
+	return newProducts;
+}
+
+// TODO: Refactor
+function getMetaobjectId(key: string): string {
+	switch (key) {
+		// Box or carton
+		case 'BOX':
+		case 'BX':
+		case 'CTN':
+			return 'gid://shopify/Metaobject/6387499226';
+		// Crate
+		case 'CRT':
+			return 'gid://shopify/Metaobject/8284537050';
+		// Pallet
+		case 'PLT':
+			return 'gid://shopify/Metaobject/8284504282';
+		// Piece
+		case 'PC':
+		case 'PCS':
+			return 'gid://shopify/Metaobject/6628344026';
+		// Square Foot
+		case 'FTX':
+		case 'SF':
+		case 'SQ FT':
+			return 'gid://shopify/Metaobject/7368900826';
+		default:
+			throw new Error('Invalid Metaobject reference key.');
+	}
+}
+
 export const action: ActionFunction = async ({ request }) => {
 	// Get a list of products to sync from .csv file
 	const handler = unstable_createMemoryUploadHandler();
@@ -26,52 +91,31 @@ export const action: ActionFunction = async ({ request }) => {
 		case 'POST': {
 			const data = parsedCSV.map((row) => {
 				return {
-					sku: row.sku,
 					title: row.title || 'DEFAULT TITLE',
+					sku: row.sku,
+					price: row.price,
+					weight: row.weight,
+					color: row.color,
+					finish: row.finish,
+					sizeAndShape: row.sizeAndShape,
+					width: row.width,
+					length: row.length,
+					thickness: row.thickness,
+					pieces: row.pieces,
+					basePrice: {
+						value: row.basePriceValue, // base price / unit price (i.e. price per square foot)
+						unitOfMeasure: row.basePriceUom, // base unit of measure / unit of measure (e.g. square foot)
+					},
+					surfaceArea: {
+						value: row.surfaceAreaValue, // surface area value / units per sales unit (e.g. number of square feet per carton)
+						unitOfMeasure: row.surfaceAreaUom, // surface area unit of measure
+					},
+					sellingUnitOfMeasure: 'Box', // Box: Metaobject<Unit of Measure>
+					material: 'Porcelain',
 				};
 			});
 
-			// See if product might already exist
-			const promises = data.map((row) => {
-				const query = `{
-					productVariants(first: 1, query: "sku:${row.sku}") {
-					  edges {
-						node {
-						  id
-						  sku
-						  price
-						  product {
-							title
-							hasOnlyDefaultVariant
-						  }
-						}
-					  }
-					}
-				  }`;
-
-				return new Promise((resolve) => {
-					graphqlClient
-						.query({ data: query })
-						.then(
-							(res) => res.body.data.productVariants.edges[0].node
-						)
-						.then((res) => resolve(res))
-						.catch(() => {
-							resolve({
-								doesNotExist: true,
-								sku: row.sku,
-								title: row.title,
-							});
-						});
-				});
-			});
-
-			const shopifyResponse = await Promise.all(promises);
-
-			const newProducts = shopifyResponse.filter(
-				(product) => product.doesNotExist === true
-			);
-
+			const newProducts = await filterExistingProducts(data);
 			const productInputs: any[] = [];
 			const filename = `bulk-op-vars-${crypto.randomUUID()}`;
 			const filePath = `${__dirname}/tmp/${filename}.jsonl`;
@@ -82,8 +126,143 @@ export const action: ActionFunction = async ({ request }) => {
 				if (product.doesNotExist) {
 					const productInput = {
 						input: {
+							status: 'DRAFT',
 							title: product.title,
-							variants: [{ sku: product.sku }],
+							metafields: [
+								{
+									namespace: 'selling_unit',
+									key: 'base_price',
+									type: 'money',
+									value: JSON.stringify({
+										amount: Number(product.basePrice.value),
+										currency_code: 'USD',
+									}),
+								},
+								{
+									namespace: 'selling_unit',
+									key: 'base_uom',
+									type: 'metaobject_reference',
+									value: getMetaobjectId(
+										product.basePrice.unitOfMeasure
+									),
+								},
+								{
+									namespace: 'selling_unit',
+									key: 'pieces',
+									type: 'number_integer',
+									value: product.pieces,
+								},
+								{
+									namespace: 'selling_unit',
+									key: 'uom',
+									type: 'metaobject_reference',
+									value: getMetaobjectId('BOX'),
+								},
+
+								{
+									namespace: 'selling_unit',
+									key: 'surface_area_value',
+									type: 'number_decimal',
+									value: product.surfaceArea.value,
+								},
+								{
+									namespace: 'selling_unit',
+									key: 'surface_area_uom',
+									type: 'metaobject_reference',
+									value: getMetaobjectId(
+										product.surfaceArea.unitOfMeasure
+									),
+								},
+								{
+									namespace: 'custom', // color
+									key: 'variation_value',
+									type: 'single_line_text_field',
+									value: product.color,
+								},
+								{
+									namespace: 'custom',
+									key: 'finish',
+									type: 'single_line_text_field',
+									value: product.finish,
+								},
+								{
+									namespace: 'size_and_shape',
+									key: 'variation_value',
+									type: 'single_line_text_field',
+									value: product.sizeAndShape,
+								},
+								{
+									namespace: 'filters',
+									key: 'material',
+									type: 'list.single_line_text_field',
+									value: JSON.stringify(['Porcelain']),
+								},
+								{
+									namespace: 'custom',
+									key: 'width',
+									type: 'dimension',
+									value: JSON.stringify({
+										value: Number(product.width),
+										unit: 'INCHES',
+									}),
+								},
+								{
+									namespace: 'custom',
+									key: 'length',
+									type: 'dimension',
+									value: JSON.stringify({
+										value: Number(product.length),
+										unit: 'INCHES',
+									}),
+								},
+								{
+									namespace: 'custom',
+									key: 'thickness',
+									type: 'dimension',
+									value: JSON.stringify({
+										value: Number(product.thickness),
+										unit: 'MILLIMETERS',
+									}),
+								},
+
+								{
+									namespace: 'unit',
+									key: 'per_sales_unit',
+									type: 'number_decimal',
+									value: product.surfaceArea.value,
+								},
+								{
+									namespace: 'unit',
+									key: 'measure',
+									type: 'single_line_text_field',
+									value:
+										product.basePrice.unitOfMeasure === 'PC'
+											? 'piece'
+											: 'sq ft',
+								},
+								{
+									namespace: 'unit',
+									key: 'price',
+									type: 'money',
+									value: JSON.stringify({
+										amount: Number(product.basePrice.value),
+										currency_code: 'USD',
+									}),
+								},
+							],
+							vendor: 'Edward Martin',
+							variants: [
+								{
+									inventoryItem: {
+										tracked: true,
+									},
+									inventoryPolicy: 'CONTINUE',
+									price: Number(product.price),
+									sku: product.sku,
+									weight: Number(product.weight),
+									weightUnit: 'POUNDS',
+								},
+							],
 						},
 					};
 					productInputs.push(productInput);
@@ -92,7 +271,11 @@ export const action: ActionFunction = async ({ request }) => {
 				}
 			}
 
-			return json({ filename, productInputs });
+			return json({
+				filename,
+				count: productInputs.length,
+				productInputs,
+			});
 		}
 		// Update new products from .csv files to Shopify. Products that don't exist are ignored.
 		case 'PUT': {
