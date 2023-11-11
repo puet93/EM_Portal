@@ -76,13 +76,8 @@ model RetailerProduct {
     vendorProductId String?        @unique
     orderItems      OrderItem[]
     vendorProduct   VendorProduct? @relation(fields: [vendorProductId], references: [id])
+    tile            Tile?
 }
-
-// model Tile {
-//     id     Int    @id @default(autoincrement())
-//     color  String
-//     finish String
-// }
 
 model Sample {
     id             String          @id @default(cuid())
@@ -94,6 +89,21 @@ model Sample {
     colorAlias     String?
     finish         String?
     vendorProducts VendorProduct[]
+}
+
+model Tile {
+    id            Int             @id @default(autoincrement())
+    color         String
+    finish        String
+    material      Material
+    width         Float
+    widthUnit     UnitOfMeasure
+    length        Float
+    lengthUnit    UnitOfMeasure
+    thickness     Float
+    thicknessUnit UnitOfMeasure
+    product       RetailerProduct @relation(fields: [productId], references: [id])
+    productId     String          @unique
 }
 
 model Vendor {
@@ -117,6 +127,11 @@ model VendorProduct {
     sampleMaterialNo String?
 }
 
+enum Material {
+    CERAMIC
+    PORCELAIN
+}
+
 enum OrderStatus {
     DRAFT
     NEW
@@ -129,4 +144,10 @@ enum Role {
     ADMIN
     SUPERADMIN
     USER
+}
+
+enum UnitOfMeasure {
+    INCHES
+    MILLIMETERS
+    CENTIMETERS
 }
