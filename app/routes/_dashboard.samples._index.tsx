@@ -3,9 +3,11 @@ import { json } from '@remix-run/node';
 import { Form, Link, useActionData, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
-import Input from '~/components/Input';
 import { badRequest } from '~/utils/request.server';
 import { graphqlClient } from '~/utils/shopify.server';
+import FileDropInput from '~/components/FileDropInput';
+import Input from '~/components/Input';
+import { getDataFromFileUpload } from '~/utils/csv';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -62,10 +64,18 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
-	const formData = await request.formData();
-	const _action = formData.get('_action');
+
+	await getDataFromFileUpload(request, 'file');
+	// const formData = await request.formData();
+	// const _action = formData.get('_action');
+
+	return json({ message: 'success' });
 
 	switch (_action) {
+		case 'update': {
+			await getDataFromFileUpload(request, 'file');
+			return json({ message: 'Hello World!' });
+		}
 		case 'metafields': {
 			const metafieldQuery = formData.get('metafieldQuery');
 
@@ -109,6 +119,18 @@ export default function SamplesPage() {
 	return (
 		<div>
 			<h1 className="headline-h3">Samples List</h1>
+
+			<Form method="post" encType="multipart/form-data">
+				<FileDropInput id="file" name="file" accept=".csv" />
+				<button
+					className="button"
+					type="submit"
+					name="_action"
+					value="update"
+				>
+					Update
+				</button>
+			</Form>
 
 			<div className="table-toolbar">
 				<Form method="post" className="inline-form">

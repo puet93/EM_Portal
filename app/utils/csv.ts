@@ -1,3 +1,8 @@
+import {
+	unstable_createMemoryUploadHandler,
+	unstable_parseMultipartFormData,
+} from '@remix-run/node';
+
 export async function parseCSV(file: File) {
 	const fileData = await file.text();
 	const table = fileData.split('\r\n').map((row) => row.split(','));
@@ -14,5 +19,16 @@ export async function parseCSV(file: File) {
 		);
 	});
 
+	return data;
+}
+
+export async function getDataFromFileUpload(
+	request: Request,
+	controlName: string
+) {
+	const handler = unstable_createMemoryUploadHandler();
+	const formData = await unstable_parseMultipartFormData(request, handler);
+	const file = formData.get(controlName) as File;
+	const data = await parseCSV(file);
 	return data;
 }

@@ -91,7 +91,7 @@ export const action: ActionFunction = async ({ request }) => {
 		case 'POST': {
 			const data = parsedCSV.map((row) => {
 				return {
-					title: row.title || 'DEFAULT TITLE',
+					title: row.title,
 					sku: row.sku,
 					price: row.price,
 					weight: row.weight,
@@ -158,7 +158,6 @@ export const action: ActionFunction = async ({ request }) => {
 									type: 'metaobject_reference',
 									value: getMetaobjectId('BOX'),
 								},
-
 								{
 									namespace: 'selling_unit',
 									key: 'surface_area_value',

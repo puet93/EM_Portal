@@ -467,6 +467,7 @@ li {
 	margin-top: 24px;
 }
 
+p,
 .text {
 	font-size: 14px;
 	font-weight: 400;
@@ -537,6 +538,11 @@ th,
 	width: 100%;
 	flex-basis: 100%;
 	margin-bottom: 40px;
+}
+
+.page-header__actions {
+	margin-left: auto;
+	display: flex;
 }
 
 .page-header .circle-button.circle-button--lg {
@@ -1228,4 +1234,62 @@ input::file-selector-button {
 	max-width: 1920px;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+.sr-only:not(:focus):not(:active) {
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	height: 1px;
+	overflow: hidden;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
+.codeblock {
+	display: inline-flex;
+	justify-content: space-between;
+	align-items: center;
+	background-color: var(--neutral-1);
+	padding: 16px 20px 16px 24px;
+	border-radius: 16px;
+
+	flex-grow: 0;
+
+	font-size: 14px;
+	line-height: calc(24 / 14);
+}
+
+.codeblock pre {
+	margin: 0;
+}
+
+.codeblock__button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	padding: 0;
+	margin: 0;
+	outline: none;
+	border: none;
+
+	background-color: transparent;
+	margin-left: 16px;
+
+	cursor: pointer;
+}
+
+.codeblock__button svg {
+	stroke: var(--secondary-text-color);
+	transition: stroke 0.2s;
+}
+
+.codeblock__button:hover svg {
+	stroke: var(--neutral-8);
+}
+
+.codeblock__button.codeblock__button--copied svg,
+.codeblock__button.codeblock__button--copied:hover svg {
+	stroke: var(--success-color);
 }

@@ -14,6 +14,14 @@ export default function ProductsPage() {
 
 	return (
 		<div className="wrapper">
+			<header className="page-header">
+				<h1>Products</h1>
+				<div className="page-header__actions">
+					<Link className="button" to="import">
+						Import
+					</Link>
+				</div>
+			</header>
 			<search.Form method="post" action="/search">
 				<div className="search-bar">
 					<SearchIcon className="search-icon" id="search-icon" />
@@ -30,6 +38,12 @@ export default function ProductsPage() {
 					</button>
 				</div>
 			</search.Form>
+
+			{search.data?.results ? (
+				<div className="message">
+					{search.data?.results.length} products found
+				</div>
+			) : null}
 
 			<table style={{ marginTop: '36px' }}>
 				<thead>
