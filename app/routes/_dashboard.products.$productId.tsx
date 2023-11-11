@@ -1,6 +1,7 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, Outlet, useActionData, useLoaderData } from '@remix-run/react';
+import type { RefObject } from 'react';
 import { useRef, useState } from 'react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
@@ -19,14 +20,13 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 			sku: true,
 			title: true,
 			vendorProduct: true,
+			tile: true,
 		},
 	});
 
 	if (!product) {
 		return badRequest({ message: 'Unable to find product.' });
 	}
-
-	console.log('PRODUCT', product);
 
 	const query = `{
 		productVariants(first: 2, query: "sku:${product.sku}") {
@@ -55,7 +55,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
-	const title = formData.get('title');
+	const { title, width, length, thickness, ...values } =
+		Object.fromEntries(formData);
 
 	if (typeof title !== 'string') {
 		throw new Error('Invalid title input');
@@ -67,6 +68,25 @@ export const action: ActionFunction = async ({ params, request }) => {
 		},
 		data: {
 			title: title,
+			tile: {
+				upsert: {
+					create: {
+						width: Number(width),
+						length: Number(length),
+						thickness: Number(thickness),
+						...values,
+					},
+					update: {
+						width: Number(width),
+						length: Number(length),
+						thickness: Number(thickness),
+						...values,
+					},
+				},
+			},
+		},
+		include: {
+			tile: true,
 		},
 	});
 
@@ -76,15 +96,16 @@ export const action: ActionFunction = async ({ params, request }) => {
 export default function ProductDetailPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
-	const ref = useRef(null);
+	const inputElRef = useRef(null) as RefObject<HTMLInputElement>;
 	const [isCopied, setIsCopied] = useState(false);
 
 	function copyToClipboard(inputEl: HTMLInputElement) {
 		navigator.clipboard.writeText(inputEl.value);
 	}
 
-	function handleClick(inputEl: HTMLInputElement) {
-		copyToClipboard(inputEl);
+	function handleClick(inputElRef: RefObject<HTMLInputElement>) {
+		if (!inputElRef.current) return;
+		copyToClipboard(inputElRef.current);
 		setIsCopied(true);
 		setTimeout(() => {
 			setIsCopied(false);
@@ -107,6 +128,86 @@ export default function ProductDetailPage() {
 							name="title"
 							defaultValue={data.product.title}
 						/>
+
+						<Input
+							label="Color"
+							id="color"
+							name="color"
+							defaultValue={data.product.tile?.color}
+						/>
+
+						<Input
+							label="Finish"
+							id="finish"
+							name="finish"
+							defaultValue={data.product.tile?.finish}
+						/>
+
+						<Input
+							label="Material"
+							id="material"
+							name="material"
+							defaultValue={
+								data.product.tile
+									? data.product.tile.material
+									: 'PORCELAIN'
+							}
+						/>
+
+						<Input
+							label="Width"
+							id="width"
+							name="width"
+							defaultValue={data.product.tile?.width}
+						/>
+
+						<Input
+							label="Width Unit"
+							id="width-unit"
+							name="widthUnit"
+							defaultValue={
+								data.product.tile
+									? data.product.tile.widthUnit
+									: 'INCHES'
+							}
+						/>
+
+						<Input
+							label="Length"
+							id="length"
+							name="length"
+							defaultValue={data.product.tile?.length}
+						/>
+
+						<Input
+							label="Length Unit"
+							id="length-unit"
+							name="lengthUnit"
+							defaultValue={
+								data.product.tile
+									? data.product.tile.lengthUnit
+									: 'INCHES'
+							}
+						/>
+
+						<Input
+							label="Thickness"
+							id="thickness"
+							name="thickness"
+							defaultValue={data.product.tile?.thickness}
+						/>
+
+						<Input
+							label="Thickness Unit"
+							id="thickness-unit"
+							name="thicknessUnit"
+							defaultValue={
+								data.product.tile
+									? data.product.tile.thicknessUnit
+									: 'MILLIMETERS'
+							}
+						/>
+
 						<button type="submit" className="primary button">
 							Update
 						</button>
@@ -131,7 +232,7 @@ export default function ProductDetailPage() {
 									value={
 										data.shopifyProduct?.legacyResourceId
 									}
-									ref={ref}
+									ref={inputElRef}
 								/>
 								<button
 									className={
@@ -140,7 +241,7 @@ export default function ProductDetailPage() {
 											: 'codeblock__button'
 									}
 									type="button"
-									onClick={() => handleClick(ref.current)}
+									onClick={() => handleClick(inputElRef)}
 								>
 									{isCopied ? (
 										<>
