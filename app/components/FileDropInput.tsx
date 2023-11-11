@@ -1,16 +1,16 @@
 import type { SyntheticEvent } from 'react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { DocumentSyncIcon } from '~/components/Icons';
 
 export default function FileDropInput({
-	id,
+	id = useId(),
 	name,
 	handleChange,
 	accept,
 }: {
-	id: string;
+	id?: string;
 	name: string;
-	handleChange: (event: SyntheticEvent) => void;
+	handleChange?: (event: SyntheticEvent) => void;
 	accept?: string;
 }) {
 	const [isDragging, setIsDragging] = useState(false);
