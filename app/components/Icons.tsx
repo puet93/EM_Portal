@@ -132,6 +132,38 @@ export function ChevronDownIcon() {
 	);
 }
 
+export function CopyIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<rect
+				x="3"
+				y="7"
+				width="14"
+				height="14"
+				rx="3"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M8 3.87866C8.56202 3.31517 9.32548 2.99894 10.1213 3H18C19.6569 3 21 4.34315 21 6V13.8787C21.0011 14.6745 20.6848 15.438 20.1213 16"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function DeliveryShipmentPackagesSearchIcon() {
 	return (
 		<svg
@@ -717,6 +749,100 @@ export function SwatchIcon() {
 			/>
 			<path
 				d="M14.95 14H19C20.105 14 21 14.895 21 16V19C21 20.105 20.105 21 19 21H6.5"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
+export function ClipboardPinIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<rect
+				x="8"
+				y="3"
+				width="8"
+				height="4"
+				rx="1"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M12 21H6C4.89543 21 4 20.1046 4 19V7C4 5.89543 4.89543 5 6 5H8"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M16 5H18C19.1046 5 20 5.89543 20 7V9"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M18 21V18.5"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				fillRule="evenodd"
+				clipRule="evenodd"
+				d="M15.889 15.0423L15.5198 13.196C15.4611 12.9023 15.5371 12.5977 15.7271 12.366C15.917 12.1343 16.2008 12 16.5003 12H19.4997C19.7993 12 20.0831 12.1343 20.273 12.366C20.4629 12.5976 20.539 12.9022 20.4802 13.196L20.111 15.0423C20.0622 15.2862 20.1061 15.5396 20.2341 15.7529L21.428 17.7427C21.5207 17.8972 21.5231 18.0896 21.4344 18.2463C21.3456 18.4031 21.1793 18.5 20.9992 18.5H15.0008C14.8207 18.5 14.6544 18.4031 14.5656 18.2464C14.4769 18.0896 14.4793 17.8972 14.572 17.7427L15.7659 15.7529C15.8939 15.5396 15.9378 15.2862 15.889 15.0423Z"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
+export function ClipboardCheckmarkIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<rect
+				x="8"
+				y="3"
+				width="8"
+				height="4"
+				rx="1"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M16 5H18C19.1046 5 20 5.89543 20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7C4 5.89543 4.89543 5 6 5H8"
+				stroke=""
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M14.1011 12L11.6011 14.5L10.1011 13"
 				stroke=""
 				strokeWidth="1.5"
 				strokeLinecap="round"
