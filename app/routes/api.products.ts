@@ -117,6 +117,71 @@ export const action: ActionFunction = async ({ request }) => {
 				retailerProduct,
 			});
 		}
+		case 'PATCH': {
+			const handler = unstable_createMemoryUploadHandler();
+			const formData = await unstable_parseMultipartFormData(
+				request,
+				handler
+			);
+
+			const vendorId = formData.get('vendorId');
+
+			if (typeof vendorId !== 'string' || vendorId.length === 0) {
+				return badRequest({ error: 'Invalid vendorId.' });
+			}
+
+			const vendor = await prisma.vendor.findUnique({
+				where: { id: vendorId },
+			});
+
+			if (!vendor) {
+				return badRequest({
+					error: 'Unable to locate the vendor with this ID.',
+				});
+			}
+
+			const file = formData.get('file') as File;
+			const parsedCSV: any[] = await parseCSV(file);
+			const data = parsedCSV.map((row) => {
+				return {
+					sku: row.sku,
+					title: row.title,
+					itemNo: row.itemNo,
+					vendorId: vendor.id,
+				};
+			});
+
+			const retailerProduct = await prisma.$transaction(
+				data.map((item) => {
+					return prisma.retailerProduct.update({
+						where: {
+							sku: item.sku,
+						},
+						data: {
+							title: item.title,
+							// vendorProduct: {
+							// 	connectOrCreate: {
+							// 		where: {
+							// 			itemNo: item.itemNo,
+							// 			vendorId: item.vendorId,
+							// 		},
+							// 		create: {
+							// 			itemNo: item.itemNo,
+							// 			vendorId: item.vendorId,
+							// 		},
+							// 	},
+							// },
+						},
+					});
+				})
+			);
+
+			return json({
+				count: retailerProduct.length,
+				vendor,
+				retailerProduct,
+			});
+		}
 		default:
 			return json({ error: 'Method not supported.' }, 405);
 	}
