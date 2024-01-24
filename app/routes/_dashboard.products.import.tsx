@@ -9,18 +9,31 @@ import { badRequest } from '~/utils/request.server';
 export const action: ActionFunction = async ({ request }) => {
 	const data = await getDataFromFileUpload(request, 'file');
 	try {
-		const updatedProducts = await prisma.$transaction(
+		const products = await prisma.$transaction(
 			data.map((item) => {
-				const { sku, ...values } = item;
-				return prisma.retailerProduct.update({
-					where: { sku: sku },
-					data: {
-						...values,
-					},
-				});
+				if (item.itemNo) {
+					return prisma.retailerProduct.create({
+						data: {
+							sku: item.sku,
+							title: item.title,
+							vendorProduct: {
+								connect: {
+									itemNo: item.itemNo,
+								},
+							},
+						},
+					});
+				} else {
+					return prisma.retailerProduct.create({
+						data: {
+							sku: item.sku,
+							title: item.title,
+						},
+					});
+				}
 			})
 		);
-		return json({ updatedProducts });
+		return json({ products });
 	} catch (e) {
 		return badRequest({ error: 'There was a problem updating products' });
 	}
@@ -29,19 +42,27 @@ export const action: ActionFunction = async ({ request }) => {
 export default function ProductsImportPage() {
 	const actionData = useActionData<typeof action>();
 	return (
-		<Form method="post" encType="multipart/form-data">
-			<FileDropInput name="file" accept=".csv" />
-			<button type="submit">Upload</button>
+		<>
+			<h1>Products</h1>
+			<p>Create new products with CSV file.</p>
 
-			{actionData?.error ? (
-				<div className="error message">{actionData.error}</div>
-			) : null}
+			<Form method="post" encType="multipart/form-data">
+				<FileDropInput name="file" accept=".csv" />
 
-			{actionData?.updatedProducts ? (
-				<div className="success message">
-					Form successfully submited.
-				</div>
-			) : null}
-		</Form>
+				<button className="primary button" type="submit">
+					Upload
+				</button>
+
+				{actionData?.error ? (
+					<div className="error message">{actionData.error}</div>
+				) : null}
+
+				{actionData?.products ? (
+					<div className="success message">
+						Form successfully submited.
+					</div>
+				) : null}
+			</Form>
+		</>
 	);
 }

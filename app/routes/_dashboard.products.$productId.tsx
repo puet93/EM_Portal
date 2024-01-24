@@ -55,41 +55,74 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
-	const { title, width, length, thickness, ...values } =
-		Object.fromEntries(formData);
+	const _action = formData.get('_action');
 
-	if (typeof title !== 'string') {
-		throw new Error('Invalid title input');
-	}
+	let product;
+	switch (_action) {
+		case 'connect': {
+			const itemNo = formData.get('itemNo');
 
-	const product = await prisma.retailerProduct.update({
-		where: {
-			id: params.productId,
-		},
-		data: {
-			title: title,
-			tile: {
-				upsert: {
-					create: {
-						width: Number(width),
-						length: Number(length),
-						thickness: Number(thickness),
-						...values,
-					},
-					update: {
-						width: Number(width),
-						length: Number(length),
-						thickness: Number(thickness),
-						...values,
+			if (typeof itemNo !== 'string') {
+				throw new Error('Invalid item number input');
+			}
+
+			product = await prisma.retailerProduct.update({
+				where: {
+					id: params.productId,
+				},
+				data: {
+					vendorProduct: {
+						connect: {
+							itemNo: itemNo,
+						},
 					},
 				},
-			},
-		},
-		include: {
-			tile: true,
-		},
-	});
+				include: {
+					vendorProduct: true,
+				},
+			});
+			break;
+		}
+		case 'update': {
+			const { title, width, length, thickness, ...values } =
+				Object.fromEntries(formData);
 
+			if (typeof title !== 'string') {
+				throw new Error('Invalid title input');
+			}
+
+			product = await prisma.retailerProduct.update({
+				where: {
+					id: params.productId,
+				},
+				data: {
+					title: title,
+					tile: {
+						upsert: {
+							create: {
+								width: Number(width),
+								length: Number(length),
+								thickness: Number(thickness),
+								...values,
+							},
+							update: {
+								width: Number(width),
+								length: Number(length),
+								thickness: Number(thickness),
+								...values,
+							},
+						},
+					},
+				},
+				include: {
+					tile: true,
+				},
+			});
+			break;
+		}
+		default:
+			throw new Error('Invalid action input');
+	}
 	return json({ product });
 };
 
@@ -117,10 +150,30 @@ export default function ProductDetailPage() {
 			<header>
 				<h1 className="headline-h3">Product Details</h1>
 				<div className="text">{data.product.title}</div>
+				<div className="text">
+					{data.product.sku} | {data.product.vendorProduct?.itemNo}
+				</div>
 			</header>
 
 			<div className="foobar">
 				<section className="foobar-main-content">
+					<Form method="post">
+						<Input
+							label="Item No."
+							id="item-number"
+							name="itemNo"
+							defaultValue={data.product.vendorProduct?.itemNo}
+						/>
+
+						<button
+							className="primary button"
+							name="_action"
+							value="connect"
+						>
+							Connect
+						</button>
+					</Form>
+
 					<Form method="post">
 						<Input
 							label="Title"
@@ -208,7 +261,12 @@ export default function ProductDetailPage() {
 							}
 						/>
 
-						<button type="submit" className="primary button">
+						<button
+							type="submit"
+							className="primary button"
+							name="_action"
+							value="update"
+						>
 							Update
 						</button>
 					</Form>

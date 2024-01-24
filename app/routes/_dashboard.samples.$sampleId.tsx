@@ -132,7 +132,12 @@ export const action: ActionFunction = async ({ params, request }) => {
 								status: DRAFT,
 								tags: ["sample"],
 								templateSuffix: "sample",
-								variants: [{ sku: "${sample.materialNo}" }]
+								variants: [{ 
+									sku: "${sample.materialNo}", 
+									price: "1.00", 
+									weight: 0.5,
+									weightUnit: POUNDS,
+								}]
 							}) {
 								product {
 									id

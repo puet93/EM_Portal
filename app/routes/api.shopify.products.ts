@@ -115,6 +115,8 @@ export const action: ActionFunction = async ({ request }) => {
 				};
 			});
 
+			console.log(data);
+
 			const newProducts = await filterExistingProducts(data);
 			const productInputs: any[] = [];
 			const filename = `bulk-op-vars-${crypto.randomUUID()}`;
@@ -276,8 +278,8 @@ export const action: ActionFunction = async ({ request }) => {
 				productInputs,
 			});
 		}
-		// Update new products from .csv files to Shopify. Products that don't exist are ignored.
-		case 'PUT': {
+		// Update products from .csv files to Shopify. Products that don't exist are ignored.
+		case 'PATCH': {
 			const data = parsedCSV.map((row) => {
 				// BASE MEASUREMENTS
 				let measurementPerCarton;

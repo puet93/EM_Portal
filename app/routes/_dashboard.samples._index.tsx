@@ -1,5 +1,9 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
-import { json } from '@remix-run/node';
+import {
+	json,
+	unstable_createMemoryUploadHandler,
+	unstable_parseMultipartFormData,
+} from '@remix-run/node';
 import { Form, Link, useActionData, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
@@ -7,7 +11,9 @@ import { badRequest } from '~/utils/request.server';
 import { graphqlClient } from '~/utils/shopify.server';
 import FileDropInput from '~/components/FileDropInput';
 import Input from '~/components/Input';
-import { getDataFromFileUpload } from '~/utils/csv';
+import { parseCSV } from '~/utils/csv';
+
+const FILE = 'file';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -65,16 +71,66 @@ export const loader: LoaderFunction = async ({ request }) => {
 export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
 
-	await getDataFromFileUpload(request, 'file');
-	// const formData = await request.formData();
-	// const _action = formData.get('_action');
-
-	return json({ message: 'success' });
+	const handler = unstable_createMemoryUploadHandler();
+	const formData = await unstable_parseMultipartFormData(request, handler);
+	const _action = formData.get('_action');
 
 	switch (_action) {
+		case 'upsert': {
+			const file = formData.get(FILE) as File;
+			const data = await parseCSV(file);
+
+			// const exists = await prisma.$transaction(
+			// 	data.map((sample) => {
+			// 		return prisma.sample.findUnique({
+			// 			where: { materialNo: sample.materialNo },
+			// 		});
+			// 	})
+			// );
+
+			// console.log('EXISTS?', exists); // returns null if it doesn't exist
+
+			const upsertedSamples = await prisma.$transaction(
+				data.map((sample) => {
+					return prisma.sample.upsert({
+						where: { materialNo: sample.materialNo },
+						update: {
+							seriesName: sample.seriesName, // Vendor's serie's name
+							color: sample.color,
+							finish: sample.finish || undefined,
+							seriesAlias: sample.seriesAlias || undefined,
+							colorAlias: sample.colorAlias || undefined,
+						},
+						create: {
+							materialNo: sample.materialNo,
+							seriesName: sample.seriesName,
+							color: sample.color,
+							finish: sample.finish || undefined,
+							seriesAlias: sample.seriesAlias || undefined,
+							colorAlias: sample.colorAlias || undefined,
+						},
+					});
+				})
+			);
+
+			return json({ upsertedSamples });
+		}
 		case 'update': {
-			await getDataFromFileUpload(request, 'file');
-			return json({ message: 'Hello World!' });
+			const file = formData.get(FILE) as File;
+			const data = await parseCSV(file);
+
+			const updatedSamples = await prisma.$transaction(
+				data.map((sample) => {
+					return prisma.sample.update({
+						where: { materialNo: sample.materialNo },
+						data: { finish: sample.finish },
+					});
+				})
+			);
+
+			console.log('UPDATED:', updatedSamples);
+
+			return json({ data: updatedSamples });
 		}
 		case 'metafields': {
 			const metafieldQuery = formData.get('metafieldQuery');
@@ -121,14 +177,14 @@ export default function SamplesPage() {
 			<h1 className="headline-h3">Samples List</h1>
 
 			<Form method="post" encType="multipart/form-data">
-				<FileDropInput id="file" name="file" accept=".csv" />
+				<FileDropInput id="file" name={FILE} accept=".csv" />
 				<button
 					className="button"
 					type="submit"
 					name="_action"
-					value="update"
+					value="upsert"
 				>
-					Update
+					Upload
 				</button>
 			</Form>
 
@@ -166,6 +222,10 @@ export default function SamplesPage() {
 				</div>
 			) : null}
 
+			{actionData && actionData.upsertedSamples ? (
+				<div className="success message">UPDATED!</div>
+			) : null}
+
 			<div className="table-toolbar">
 				<Form
 					className="inline-form"
@@ -201,6 +261,10 @@ export default function SamplesPage() {
 					<button className="primary button" type="submit">
 						Search
 					</button>
+
+					<Link className="button" to="new">
+						Create New Sample
+					</Link>
 				</Form>
 			</div>
 

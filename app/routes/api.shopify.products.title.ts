@@ -18,11 +18,10 @@ export const action: ActionFunction = async ({ request }) => {
 
 	switch (request.method) {
 		case 'PUT': {
-			const data = parsedCSV.map(({ sku, title, color }) => {
+			const data = parsedCSV.map(({ sku, title }) => {
 				return {
 					sku,
 					title,
-					color,
 				};
 			});
 
@@ -37,12 +36,12 @@ export const action: ActionFunction = async ({ request }) => {
 									title
 									metafields(first: 1, keys: ["custom.variation_value"]) {
 										edges {
-										  node {
-											id
-											key
-										  }
+											node {
+												id
+												key
+										  	}
 										}
-									  }
+									}
 								}
 							}
 						}
@@ -59,10 +58,10 @@ export const action: ActionFunction = async ({ request }) => {
 							resolve({
 								id: res.product.id,
 								title: row.title,
-								color: row.color,
-								metafields: res.product.metafields.edges.map(
-									(item) => item.node
-								),
+								// color: row.color,
+								// metafields: res.product.metafields.edges.map(
+								// 	(item) => item.node
+								// ),
 							})
 						);
 				});
@@ -84,34 +83,34 @@ export const action: ActionFunction = async ({ request }) => {
 				};
 
 				// METAFIELDS
-				const metafieldInputs = [];
+				// const metafieldInputs = [];
 
 				// COLOR
-				if (product.color) {
-					const metafield =
-						product.metafields &&
-						product.metafields.find(
-							(item) => item.key === 'custom.variation_value'
-						);
+				// if (product.color) {
+				// 	const metafield =
+				// 		product.metafields &&
+				// 		product.metafields.find(
+				// 			(item) => item.key === 'custom.variation_value'
+				// 		);
 
-					if (metafield) {
-						metafieldInputs.push({
-							id: metafield.id,
-							value: product.color,
-						});
-					} else {
-						metafieldInputs.push({
-							namespace: 'custom',
-							key: 'variation_value',
-							type: 'single_line_text_field',
-							value: product.color,
-						});
-					}
-				}
+				// 	if (metafield) {
+				// 		metafieldInputs.push({
+				// 			id: metafield.id,
+				// 			value: product.color,
+				// 		});
+				// 	} else {
+				// 		metafieldInputs.push({
+				// 			namespace: 'custom',
+				// 			key: 'variation_value',
+				// 			type: 'single_line_text_field',
+				// 			value: product.color,
+				// 		});
+				// 	}
+				// }
 
-				if (metafieldInputs.length > 0) {
-					productInput.input.metafields = metafieldInputs;
-				}
+				// if (metafieldInputs.length > 0) {
+				// 	productInput.input.metafields = metafieldInputs;
+				// }
 
 				productInputs.push(productInput);
 				fs.appendFileSync(filePath, JSON.stringify(productInput));

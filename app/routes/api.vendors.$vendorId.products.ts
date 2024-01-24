@@ -31,9 +31,10 @@ export const action = async ({ params, request }: ActionArgs) => {
 			const parsedCSV: any[] = await parseCSV(file);
 			const data = parsedCSV.map((row) => ({
 				itemNo: row.itemNo,
-				color: row.color,
-				series: row.series,
-				description: row.size,
+				color: row.color || null,
+				description: row.description || null,
+				finish: row.finish || null,
+				series: row.series || row.seriesName || null,
 			}));
 
 			const vendorProducts = await prisma.$transaction(
@@ -44,16 +45,18 @@ export const action = async ({ params, request }: ActionArgs) => {
 							vendor: vendor,
 						},
 						update: {
-							color: item.color,
-							seriesName: item.series,
-							description: item.description,
+							color: item.color || undefined,
+							description: item.description || undefined,
+							finish: item.finish || undefined,
+							seriesName: item.series || undefined,
 						},
 						create: {
-							itemNo: item.itemNo,
 							vendorId: vendor.id,
-							color: item.color,
-							seriesName: item.series,
-							description: item.description,
+							itemNo: item.itemNo,
+							color: item.color || undefined,
+							description: item.description || undefined,
+							finish: item.finish || undefined,
+							seriesName: item.series || undefined,
 						},
 					});
 
@@ -116,7 +119,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 				})
 			);
 
-			return json({ vendorProducts });
+			return json({ data, vendorProducts });
 		}
 		case 'PATCH': {
 			const handler = unstable_createMemoryUploadHandler();

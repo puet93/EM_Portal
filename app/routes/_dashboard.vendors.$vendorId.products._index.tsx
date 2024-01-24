@@ -180,6 +180,8 @@ export const action = async ({ params, request }: ActionArgs) => {
 			// 	})
 			// );
 
+			console.log('CSV', parsedCSV);
+
 			return badRequest({ formError: 'Not yet implemented.' });
 		}
 		default:
@@ -231,6 +233,10 @@ export default function VendorProductsPage() {
 					>
 						Search
 					</button>
+
+					<Link className="button" to="edit">
+						Edit
+					</Link>
 				</div>
 			</Form>
 
