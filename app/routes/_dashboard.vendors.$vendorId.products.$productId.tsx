@@ -46,6 +46,10 @@ export default function VendorProductsPage() {
 					<p>{product.itemNo}</p>
 				</Link>
 
+				<Link className="primary button" to="edit">
+					Edit
+				</Link>
+
 				{product.sampleMaterialNo ? (
 					<Form method="post">
 						<button className="button">Disconnect</button>

@@ -75,6 +75,7 @@ function getMetaobjectId(key: string): string {
 		case 'SQ FT':
 			return 'gid://shopify/Metaobject/7368900826';
 		default:
+			console.log('INVALID KEY', key);
 			throw new Error('Invalid Metaobject reference key.');
 	}
 }
@@ -91,27 +92,27 @@ export const action: ActionFunction = async ({ request }) => {
 		case 'POST': {
 			const data = parsedCSV.map((row) => {
 				return {
-					title: row.title,
-					sku: row.sku,
-					price: row.price,
-					weight: row.weight,
 					color: row.color,
 					finish: row.finish,
+					material: row.material,
 					sizeAndShape: row.sizeAndShape,
+					sku: row.sku,
+					title: row.title,
+					weight: row.weightPerCarton,
 					width: row.width,
 					length: row.length,
 					thickness: row.thickness,
-					pieces: row.pieces,
+					pieces: row.piecesPerCarton,
+					price: row.pricePerCarton,
 					basePrice: {
-						value: row.basePriceValue, // base price / unit price (i.e. price per square foot)
+						value: row.basePrice, // base price / unit price (i.e. price per square foot)
 						unitOfMeasure: row.basePriceUom, // base unit of measure / unit of measure (e.g. square foot)
 					},
 					surfaceArea: {
-						value: row.surfaceAreaValue, // surface area value / units per sales unit (e.g. number of square feet per carton)
-						unitOfMeasure: row.surfaceAreaUom, // surface area unit of measure
+						value: row.areaPerCarton, // surface area value / units per sales unit (e.g. number of square feet per carton)
+						unitOfMeasure: row.areaPerCartonUom, // surface area unit of measure
 					},
 					sellingUnitOfMeasure: 'Box', // Box: Metaobject<Unit of Measure>
-					material: 'Porcelain',
 				};
 			});
 
@@ -196,7 +197,7 @@ export const action: ActionFunction = async ({ request }) => {
 									namespace: 'filters',
 									key: 'material',
 									type: 'list.single_line_text_field',
-									value: JSON.stringify(['Porcelain']),
+									value: JSON.stringify([product.material]),
 								},
 								{
 									namespace: 'custom',
@@ -254,10 +255,10 @@ export const action: ActionFunction = async ({ request }) => {
 							vendor: 'Edward Martin',
 							variants: [
 								{
-									inventoryItem: {
-										tracked: true,
-									},
-									inventoryPolicy: 'CONTINUE',
+									// inventoryItem: {
+									// 	tracked: false,
+									// },
+									// inventoryPolicy: 'CONTINUE',
 									price: Number(product.price),
 									sku: product.sku,
 									weight: Number(product.weight),
@@ -318,16 +319,16 @@ export const action: ActionFunction = async ({ request }) => {
 				}
 
 				// PRICE
-				let price;
-				if (row.listPrice && measurementPerCarton.value) {
-					price = calculatePricePerCarton(
-						row.listPrice,
-						0.45,
-						0.445,
-						1.7,
-						measurementPerCarton.value
-					);
-				}
+				let price = row.pricePerCarton;
+				// if (row.listPrice && measurementPerCarton.value) {
+				// 	price = calculatePricePerCarton(
+				// 		row.listPrice,
+				// 		0.45,
+				// 		0.445,
+				// 		1.7,
+				// 		measurementPerCarton.value
+				// 	);
+				// }
 
 				return {
 					sku: row.sku,
@@ -624,12 +625,12 @@ export const action: ActionFunction = async ({ request }) => {
 
 				// BASE PRICE
 				if (
-					productResponse.measurementPerCarton &&
+					// productResponse.measurementPerCarton &&
 					productResponse.variants[0].price
 				) {
 					const price = productResponse.variants[0].price;
-					const { value } = productResponse.measurementPerCarton;
-					const basePrice = Number(price) / value;
+					// const { value } = productResponse.measurementPerCarton;
+					const basePrice = productResponse.basePrice.value; // Number(price) / value;
 					const metafield =
 						productResponse.metafields &&
 						productResponse.metafields.find(

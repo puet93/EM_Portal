@@ -84,10 +84,12 @@ export const action: ActionFunction = async ({ params, request }) => {
 			break;
 		}
 		case 'update': {
-			const { title, width, length, thickness, ...values } =
-				Object.fromEntries(formData);
+			// const { sku, title, width, length, thickness, ...values } =
+			// 	Object.fromEntries(formData);
 
-			if (typeof title !== 'string') {
+			const { sku, title } = Object.fromEntries(formData);
+
+			if (typeof title !== 'string' || typeof sku !== 'string') {
 				throw new Error('Invalid title input');
 			}
 
@@ -97,22 +99,23 @@ export const action: ActionFunction = async ({ params, request }) => {
 				},
 				data: {
 					title: title,
-					tile: {
-						upsert: {
-							create: {
-								width: Number(width),
-								length: Number(length),
-								thickness: Number(thickness),
-								...values,
-							},
-							update: {
-								width: Number(width),
-								length: Number(length),
-								thickness: Number(thickness),
-								...values,
-							},
-						},
-					},
+					sku: sku,
+					// tile: {
+					// 	upsert: {
+					// 		create: {
+					// 			width: Number(width),
+					// 			length: Number(length),
+					// 			thickness: Number(thickness),
+					// 			...values,
+					// 		},
+					// 		update: {
+					// 			width: Number(width),
+					// 			length: Number(length),
+					// 			thickness: Number(thickness),
+					// 			...values,
+					// 		},
+					// 	},
+					// },
 				},
 				include: {
 					tile: true,
@@ -176,13 +179,20 @@ export default function ProductDetailPage() {
 
 					<Form method="post">
 						<Input
+							label="SKU"
+							id="sku"
+							name="sku"
+							defaultValue={data.product.sku}
+						/>
+
+						<Input
 							label="Title"
 							id="title"
 							name="title"
 							defaultValue={data.product.title}
 						/>
 
-						<Input
+						{/* <Input
 							label="Color"
 							id="color"
 							name="color"
@@ -259,7 +269,7 @@ export default function ProductDetailPage() {
 									? data.product.tile.thicknessUnit
 									: 'MILLIMETERS'
 							}
-						/>
+						/> */}
 
 						<button
 							type="submit"

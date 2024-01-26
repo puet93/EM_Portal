@@ -4,25 +4,6 @@ import { Link, Outlet, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 
-// export const action = async ({ request }: ActionArgs) => {
-// 	await requireUserId(request);
-
-// 	if (request.method !== 'POST') {
-// 		return json({ message: 'Method not supported' }, 405);
-// 	}
-
-// 	const formData = await request.formData();
-// 	const vendorName = formData.get('vendorName');
-
-// 	if (typeof vendorName !== 'string' || vendorName.length === 0) {
-// 		return json({ message: 'Invalid form input' });
-// 	}
-
-// 	return json({
-// 		vendor: await prisma.vendor.create({ data: { name: vendorName } }),
-// 	});
-// };
-
 export const loader = async ({ request }: LoaderArgs) => {
 	await requireUserId(request);
 	const vendors = await prisma.vendor.findMany();
@@ -35,6 +16,9 @@ export default function VendorsPage() {
 		<>
 			<header>
 				<h1 className="headline-h3">Vendors</h1>
+				<Link className="primary button" to="new">
+					Create New Vendor
+				</Link>
 			</header>
 			<ul>
 				{data.vendors.map((vendor) => (

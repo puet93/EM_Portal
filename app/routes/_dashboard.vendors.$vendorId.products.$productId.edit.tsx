@@ -98,6 +98,13 @@ export default function VendorProductsPage() {
 					defaultValue={product.finish}
 				/>
 
+				<Input
+					label="Item No"
+					name="itemNo"
+					id="item-no"
+					defaultValue={product.itemNo}
+				/>
+
 				{actionData && !actionData.error ? (
 					<div className="success message">Saved</div>
 				) : null}

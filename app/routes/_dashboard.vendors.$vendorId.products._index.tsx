@@ -53,6 +53,9 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	const products = await prisma.vendorProduct.findMany({
 		where: fields,
 		orderBy: { seriesName: 'asc' },
+		include: {
+			retailerProduct: true,
+		},
 	});
 	return json({ products });
 };
@@ -195,6 +198,8 @@ export default function VendorProductsPage() {
 
 	return (
 		<>
+			<Link to="import">Import</Link>
+
 			<Form method="post">
 				<div className="search-bar">
 					<SearchIcon className="search-icon" id="search-icon" />
@@ -260,7 +265,7 @@ export default function VendorProductsPage() {
 								<th>Description</th>
 								<th>Item No.</th>
 								<th>Sample</th>
-								<th></th>
+								<th>SKU</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -283,12 +288,9 @@ export default function VendorProductsPage() {
 										)}
 									</td>
 									<td>
-										<Link
-											to={product.id}
-											className="button"
-										>
-											Edit
-										</Link>
+										{product.retailProduct?.sku
+											? product.retailProduct.sku
+											: 'No connected product.'}
 									</td>
 								</tr>
 							))}
@@ -337,14 +339,17 @@ export default function VendorProductsPage() {
 											</Link>
 										)}
 									</td>
-									<td>
-										<Link
-											to={product.id}
-											className="button"
-										>
-											Edit
-										</Link>
-									</td>
+									{product.retailerProduct ? (
+										<td>
+											<Link
+												to={`/products/${product.retailerProduct.id}`}
+											>
+												Connected
+											</Link>
+										</td>
+									) : (
+										<td></td>
+									)}
 								</tr>
 							))}
 						</tbody>
