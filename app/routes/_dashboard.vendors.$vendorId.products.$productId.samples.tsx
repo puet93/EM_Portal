@@ -102,25 +102,28 @@ export default function VendorProductsPage() {
 			</Form>
 
 			{actionData?.results ? (
-				<ul>
-					{actionData.results.map((sample) => (
-						<li key={sample.id}>
-							<span>
-								{sample.materialNo}: {sample.seriesName}{' '}
-								{sample.color} {sample.finish}
-							</span>
-							<Form method="post">
-								<button
-									type="submit"
-									name="sampleId"
-									value={sample.id}
-								>
-									Connect
-								</button>
-							</Form>
-						</li>
-					))}
-				</ul>
+				<>
+					<h2>Results</h2>
+					<ul>
+						{actionData.results.map((sample) => (
+							<li key={sample.id}>
+								<span>
+									{sample.materialNo}: {sample.seriesName}{' '}
+									{sample.color} {sample.finish}
+								</span>
+								<Form method="post">
+									<button
+										type="submit"
+										name="sampleId"
+										value={sample.id}
+									>
+										Connect
+									</button>
+								</Form>
+							</li>
+						))}
+					</ul>
+				</>
 			) : null}
 
 			{actionData && actionData.results.length === 0 ? (

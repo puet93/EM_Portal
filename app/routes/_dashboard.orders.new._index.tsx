@@ -1,10 +1,32 @@
-import type { ActionFunction } from '@remix-run/node';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { useFetcher, useSubmit } from '@remix-run/react';
+import { Form, useFetcher, useLoaderData, useSubmit } from '@remix-run/react';
+import { fetchOrderByName } from '~/utils/shopify.server';
 import { prisma } from '~/db.server';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SearchIcon, TrashIcon } from '~/components/Icons';
+
 import Counter from '~/components/Counter';
+import Input from '~/components/Input';
+
+export const loader: LoaderFunction = async ({ request }) => {
+	const searchParams = new URL(request.url).searchParams;
+	const orderName = searchParams.get('order');
+
+	if (orderName) {
+		const order = await fetchOrderByName(orderName);
+
+		let search;
+		if (order && order?.lineItems) {
+			let skus = order.lineItems.map((item) => item.sku);
+			search = skus.join(', ');
+		}
+
+		return json({ order, search });
+	}
+
+	return json({});
+};
 
 export const action: ActionFunction = async ({ params, request }) => {
 	const formData = await request.formData();
@@ -39,23 +61,29 @@ export const action: ActionFunction = async ({ params, request }) => {
 };
 
 export default function NewOrderPage() {
+	const data = useLoaderData();
 	const search = useFetcher();
+	const shippingAddressForm = useRef(null);
 	const submit = useSubmit();
 	const [cart, setCart] = useState([]);
-	const [address, setAddress] = useState({
-		line1: undefined,
-		line2: undefined,
-		line3: undefined,
-		city: undefined,
-		state: undefined,
-		postalCode: undefined,
-	});
 
-	function handleDiscard() {
-		window.alert('You sure?');
-	}
+	useEffect(() => {
+		console.log('cart', cart);
+	}, [cart]);
 
 	function handleSubmit() {
+		const form = shippingAddressForm.current;
+		if (!form) return;
+
+		const address = {
+			line1: form['name'].value || undefined,
+			line2: form['address1'].value || undefined,
+			line3: form['address2'].value || undefined,
+			city: form['city'].value || undefined,
+			state: form['province'].value || undefined,
+			postalCode: form['zip'].value || undefined,
+		};
+
 		let fields: {
 			cart: string;
 			address: string;
@@ -127,6 +155,7 @@ export default function NewOrderPage() {
 								id="query"
 								placeholder="Search"
 								autoComplete="off"
+								defaultValue={data.search ? data.search : ''}
 							/>
 
 							<button className="button" type="submit">
@@ -219,164 +248,182 @@ export default function NewOrderPage() {
 				</section>
 
 				<aside className="foobar-sidebar sample-cart">
-					<h2 className="headline-h6">Selected Samples</h2>
-
-					<div className="sample-cart-actions">
-						<button
-							className="primary button full-width"
-							onClick={handleSubmit}
-						>
-							Save
+					<Form className="inline-form" method="get" replace>
+						<Input
+							label="Shopify Order No."
+							id="order"
+							name="order"
+							defaultValue={
+								data.order?.name ? data.order.name : ''
+							}
+						/>
+						<button type="submit" className="button">
+							Get Address
 						</button>
-
-						<button onClick={handleDiscard} className="button">
-							Discard
-						</button>
-					</div>
+					</Form>
 
 					<div className="shipping-info">
-						<div className="input input--sm">
-							<label htmlFor="ship-to-name">Name</label>
-							<input
-								type="text"
-								autoComplete="name"
-								id="ship-to-name"
-								value={address?.line1 ? address.line1 : ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										line1: e.target.value,
-									})
-								}
-							/>
-						</div>
+						<form ref={shippingAddressForm}>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-name">Name</label>
+								<input
+									type="text"
+									autoComplete="name"
+									id="ship-to-name"
+									name="name"
+									defaultValue={
+										data.order?.shippingAddress?.name
+											? data.order?.shippingAddress?.name
+											: ''
+									}
+								/>
+							</div>
 
-						<div className="input input--sm">
-							<label htmlFor="ship-to-address-line-1">
-								Street Address
-							</label>
-							<input
-								type="text"
-								autoComplete="address-line1"
-								id="ship-to-address-1"
-								value={address.line2 ?? ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										line2: e.target.value,
-									})
-								}
-							/>
-						</div>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-address-line-1">
+									Street Address
+								</label>
+								<input
+									type="text"
+									autoComplete="address-line1"
+									id="ship-to-address-1"
+									name="address1"
+									defaultValue={
+										data.order?.shippingAddress?.address1
+											? data.order?.shippingAddress
+													?.address1
+											: ''
+									}
+								/>
+							</div>
 
-						<div className="input input--sm">
-							<label htmlFor="ship-to-address-line-2">
-								Suite, Unit, Apt #
-							</label>
-							<input
-								type="text"
-								name="line2"
-								autoComplete="address-line2"
-								id="ship-to-address-line-2"
-								value={address.line3 ?? ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										line3: e.target.value,
-									})
-								}
-							/>
-						</div>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-address-line-2">
+									Suite, Unit, Apt #
+								</label>
+								<input
+									type="text"
+									autoComplete="address-line2"
+									id="ship-to-address-line-2"
+									name="address2"
+									defaultValue={
+										data.order?.shippingAddress?.address2
+											? data.order?.shippingAddress
+													?.address2
+											: ''
+									}
+								/>
+							</div>
 
-						<div className="input input--sm">
-							<label htmlFor="ship-to-city">City</label>
-							<input
-								type="text"
-								name="city"
-								autoComplete="address-level2"
-								id="ship-to-city"
-								value={address.city ?? ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										city: e.target.value,
-									})
-								}
-							/>
-						</div>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-city">City</label>
+								<input
+									type="text"
+									autoComplete="address-level2"
+									id="ship-to-city"
+									name="city"
+									defaultValue={
+										data.order?.shippingAddress?.city
+											? data.order?.shippingAddress?.city
+											: ''
+									}
+								/>
+							</div>
 
-						<div className="input input--sm">
-							<label htmlFor="ship-to-state">State</label>
-							<input
-								type="text"
-								name="state"
-								autoComplete="address-level1"
-								id="ship-to-state"
-								value={address.state ?? ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										state: e.target.value,
-									})
-								}
-							/>
-						</div>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-state">State</label>
+								<input
+									type="text"
+									autoComplete="address-level1"
+									id="ship-to-state"
+									name="province"
+									defaultValue={
+										data.order?.shippingAddress?.province
+											? data.order?.shippingAddress
+													?.province
+											: ''
+									}
+								/>
+							</div>
 
-						<div className="input input--sm">
-							<label htmlFor="ship-to-zip">ZIP Code</label>
-							<input
-								type="text"
-								name="postalCode"
-								autoComplete="postal-code"
-								id="ship-to-zip"
-								value={address.postalCode ?? ''}
-								onChange={(e) =>
-									setAddress({
-										...address,
-										postalCode: e.target.value,
-									})
-								}
-							/>
-						</div>
+							<div className="input input--sm">
+								<label htmlFor="ship-to-zip">ZIP Code</label>
+								<input
+									type="text"
+									autoComplete="postal-code"
+									id="ship-to-zip"
+									name="zip"
+									defaultValue={
+										data.order?.shippingAddress?.zip
+											? data.order?.shippingAddress?.zip
+											: ''
+									}
+								/>
+							</div>
+
+							<button
+								type="button"
+								className="primary button full-width"
+								onClick={handleSubmit}
+							>
+								Save
+							</button>
+						</form>
 					</div>
 
-					<ul className="sample-cart-list">
-						{cart.map(
-							(item: {
-								id: string;
-								sku: string;
-								title: string;
-							}) => (
-								<li className="sample-cart-item" key={item.id}>
-									<div className="sample-cart-item__description">
-										<div className="">{item.title}</div>
-										<div className="caption">
-											{item.sku}
-										</div>
-									</div>
+					<div style={{ marginTop: 64 }}>
+						{cart.length > 0 ? (
+							<h2 className="headline-h6">
+								Item Count:{' '}
+								{cart.reduce(
+									(accumulator, item) =>
+										accumulator + item.quantity,
+									0
+								)}
+							</h2>
+						) : null}
 
-									<Counter
-										min={1}
-										name={`quantity-${item.sku}`}
-										onChange={(quantity) => {
-											handleQtyChange(quantity, item);
-										}}
-										defaultValue={1}
-									/>
-
-									<button
-										aria-label="Delete"
-										className="sample-cart-delete-button"
-										onClick={() => {
-											removeFromCart(item);
-										}}
+						<ul className="sample-cart-list">
+							{cart.map(
+								(item: {
+									id: string;
+									sku: string;
+									title: string;
+								}) => (
+									<li
+										className="sample-cart-item"
+										key={item.id}
 									>
-										<TrashIcon />
-									</button>
-								</li>
-							)
-						)}
-					</ul>
+										<div className="sample-cart-item__description">
+											<div className="">{item.title}</div>
+											<div className="caption">
+												{item.sku}
+											</div>
+										</div>
+
+										<Counter
+											min={1}
+											name={`quantity-${item.sku}`}
+											onChange={(quantity) => {
+												handleQtyChange(quantity, item);
+											}}
+											defaultValue={1}
+										/>
+
+										<button
+											aria-label="Delete"
+											className="sample-cart-delete-button"
+											onClick={() => {
+												removeFromCart(item);
+											}}
+										>
+											<TrashIcon />
+										</button>
+									</li>
+								)
+							)}
+						</ul>
+					</div>
 				</aside>
 			</div>
 		</div>

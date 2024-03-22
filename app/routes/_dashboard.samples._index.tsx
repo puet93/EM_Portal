@@ -1,4 +1,6 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
+import type { RefObject, SyntheticEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import {
 	json,
 	unstable_createMemoryUploadHandler,
@@ -61,9 +63,17 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	const samples = await prisma.sample.findMany({
 		where: query,
-		include: { vendorProducts: true },
-		orderBy: [{ seriesName: 'asc' }, { color: 'asc' }],
+		include: {
+			vendorProducts: {
+				include: { retailerProduct: true },
+			},
+		},
+		orderBy: [{ seriesName: 'asc' }, { materialNo: 'asc' }],
 	});
+
+	console.group('SAMPLES');
+	samples.map((sample) => console.log(sample.vendorProducts));
+	console.groupEnd();
 
 	return json({ samples, fields });
 };
@@ -95,7 +105,7 @@ export const action: ActionFunction = async ({ request }) => {
 					return prisma.sample.upsert({
 						where: { materialNo: sample.materialNo },
 						update: {
-							seriesName: sample.seriesName, // Vendor's serie's name
+							seriesName: sample.seriesName, // Vendor's series name
 							color: sample.color,
 							finish: sample.finish || undefined,
 							seriesAlias: sample.seriesAlias || undefined,
@@ -172,10 +182,78 @@ export default function SamplesPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 
+	const masterCheckboxRef = useRef(null) as RefObject<HTMLInputElement>;
+	const tableBodyRef = useRef(null) as RefObject<HTMLTableSectionElement>;
+
+	useEffect(() => {
+		if (!masterCheckboxRef.current) return;
+		masterCheckboxRef.current.indeterminate = false;
+		masterCheckboxRef.current.checked = false;
+
+		const checkboxes = getCheckboxes();
+		if (!checkboxes) return;
+		for (let i = 0; i < checkboxes.length; i++) {
+			checkboxes[i].checked = false;
+		}
+	}, [data]);
+
+	function getCheckboxes() {
+		if (!tableBodyRef.current) return;
+		const checkboxes: NodeListOf<HTMLInputElement> =
+			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
+		return checkboxes;
+	}
+
+	function handleChange() {
+		const checkboxes = getCheckboxes();
+		if (!checkboxes || !masterCheckboxRef.current) return;
+
+		const count = checkboxes.length;
+		let checkedCount = 0;
+		for (let i = 0; i < count; i++) {
+			if (checkboxes[i].checked) {
+				++checkedCount;
+			}
+		}
+
+		// if no checboxes are checked, set master checkbox checked to false
+		if (checkedCount === 0) {
+			masterCheckboxRef.current.indeterminate = false;
+			masterCheckboxRef.current.checked = false;
+			return;
+		}
+
+		// if all checkboxes are checked, set master checkbox checked to true
+		if (checkedCount / count === 1) {
+			masterCheckboxRef.current.indeterminate = false;
+			masterCheckboxRef.current.checked = true;
+			return;
+		}
+
+		// if some checkboxes are checked, set master checkbox indeterminate to true
+		if (checkedCount / count !== 1) {
+			masterCheckboxRef.current.indeterminate = true;
+			return;
+		}
+	}
+
+	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
+		const checkboxes = getCheckboxes();
+		if (!checkboxes) return;
+		for (let i = 0; i < checkboxes.length; i++) {
+			if (e.currentTarget.checked) {
+				checkboxes[i].checked = true;
+			} else {
+				checkboxes[i].checked = false;
+			}
+		}
+	}
+
 	return (
 		<div>
 			<h1 className="headline-h3">Samples List</h1>
 
+			{/* Bulk Upload Form */}
 			<Form method="post" encType="multipart/form-data">
 				<FileDropInput id="file" name={FILE} accept=".csv" />
 				<button
@@ -188,7 +266,7 @@ export default function SamplesPage() {
 				</button>
 			</Form>
 
-			<div className="table-toolbar">
+			{/* <div className="table-toolbar">
 				<Form method="post" className="inline-form">
 					<Input
 						label="Series"
@@ -206,7 +284,7 @@ export default function SamplesPage() {
 						Check Series
 					</button>
 				</Form>
-			</div>
+			</div> */}
 
 			{actionData && actionData.empty?.length === 0 ? (
 				<div className="success message">
@@ -226,6 +304,7 @@ export default function SamplesPage() {
 				<div className="success message">UPDATED!</div>
 			) : null}
 
+			{/* Search Form */}
 			<div className="table-toolbar">
 				<Form
 					className="inline-form"
@@ -271,23 +350,35 @@ export default function SamplesPage() {
 			{data.samples ? (
 				<Form method="post">
 					<table>
-						<tbody>
+						<tbody ref={tableBodyRef}>
 							<tr>
-								<th></th>
+								<th>
+									<input
+										ref={masterCheckboxRef}
+										id="master-checkbox"
+										type="checkbox"
+										onChange={handleMasterCheckboxChange}
+									/>
+								</th>
 								<th>Material No.</th>
 								<th>Series</th>
-								<th>Color</th>
-								<th>Finish</th>
+								<th>Linked Items</th>
 								<th style={{ textAlign: 'center' }}>Shopify</th>
 							</tr>
 							{data.samples.map((sample) => (
 								<tr className="row" key={sample.id}>
 									<td>
-										{sample.vendorProducts.length !== 0 ? (
+										{/* {sample.vendorProducts.length !== 0 ? (
 											<span className="success indicator"></span>
 										) : (
 											<span className="indicator"></span>
-										)}
+										)} */}
+										<input
+											type="checkbox"
+											name="sampleId"
+											value={sample.id}
+											onChange={handleChange}
+										/>
 									</td>
 									<td>
 										<Link to={sample.id}>
@@ -296,17 +387,29 @@ export default function SamplesPage() {
 									</td>
 									<td>
 										<Link to={sample.id}>
-											{sample.seriesName}
-										</Link>
-									</td>
-									<td>
-										<Link to={sample.id}>
-											{sample.color}
-										</Link>
-									</td>
-									<td>
-										<Link to={sample.id}>
+											{sample.seriesName} - {sample.color}{' '}
 											{sample.finish}
+										</Link>
+									</td>
+									<td>
+										<Link to={sample.id}>
+											{sample.vendorProducts.map(
+												(vendorProduct) => (
+													<div
+														key={
+															vendorProduct
+																.retailerProduct
+																.id
+														}
+													>
+														{
+															vendorProduct
+																.retailerProduct
+																.title
+														}
+													</div>
+												)
+											)}
 										</Link>
 									</td>
 									<td style={{ textAlign: 'center' }}>

@@ -55,6 +55,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		orderBy: { seriesName: 'asc' },
 		include: {
 			retailerProduct: true,
+			sample: true,
 		},
 	});
 	return json({ products });
@@ -280,7 +281,11 @@ export default function VendorProductsPage() {
 									<td>{product.itemNo}</td>
 									<td>
 										{product.sampleMaterialNo ? (
-											product.sampleMaterialNo
+											<Link
+												to={`samples/${product.sampleMaterialNo}`}
+											>
+												{product.sample.id}
+											</Link>
 										) : (
 											<Link to={`${product.id}/samples`}>
 												Connect
@@ -288,9 +293,15 @@ export default function VendorProductsPage() {
 										)}
 									</td>
 									<td>
-										{product.retailProduct?.sku
-											? product.retailProduct.sku
-											: 'No connected product.'}
+										{product.retailProduct?.sku ? (
+											<Link
+												to={`/products/${product.retailerProduct.id}`}
+											>
+												{product.retailProduct.title}
+											</Link>
+										) : (
+											'No retailer product.'
+										)}
 									</td>
 								</tr>
 							))}
@@ -326,10 +337,19 @@ export default function VendorProductsPage() {
 									<td>
 										<i>Description goes here</i>
 									</td>
-									<td>{product.itemNo}</td>
 									<td>
-										{product.sampleMaterialNo ? (
-											product.sampleMaterialNo
+										<Link to={`${product.id}/edit`}>
+											{product.itemNo}
+										</Link>
+									</td>
+									<td>
+										{product.sampleMaterialNo &&
+										product.sample ? (
+											<Link
+												to={`/samples/${product.sample.id}`}
+											>
+												{product.sampleMaterialNo}
+											</Link>
 										) : (
 											<Link
 												to={`${product.id}/samples`}
@@ -344,11 +364,11 @@ export default function VendorProductsPage() {
 											<Link
 												to={`/products/${product.retailerProduct.id}`}
 											>
-												Connected
+												{product.retailerProduct.title}
 											</Link>
 										</td>
 									) : (
-										<td></td>
+										<td>No retailer product</td>
 									)}
 								</tr>
 							))}

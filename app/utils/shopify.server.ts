@@ -1,6 +1,7 @@
 import '@shopify/shopify-api/adapters/node';
 import { shopifyApi, LATEST_API_VERSION, Session } from '@shopify/shopify-api';
 import { restResources } from '@shopify/shopify-api/rest/admin/2023-07';
+import { query } from 'express';
 
 const {
 	SHOPIFY_ACCESS_TOKEN,
@@ -105,3 +106,105 @@ export const getMetafields = () => {
 
 	return metafieldKeys;
 };
+
+export const fetchOrderByName = async (name: string) => {
+	// In Shopify, the name refers to the order number (e.g. #2002)
+
+	let queryString = `
+		query fetchOrderByName {
+			orders(first: 1, query: "name:${name}") {
+				nodes {
+					name
+					shippingAddress {
+						name
+						address1
+						address2
+						city
+						province
+						zip
+					}
+					lineItems(first: 100) {
+						nodes {
+							title
+							quantity
+							sku
+						}
+					}
+				}
+			}
+		}
+	`;
+
+	const response = await graphqlClient.query({
+		data: queryString,
+	});
+
+	let orders = response.body?.data?.orders.nodes; // Can be []
+	let order; // undefined
+
+	if (orders.length > 0) {
+		order = orders[0];
+		console.log('ORDER', order);
+	} else {
+		console.log('ORDER NOT FOUND');
+		return;
+	}
+
+	if (order) {
+		let lineItems; // undefined
+		if (order.lineItems.nodes && order.lineItems.nodes.length > 0) {
+			lineItems = order.lineItems.nodes;
+		}
+		order = { ...order, lineItems };
+		return order;
+	} else {
+		return;
+	}
+};
+
+export async function createShopifyProductFromSample(
+	title: String,
+	materialNo: String
+) {
+	const response = await graphqlClient.query({
+		data: `
+			mutation productCreate {
+				productCreate(input: {
+					title: "${title}",
+					status: DRAFT,
+					tags: ["sample"],
+					templateSuffix: "sample",
+					variants: [{ 
+						sku: "${materialNo}", 
+						price: "1.00", 
+						weight: 0.5,
+						weightUnit: POUNDS,
+					}]
+				}) {
+					product {
+						id
+						title
+						tags
+						status
+						vendor
+						templateSuffix
+						variants(first: 1) {
+							edges {
+								node {
+									id
+									title
+								}
+							}
+						}
+					}
+					userErrors {
+						field
+						message
+					}
+				}
+			}
+		`,
+	});
+
+	return response.body.data.productCreate.product;
+}

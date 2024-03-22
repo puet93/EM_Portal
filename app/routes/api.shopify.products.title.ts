@@ -58,10 +58,6 @@ export const action: ActionFunction = async ({ request }) => {
 							resolve({
 								id: res.product.id,
 								title: row.title,
-								// color: row.color,
-								// metafields: res.product.metafields.edges.map(
-								// 	(item) => item.node
-								// ),
 							})
 						);
 				});
@@ -81,37 +77,6 @@ export const action: ActionFunction = async ({ request }) => {
 						handle: '',
 					},
 				};
-
-				// METAFIELDS
-				// const metafieldInputs = [];
-
-				// COLOR
-				// if (product.color) {
-				// 	const metafield =
-				// 		product.metafields &&
-				// 		product.metafields.find(
-				// 			(item) => item.key === 'custom.variation_value'
-				// 		);
-
-				// 	if (metafield) {
-				// 		metafieldInputs.push({
-				// 			id: metafield.id,
-				// 			value: product.color,
-				// 		});
-				// 	} else {
-				// 		metafieldInputs.push({
-				// 			namespace: 'custom',
-				// 			key: 'variation_value',
-				// 			type: 'single_line_text_field',
-				// 			value: product.color,
-				// 		});
-				// 	}
-				// }
-
-				// if (metafieldInputs.length > 0) {
-				// 	productInput.input.metafields = metafieldInputs;
-				// }
-
 				productInputs.push(productInput);
 				fs.appendFileSync(filePath, JSON.stringify(productInput));
 				fs.appendFileSync(filePath, '\n');

@@ -9,6 +9,9 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const product = await prisma.vendorProduct.findUnique({
 		where: { id: params.productId },
+		include: {
+			retailerProduct: true,
+		},
 	});
 
 	if (!product) {
@@ -49,6 +52,18 @@ export default function VendorProductsPage() {
 				<Link className="primary button" to="edit">
 					Edit
 				</Link>
+
+				{product.retailerProduct ? (
+					<div>
+						<h2>Retailer Product</h2>
+						<Link
+							className="button"
+							to={`/products/${product.retailerProduct.id}`}
+						>
+							{product.retailerProduct.title}
+						</Link>
+					</div>
+				) : null}
 
 				{product.sampleMaterialNo ? (
 					<Form method="post">

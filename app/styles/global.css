@@ -104,6 +104,11 @@ a:visited {
 	color: var(--text-color);
 }
 
+code {
+	white-space-collapse: preserve;
+	color: cyan;
+}
+
 table {
 	border-collapse: collapse;
 	width: 100%;
@@ -571,7 +576,7 @@ th,
 }
 
 .sample-cart-list {
-	margin-top: 72px;
+	margin-top: 32px;
 }
 
 .sample-cart-item {

@@ -22,6 +22,13 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
+		include: {
+			vendorProducts: {
+				include: {
+					retailerProduct: true,
+				},
+			},
+		},
 	});
 
 	if (!sample) return badRequest({ message: 'Unable to find sample.' });
@@ -69,7 +76,9 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 		});
 	}
 
-	return json({ connected, vendorProducts, sample });
+	const inventoryLocations = await fetchInventoryLocations();
+
+	return json({ connected, vendorProducts, sample, inventoryLocations });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -78,6 +87,21 @@ export const action: ActionFunction = async ({ params, request }) => {
 	const { _action, ...fields } = Object.fromEntries(formData);
 
 	switch (_action) {
+		case 'location': {
+			const sample = await prisma.sample.findUnique({
+				where: { id: params.sampleId },
+			});
+
+			if (!sample) {
+				return badRequest({
+					errors: ['Unable to locate sample in database.'],
+				});
+			}
+
+			await updateInventoryLocation(sample.materialNo, fields.locationId);
+
+			return json({ message: 'Inventory location updated.' });
+		}
 		case 'sync':
 			const sample = await prisma.sample.findUnique({
 				where: { id: params.sampleId },
@@ -123,52 +147,19 @@ export const action: ActionFunction = async ({ params, request }) => {
 			const existingSamples = responseBody.data?.productVariants?.edges;
 			const productExists = existingSamples.length !== 0;
 
+			// If sample does not exist on Shopify as a product
 			if (!productExists) {
-				const newShopifyProduct = await graphqlClient.query({
-					data: `
-						mutation productCreate {
-							productCreate(input: {
-								title: "${fields.title}",
-								status: DRAFT,
-								tags: ["sample"],
-								templateSuffix: "sample",
-								variants: [{ 
-									sku: "${sample.materialNo}", 
-									price: "1.00", 
-									weight: 0.5,
-									weightUnit: POUNDS,
-								}]
-							}) {
-								product {
-									id
-									title
-									tags
-									status
-									vendor
-									templateSuffix
-									variants(first: 1) {
-										edges {
-											node {
-												id
-												title
-											}
-										}
-									}
-								}
-								userErrors {
-									field
-									message
-								}
-							}
-						}
-					`,
-				});
+				// Create Shopify product from sample
+				const newShopifyProduct = await createShopifyProductFromSample(
+					String(fields.title),
+					sample.materialNo
+				);
 
+				// Update sample on database with Shopify product's GID
 				await prisma.sample.update({
 					where: { id: sample.id },
 					data: {
-						gid: newShopifyProduct.body.data.productCreate.product
-							.id,
+						gid: newShopifyProduct.id,
 					},
 				});
 
@@ -239,6 +230,8 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 			const metafields = [];
 			for (const sku of skus) {
+				console.log(`METAFIELD: ${sku}`);
+
 				const metafield = await upsertSampleToProductMetafield(
 					sku,
 					sampleGID
@@ -249,6 +242,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 			return json({ metafields });
 		}
 		default:
+			console.log('INVALID ACTION');
 			return badRequest({ message: 'Invalid action' });
 	}
 };
@@ -260,14 +254,26 @@ export default function SampleDetailPage() {
 
 	let suggestedTitle = '';
 
-	if (seriesAlias && colorAlias) {
-		suggestedTitle = seriesAlias;
-	}
-	if (suggestedTitle && finish) {
-		suggestedTitle = suggestedTitle + ' ' + finish;
-	}
-	if (suggestedTitle) {
-		suggestedTitle = suggestedTitle + ' ' + colorAlias + ' 4x4 Tile Sample';
+	try {
+		if (data.connected.length > 1) {
+			if (seriesAlias && colorAlias) {
+				suggestedTitle = seriesAlias;
+			}
+			if (suggestedTitle && finish) {
+				suggestedTitle = suggestedTitle + ' ' + finish;
+			}
+			if (suggestedTitle) {
+				suggestedTitle =
+					suggestedTitle + ' ' + colorAlias + ' Tile Sample';
+			}
+		}
+
+		if (data.connected.length == 1) {
+			const title = data.connected[0].retailerProduct.title;
+			suggestedTitle = title + ' Sample';
+		}
+	} catch (e) {
+		console.log(e);
 	}
 
 	return (
@@ -296,7 +302,13 @@ export default function SampleDetailPage() {
 				</div>
 
 				<div style={{ marginTop: 24, marginBottom: 24 }}>
-					<h2 className="headline-h5"></h2>
+					<h2 className="headline-h5">Sync with Shopify</h2>
+					<p style={{ maxWidth: 768 }}>
+						Looks for a product on Shopify matching the sample's
+						material number. If the product exists, it will be
+						updated. If the product does not exist, a new product
+						will be created with the sample's information.
+					</p>
 					<Form method="post" className="inline-form" replace>
 						<Input
 							id="title"
@@ -310,7 +322,7 @@ export default function SampleDetailPage() {
 							name="_action"
 							value="sync"
 						>
-							Sync with Shopify
+							Sync
 						</button>
 					</Form>
 
@@ -328,6 +340,46 @@ export default function SampleDetailPage() {
 						))}
 				</div>
 
+				{data.inventoryLocations && (
+					<div style={{ marginTop: 24, marginBottom: 24 }}>
+						<h2 className="headline-h5"></h2>
+						<Form method="post" className="inline-form" replace>
+							<select name="locationId">
+								{data.inventoryLocations.map((location) => (
+									<option
+										key={location.node.id}
+										value={location.node.id}
+									>
+										{location.node.name}
+									</option>
+								))}
+							</select>
+
+							<button
+								className="button"
+								type="submit"
+								name="_action"
+								value="location"
+							>
+								Update Inventory Location
+							</button>
+						</Form>
+
+						{actionData && !actionData.errors ? (
+							<div className="success message">
+								{actionData.message}
+							</div>
+						) : null}
+
+						{actionData?.errors &&
+							actionData.errors.map((error) => (
+								<div key={error} className="error message">
+									{error}
+								</div>
+							))}
+					</div>
+				)}
+
 				{data.connected && data.connected.length !== 0 ? (
 					<div style={{ marginTop: 48, marginBottom: 48 }}>
 						<Form method="post">
@@ -343,9 +395,7 @@ export default function SampleDetailPage() {
 									alignItems: 'center',
 								}}
 							>
-								<h2 className="headline-h5">
-									Connected Sample Swatches
-								</h2>
+								<h2 className="headline-h5">HERRO?S!</h2>
 
 								<button
 									className="primary button"
@@ -369,42 +419,22 @@ export default function SampleDetailPage() {
 							<ul className="foobar-card-list">
 								{data.connected.map((product) => (
 									<li key={product.id}>
-										<input
-											type="hidden"
-											name="connected"
-											value={product.retailerProduct.sku}
-										/>
-										<Link
-											className="foobar-card"
-											to={`/vendors/${product.vendor.id}/products/${product.id}`}
-										>
-											<div>
-												<p className="text">
-													{
-														product.retailerProduct
-															.title
-													}{' '}
-												</p>
-												<p className="caption-2">
-													{
-														product.retailerProduct
-															.sku
-													}
-												</p>
-											</div>
-
-											<div>
-												<p className="text">
-													{product.seriesName}{' '}
-													{product.description}{' '}
-													{product.finish}{' '}
-													{product.color}
-												</p>
-												<p className="caption-2">
-													{product.itemNo}
-												</p>
-											</div>
-										</Link>
+										<div>
+											<input
+												type="hidden"
+												name="connected"
+												value={
+													product.retailerProduct.sku
+												}
+											/>
+											<code>
+												{JSON.stringify(
+													product,
+													null,
+													4
+												)}
+											</code>
+										</div>
 									</li>
 								))}
 							</ul>
@@ -565,6 +595,9 @@ export default function SampleDetailPage() {
 	);
 }
 
+// FUNCTIONS
+// Functions should filter response.body.data
+
 async function getProductFromSKU(sku: String) {
 	const queryString = `{
 		productVariants(first: 1, query: "sku:${sku}") {
@@ -602,10 +635,14 @@ async function getProductFromSKU(sku: String) {
 }
 
 async function upsertSampleToProductMetafield(sku, sampleGID) {
+	// TODO: Remove this
+	console.log(`upsertSampleToProductMetafield(${sku}, ${sampleGID})`);
+
 	// Get the Product GID
 	const product = await getProductFromSKU(sku);
 
 	if (!product) {
+		console.log('NO PRODUCT');
 		return badRequest({});
 	}
 
@@ -639,7 +676,167 @@ async function upsertSampleToProductMetafield(sku, sampleGID) {
 		`,
 	});
 
-	console.log(response.body.data);
-
 	return response.body.data;
+}
+
+async function fetchInventoryLocations() {
+	const locations = [
+		{
+			node: {
+				id: 'gid://shopify/Location/72879243482',
+				name: 'Decor Tile FOB Texas',
+			},
+		},
+		{
+			node: {
+				id: 'gid://shopify/Location/75041603802',
+				name: 'European Porcelain Ceramics',
+			},
+		},
+		{
+			node: {
+				id: 'gid://shopify/Location/71944863962',
+				name: 'Florim',
+			},
+		},
+		{
+			node: {
+				id: 'gid://shopify/Location/74360193242',
+				name: 'Roca - Anaheim',
+			},
+		},
+	];
+
+	return locations;
+}
+
+async function fetchInventoryItemId(sku: String) {
+	const queryString = `query {
+		inventoryItems(first: 1, query: "sku:${sku}") {
+		  	edges {
+				node {
+			  		id
+			  		tracked
+			  		sku
+				}
+		  	}
+		}
+	}`;
+
+	const shopifyResponse = await graphqlClient.query({ data: queryString });
+	const inventoryItem =
+		shopifyResponse?.body?.data?.inventoryItems?.edges[0]?.node;
+
+	if (!inventoryItem) {
+		return null;
+	}
+
+	return inventoryItem.id;
+}
+
+async function updateInventoryLocation(sku, locationId) {
+	let inventoryItemId = await fetchInventoryItemId(sku);
+
+	let query = `mutation inventoryBulkToggleActivation {
+		inventoryBulkToggleActivation(
+		  	inventoryItemId: "${inventoryItemId}",
+		  	inventoryItemUpdates: [
+				{
+					activate: ${locationId === 'gid://shopify/Location/72879243482' ? true : false},
+					locationId: "gid://shopify/Location/72879243482",
+				},
+				{
+					activate: ${locationId === 'gid://shopify/Location/75041603802' ? true : false},
+					locationId: "gid://shopify/Location/75041603802",
+				},
+				{
+					activate: ${locationId === 'gid://shopify/Location/71944863962' ? true : false},
+					locationId: "gid://shopify/Location/71944863962",
+				},
+				{
+					activate: ${locationId === 'gid://shopify/Location/74360193242' ? true : false},
+					locationId: "gid://shopify/Location/74360193242",
+				}
+			]
+		) {
+		  	inventoryItem {
+				id
+				variant {
+					product {
+						title
+					}
+				}
+		  	}
+		  	inventoryLevels {
+				id
+				location {
+					id
+					name
+					isActive
+				}
+		  	}
+		}
+	}`;
+
+	let response = await graphqlClient.query({ data: query });
+	return response.body.data;
+}
+
+async function createShopifyProductFromSample(
+	title: String,
+	materialNo: String
+) {
+	const response = await graphqlClient.query({
+		data: `
+			mutation productCreate {
+				productCreate(input: {
+					title: "${title}",
+					status: DRAFT,
+					tags: ["sample"],
+					templateSuffix: "sample",
+					variants: [{ 
+						sku: "${materialNo}", 
+						price: "1.00", 
+						weight: 0.5,
+						weightUnit: POUNDS,
+					}]
+				}) {
+					product {
+						id
+						title
+						tags
+						status
+						vendor
+						templateSuffix
+						variants(first: 1) {
+							edges {
+								node {
+									id
+									title
+								}
+							}
+						}
+					}
+					userErrors {
+						field
+						message
+					}
+				}
+			}
+		`,
+	});
+
+	return response.body.data.productCreate.product;
+}
+
+async function syncWithShopify(sku: String) {
+	// Create or update sample on Shopify
+
+	// Then update inventory location
+	let updatedInventoryLocation = await updateInventoryLocation(
+		sku,
+		'locationId'
+	);
+
+	// Then add sample to the metafields of related products
 }

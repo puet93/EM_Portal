@@ -2,6 +2,7 @@ import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
+import { badRequest } from '~/utils/request.server';
 import { prisma } from '~/db.server';
 import Input from '~/components/Input';
 
@@ -16,16 +17,32 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
+	const _action = formData.get('_action');
 	const entries = Object.fromEntries(formData);
 
-	await prisma.sample.update({
-		where: {
-			id: params.sampleId,
-		},
-		data: entries,
-	});
+	switch (_action) {
+		case 'update': {
+			await prisma.sample.update({
+				where: {
+					id: params.sampleId,
+				},
+				data: entries,
+			});
 
-	return redirect('..');
+			return redirect('..');
+		}
+		case 'delete': {
+			await prisma.sample.delete({
+				where: {
+					id: params.sampleId,
+				},
+			});
+
+			return redirect('../..');
+		}
+		default:
+			return badRequest({ message: 'Invalid action' });
+	}
 };
 
 export default function SampleDetailPage() {
@@ -78,8 +95,22 @@ export default function SampleDetailPage() {
 					defaultValue={data.sample.colorAlias}
 				/>
 
-				<button type="submit" className="button">
+				<button
+					name="_action"
+					value="Update"
+					type="submit"
+					className="button"
+				>
 					Update
+				</button>
+
+				<button
+					name="_action"
+					value="delete"
+					type="submit"
+					className="button"
+				>
+					Delete
 				</button>
 			</Form>
 		</div>

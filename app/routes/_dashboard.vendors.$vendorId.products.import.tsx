@@ -52,20 +52,23 @@ export const action = async ({ params, request }: ActionArgs) => {
 							vendor,
 						},
 						update: {
-							seriesName: item.seriesName,
-							color: item.color,
-							finish: item.finish,
-							retailerProduct: {
-								connectOrCreate: {
-									where: {
-										sku: item.sku,
-									},
-									create: {
-										sku: item.sku,
-										title: item.title,
-									},
-								},
-							},
+							seriesName: item.seriesName || undefined,
+							color: item.color || undefined,
+							finish: item.finish || undefined,
+							listPrice: item.cost || undefined,
+							retailerProduct: item.sku
+								? {
+										connectOrCreate: {
+											where: {
+												sku: item.sku,
+											},
+											create: {
+												sku: item.sku,
+												title: item.title,
+											},
+										},
+								  }
+								: undefined,
 							sample: item.materialNo
 								? {
 										connectOrCreate: {
@@ -94,17 +97,20 @@ export const action = async ({ params, request }: ActionArgs) => {
 							seriesName: item.seriesName,
 							color: item.color,
 							finish: item.finish,
-							retailerProduct: {
-								connectOrCreate: {
-									where: {
-										sku: item.sku,
-									},
-									create: {
-										sku: item.sku,
-										title: item.title,
-									},
-								},
-							},
+							listPrice: item.cost || undefined,
+							retailerProduct: item.sku
+								? {
+										connectOrCreate: {
+											where: {
+												sku: item.sku,
+											},
+											create: {
+												sku: item.sku,
+												title: item.title,
+											},
+										},
+								  }
+								: undefined,
 							sample: item.materialNo
 								? {
 										connectOrCreate: {

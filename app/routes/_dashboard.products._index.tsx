@@ -233,6 +233,7 @@ export default function ProductsPage() {
 								</th>
 								<th>Edward Martin</th>
 								<th>Item No.</th>
+								<th>Cost</th>
 								<th>Sample Material No.</th>
 							</tr>
 						</thead>
@@ -274,14 +275,6 @@ export default function ProductsPage() {
 												</div>
 
 												<div>
-													{product.vendorProduct
-														.description
-														? product.vendorProduct
-																.description
-														: 'Missing size'}
-												</div>
-
-												<div>
 													{product.vendorProduct.color
 														? product.vendorProduct
 																.color
@@ -293,6 +286,17 @@ export default function ProductsPage() {
 												<span className="error indicator"></span>{' '}
 												MISSING
 											</td>
+										)}
+
+										{product.vendorProduct?.listPrice ? (
+											<td>
+												{
+													product.vendorProduct
+														.listPrice
+												}
+											</td>
+										) : (
+											<td>--</td>
 										)}
 
 										{product.vendorProduct?.sample ? (

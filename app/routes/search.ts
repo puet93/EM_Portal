@@ -25,8 +25,8 @@ export const action = async ({ request }: ActionArgs) => {
 			prisma.retailerProduct.findMany({
 				where: {
 					vendorProduct: {
-						sample: {
-							materialNo: query,
+						sampleMaterialNo: {
+							search: query,
 						},
 					},
 				},
