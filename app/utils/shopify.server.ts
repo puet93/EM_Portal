@@ -207,3 +207,41 @@ export async function createShopifyProductFromSample(
 
 	return response.body.data.productCreate.product;
 }
+
+interface ErrorResult {
+	error: true;
+	message: string;
+}
+
+interface ShopifyProduct {
+	title: string;
+}
+
+export async function fetchProductBySku(
+	sku: string
+): Promise<ShopifyProduct | ErrorResult> {
+	let queryString = `query Product {
+		productVariants(first: 1, query: "sku:${sku}") {
+			nodes {
+				id
+				sku
+				product {
+					id
+				  	title
+			  	}
+			}
+		}
+	}`;
+
+	try {
+		let response = await graphqlClient.query({ data: queryString });
+		console.log(response);
+	} catch (error) {
+		return { error: true, message: error.message };
+	}
+
+	return {
+		error: true,
+		message: 'Something happened. End of line.',
+	};
+}
