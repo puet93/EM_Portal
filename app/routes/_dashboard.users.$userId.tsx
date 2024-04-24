@@ -10,9 +10,17 @@ import Input from '~/components/Input';
 export const loader = async ({ params, request }: LoaderArgs) => {
 	await requireUserId(request);
 
-	return json({
-		user: await prisma.user.findUnique({ where: { id: params.userId } }),
-	});
+	const [user, vendors] = await prisma.$transaction([
+		prisma.user.findUnique({ where: { id: params.userId } }),
+		prisma.vendor.findMany(),
+	]);
+
+	const vendorOptions = vendors.map((vendor) => ({
+		value: vendor.id,
+		label: vendor.name,
+	}));
+
+	return json({ user, vendorOptions });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -20,7 +28,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 	const formData = await request.formData();
 	const { ...values } = Object.fromEntries(formData);
-	console.log('FORM DATA', values);
 
 	await prisma.user.update({
 		where: {
@@ -76,6 +83,12 @@ export default function UserPage() {
 					name="role"
 					options={options}
 					defaultValue={data.user?.role || undefined}
+				/>
+
+				<Dropdown
+					name="vendorId"
+					options={data.vendorOptions}
+					defaultValue={data.user?.vendorId || undefined}
 				/>
 
 				{actionData?.formError ? (

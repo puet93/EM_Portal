@@ -106,6 +106,7 @@ export const action: ActionFunction = async ({ request }) => {
 	await requireSuperAdmin(request);
 
 	switch (request.method) {
+		// TODO: Remove POST after PATCH is fixed
 		case 'POST': {
 			const handler = unstable_createMemoryUploadHandler();
 			const formData = await unstable_parseMultipartFormData(
@@ -228,6 +229,7 @@ export const action: ActionFunction = async ({ request }) => {
 				productInputs,
 			});
 		}
+		// TODO: Remove PUT is fixed
 		case 'PUT': {
 			const handler = unstable_createMemoryUploadHandler();
 			const formData = await unstable_parseMultipartFormData(
@@ -396,6 +398,7 @@ export const action: ActionFunction = async ({ request }) => {
 				productInputs,
 			});
 		}
+		// PATCH should be the only valid method, but PUT seems to be closest to completion
 		case 'PATCH': {
 			const handler = unstable_createMemoryUploadHandler();
 			const formData = await unstable_parseMultipartFormData(

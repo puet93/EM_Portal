@@ -69,9 +69,17 @@ export const action = async ({ request }: ActionArgs) => {
 
 export const loader = async ({ request }: LoaderArgs) => {
 	await requireSuperAdmin(request);
+
 	return json({
 		users: await prisma.user.findMany({
 			orderBy: { email: 'asc' },
+			include: {
+				vendor: {
+					select: {
+						name: true,
+					},
+				},
+			},
 		}),
 	});
 };
@@ -107,7 +115,9 @@ export default function UserPage() {
 										<p className="title">
 											{user.firstName} {user.lastName}
 										</p>
-										<p className="caption">{user.role}</p>
+										<p className="caption">
+											{user.vendor?.name}
+										</p>
 									</Link>
 								</td>
 								<td>{user.email}</td>

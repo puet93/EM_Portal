@@ -1,4 +1,4 @@
-export const fakeAysncRequest = async (
+export const fakeAsyncRequest = async (
 	returnValue: any,
 	timeout: number = 1000
 ) => {

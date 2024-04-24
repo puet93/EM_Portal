@@ -143,7 +143,9 @@ export const action = async ({ params, request }: ActionArgs) => {
 
 				return json({ formError: null, results });
 			} catch (e) {
-				return badRequest({ formError: 'penis' });
+				return badRequest({
+					formError: 'There was a problem querying the database.',
+				});
 			}
 		}
 		case 'update': {

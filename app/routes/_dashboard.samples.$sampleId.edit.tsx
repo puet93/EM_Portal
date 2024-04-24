@@ -17,8 +17,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 export const action: ActionFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const formData = await request.formData();
-	const _action = formData.get('_action');
-	const entries = Object.fromEntries(formData);
+	const { _action, ...entries } = Object.fromEntries(formData);
 
 	switch (_action) {
 		case 'update': {
@@ -97,7 +96,7 @@ export default function SampleDetailPage() {
 
 				<button
 					name="_action"
-					value="Update"
+					value="update"
 					type="submit"
 					className="button"
 				>

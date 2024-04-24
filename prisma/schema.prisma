@@ -18,6 +18,8 @@ model User {
     updatedAt DateTime  @updatedAt
     notes     Note[]
     password  Password?
+    vendor    Vendor?   @relation(fields: [vendorId], references: [id])
+    vendorId  String?
 }
 
 model Password {
@@ -110,6 +112,7 @@ model Vendor {
     id       String          @id @default(cuid())
     name     String          @unique
     products VendorProduct[]
+    users    User[]
 }
 
 model VendorProduct {
