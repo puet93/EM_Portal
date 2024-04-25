@@ -23,6 +23,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
 		include: {
+			vendor: true,
 			vendorProducts: {
 				include: {
 					retailerProduct: true,
@@ -280,6 +281,7 @@ export default function SampleDetailPage() {
 		<div className="foobar">
 			<div className="foobar-main-content">
 				<h1>Sample Swatch</h1>
+				{data.sample.vendor ? <p>{data.sample.vendor.name}</p> : null}
 
 				<div style={{ marginTop: 24, marginBottom: 24 }}>
 					<p className="title">

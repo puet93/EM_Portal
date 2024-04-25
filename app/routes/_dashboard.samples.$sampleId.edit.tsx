@@ -5,13 +5,21 @@ import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import { prisma } from '~/db.server';
 import Input from '~/components/Input';
+import Dropdown from '~/components/Dropdown';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
 	});
-	return json({ sample });
+
+	const vendors = await prisma.vendor.findMany();
+	const vendorOptions = vendors.map((vendor) => ({
+		value: vendor.id,
+		label: vendor.name,
+	}));
+
+	return json({ sample, vendorOptions });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -52,6 +60,8 @@ export default function SampleDetailPage() {
 			<h1>Edit Sample Swatch</h1>
 
 			<Form method="post" replace>
+				<Dropdown name="vendorId" options={data.vendorOptions} />
+
 				<Input
 					label="Series"
 					id="series"
