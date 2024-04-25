@@ -119,6 +119,8 @@ model Sample {
     color          String
     colorAlias     String?
     finish         String?
+    vendor         Vendor?         @relation(fields: [vendorId], references: [id])
+    vendorId       String?
     vendorProducts VendorProduct[]
 }
 
@@ -140,9 +142,10 @@ model Tile {
 model Vendor {
     id           String          @id @default(cuid())
     name         String          @unique
-    products     VendorProduct[]
-    users        User[]
     fulfillments Fulfillment[]
+    products     VendorProduct[]
+    sample       Sample[]
+    users        User[]
 }
 
 model VendorProduct {
