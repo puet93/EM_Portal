@@ -64,16 +64,13 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const samples = await prisma.sample.findMany({
 		where: query,
 		include: {
+			vendor: true,
 			vendorProducts: {
 				include: { retailerProduct: true },
 			},
 		},
 		orderBy: [{ seriesName: 'asc' }, { materialNo: 'asc' }],
 	});
-
-	console.group('SAMPLES');
-	samples.map((sample) => console.log(sample.vendorProducts));
-	console.groupEnd();
 
 	return json({ samples, fields });
 };
@@ -360,6 +357,7 @@ export default function SamplesPage() {
 										onChange={handleMasterCheckboxChange}
 									/>
 								</th>
+								<th>Vendor</th>
 								<th>Material No.</th>
 								<th>Series</th>
 								<th>Linked Items</th>
@@ -368,17 +366,17 @@ export default function SamplesPage() {
 							{data.samples.map((sample) => (
 								<tr className="row" key={sample.id}>
 									<td>
-										{/* {sample.vendorProducts.length !== 0 ? (
-											<span className="success indicator"></span>
-										) : (
-											<span className="indicator"></span>
-										)} */}
 										<input
 											type="checkbox"
 											name="sampleId"
 											value={sample.id}
 											onChange={handleChange}
 										/>
+									</td>
+									<td>
+										{sample.vendor?.name
+											? sample.vendor?.name
+											: null}
 									</td>
 									<td>
 										<Link to={sample.id}>
