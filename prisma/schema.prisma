@@ -52,23 +52,52 @@ model Address {
     orders     Order[]
 }
 
+model Fulfillment {
+    id           String                @id @default(cuid())
+    name         String                @unique
+    lineItems    FulfillmentLineItem[]
+    order        Order                 @relation(fields: [orderId], references: [id])
+    orderId      String
+    status       FulfillmentStatus     @default(NEW)
+    trackingInfo TrackingInfo?
+    vendor       Vendor?               @relation(fields: [vendorId], references: [id])
+    vendorId     String?
+}
+
+model FulfillmentLineItem {
+    id            String      @id @default(cuid())
+    fulfillment   Fulfillment @relation(fields: [fulfillmentId], references: [id])
+    fulfillmentId String
+    orderItem     OrderItem   @relation(fields: [orderItemId], references: [id])
+    orderItemId   String      @unique
+}
+
+model TrackingInfo {
+    number        String      @id @unique
+    company       String
+    fulfillment   Fulfillment @relation(fields: [fulfillmentId], references: [id])
+    fulfillmentId String      @unique
+}
+
 model Order {
-    id        String      @id @default(uuid())
-    addressId String
-    createdAt DateTime    @default(now())
-    status    OrderStatus @default(DRAFT)
-    notes     Note[]
-    address   Address     @relation(fields: [addressId], references: [id])
-    items     OrderItem[]
+    id           String        @id @default(uuid())
+    createdAt    DateTime      @default(now())
+    address      Address       @relation(fields: [addressId], references: [id])
+    addressId    String
+    status       OrderStatus   @default(DRAFT)
+    notes        Note[]
+    items        OrderItem[]
+    fulfillments Fulfillment[]
 }
 
 model OrderItem {
-    id        String          @id @default(uuid())
-    orderId   String
-    productId String
-    quantity  Int             @default(1)
-    order     Order           @relation(fields: [orderId], references: [id])
-    product   RetailerProduct @relation(fields: [productId], references: [id])
+    id                  String               @id @default(uuid())
+    order               Order                @relation(fields: [orderId], references: [id])
+    orderId             String
+    product             RetailerProduct      @relation(fields: [productId], references: [id])
+    productId           String
+    quantity            Int                  @default(1)
+    fulfillmentLineItem FulfillmentLineItem?
 }
 
 model RetailerProduct {
@@ -109,10 +138,11 @@ model Tile {
 }
 
 model Vendor {
-    id       String          @id @default(cuid())
-    name     String          @unique
-    products VendorProduct[]
-    users    User[]
+    id           String          @id @default(cuid())
+    name         String          @unique
+    products     VendorProduct[]
+    users        User[]
+    fulfillments Fulfillment[]
 }
 
 model VendorProduct {
@@ -130,6 +160,14 @@ model VendorProduct {
     sampleMaterialNo String?
 }
 
+enum FulfillmentStatus {
+    NEW
+    PROCESSING
+    COMPLETE
+    CANCELLED
+    ERROR
+}
+
 enum Material {
     CERAMIC
     PORCELAIN
@@ -141,6 +179,7 @@ enum OrderStatus {
     PROCESSING
     COMPLETE
     CANCELLED
+    ERROR
 }
 
 enum Role {
