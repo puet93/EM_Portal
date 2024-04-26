@@ -1236,7 +1236,8 @@ input::file-selector-button {
 }
 
 .wrapper {
-	max-width: 1920px;
+	min-width: 960px;
+	max-width: 1280px;
 	margin-left: auto;
 	margin-right: auto;
 }
