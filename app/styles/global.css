@@ -550,6 +550,10 @@ th,
 	display: flex;
 }
 
+.page-header__actions .button {
+	margin-left: 12px;
+}
+
 .page-header .circle-button.circle-button--lg {
 	margin-right: 8px;
 }
