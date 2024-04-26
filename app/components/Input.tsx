@@ -3,6 +3,7 @@ export default function Input({
 	label,
 	name,
 	type,
+	autoFocus = false,
 	className,
 	defaultValue,
 }: {
@@ -10,6 +11,7 @@ export default function Input({
 	label: string;
 	name: string;
 	type?: string;
+	autoFocus: boolean;
 	className?: string;
 	defaultValue?: string;
 }) {
@@ -21,6 +23,7 @@ export default function Input({
 				name={name}
 				type={type || 'text'}
 				defaultValue={defaultValue}
+				autoFocus={autoFocus}
 			/>
 		</div>
 	);
