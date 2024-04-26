@@ -65,11 +65,11 @@ model Fulfillment {
 }
 
 model FulfillmentLineItem {
-    id            String      @id @default(cuid())
-    fulfillment   Fulfillment @relation(fields: [fulfillmentId], references: [id])
-    fulfillmentId String
-    orderItem     OrderItem   @relation(fields: [orderItemId], references: [id])
-    orderItemId   String      @unique
+    id              String        @id @default(cuid())
+    fulfillment     Fulfillment   @relation(fields: [fulfillmentId], references: [id])
+    fulfillmentId   String
+    orderLineItem   OrderLineItem @relation(fields: [orderLineItemId], references: [id])
+    orderLineItemId String        @unique
 }
 
 model TrackingInfo {
@@ -80,22 +80,32 @@ model TrackingInfo {
 }
 
 model Order {
-    id           String        @id @default(uuid())
-    createdAt    DateTime      @default(now())
-    address      Address       @relation(fields: [addressId], references: [id])
+    id           String          @id @default(uuid())
+    createdAt    DateTime        @default(now())
+    address      Address         @relation(fields: [addressId], references: [id])
     addressId    String
-    status       OrderStatus   @default(DRAFT)
+    status       OrderStatus     @default(DRAFT)
     notes        Note[]
     items        OrderItem[]
+    lineItems    OrderLineItem[]
     fulfillments Fulfillment[]
 }
 
 model OrderItem {
+    id        String          @id @default(uuid())
+    order     Order           @relation(fields: [orderId], references: [id])
+    orderId   String
+    product   RetailerProduct @relation(fields: [productId], references: [id])
+    productId String
+    quantity  Int             @default(1)
+}
+
+model OrderLineItem {
     id                  String               @id @default(uuid())
     order               Order                @relation(fields: [orderId], references: [id])
     orderId             String
-    product             RetailerProduct      @relation(fields: [productId], references: [id])
-    productId           String
+    sample              Sample               @relation(fields: [sampleId], references: [id])
+    sampleId            String
     quantity            Int                  @default(1)
     fulfillmentLineItem FulfillmentLineItem?
 }
@@ -104,10 +114,10 @@ model RetailerProduct {
     id              String         @id @default(cuid())
     sku             String         @unique
     title           String
-    vendorProductId String?        @unique
     orderItems      OrderItem[]
-    vendorProduct   VendorProduct? @relation(fields: [vendorProductId], references: [id])
     tile            Tile?
+    vendorProduct   VendorProduct? @relation(fields: [vendorProductId], references: [id])
+    vendorProductId String?        @unique
 }
 
 model Sample {
@@ -119,6 +129,7 @@ model Sample {
     color          String
     colorAlias     String?
     finish         String?
+    orderLineItems OrderLineItem[]
     vendor         Vendor?         @relation(fields: [vendorId], references: [id])
     vendorId       String?
     vendorProducts VendorProduct[]
