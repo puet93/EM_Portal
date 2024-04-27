@@ -1,37 +1,47 @@
+import type { RefObject, SyntheticEvent } from 'react';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
-import { Form, useFetcher, useLoaderData, useSubmit } from '@remix-run/react';
+import {
+	Form,
+	Link,
+	useActionData,
+	useFetcher,
+	useLoaderData,
+	useSubmit,
+} from '@remix-run/react';
 import { fetchOrderByName } from '~/utils/shopify.server';
 import { prisma } from '~/db.server';
 import { useEffect, useRef, useState } from 'react';
 import { SearchIcon, TrashIcon } from '~/components/Icons';
-
 import Counter from '~/components/Counter';
-import Input from '~/components/Input';
+import { badRequest } from '~/utils/request.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
-	const orderName = searchParams.get('order');
+	const orderName = searchParams.get('query');
 
+	// Shopify sample order search
+	let errors: { order?: string; searchHint?: string } = {};
+	let order;
+	let searchHint;
 	if (orderName) {
-		const order = await fetchOrderByName(orderName);
+		order = await fetchOrderByName(orderName);
 
-		let search;
-		if (order && order?.lineItems) {
+		if (order?.lineItems) {
 			let skus = order.lineItems.map((item) => item.sku);
-			search = skus.join(', ');
+			searchHint = skus.join(', ');
 		}
-
-		return json({ order, search });
 	}
 
-	return json({});
+	if (Object.keys(errors).length !== 0) return json({ errors });
+	return json({ order, orderName, searchHint });
 };
 
-export const action: ActionFunction = async ({ params, request }) => {
+export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
 	const cart = formData.get('cart');
 	const address = formData.get('address');
+	const orderName = formData.get('orderName');
 
 	if (typeof cart !== 'string' || cart.length === 0) {
 		return json({ error: 'Unable to get cart.' });
@@ -41,35 +51,131 @@ export const action: ActionFunction = async ({ params, request }) => {
 		return json({ error: 'Unable to get address.' });
 	}
 
+	if (typeof orderName !== 'string' || orderName.length === 0) {
+		return json({ error: 'Unable to get order name.' });
+	}
+
 	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
 	const parsedAddress = JSON.parse(address);
-	const order = await prisma.order.create({
-		data: {
-			items: {
-				create: parsedCart.map((item) => ({
-					productId: item.id,
-					quantity: Number(item.quantity),
-				})),
-			},
-			address: {
-				create: parsedAddress,
-			},
-		},
+	const fulfillments: string[] = [];
+
+	parsedCart.filter((item) => {
+		if (!item.vendorId) return; // Seems like a good place to check for no vendors
+
+		if (!fulfillments.includes(item.vendorId)) {
+			fulfillments.push(item.vendorId);
+		}
 	});
 
-	return redirect(`/orders/new/${order.id}`);
+	try {
+		const response = await prisma.$transaction(async (tx) => {
+			// Create the order, order line items, and fulfillments
+			const order = await prisma.order.create({
+				data: {
+					name: orderName,
+					lineItems: {
+						create: parsedCart.map((item) => ({
+							sampleId: item.id,
+							quantity: Number(item.quantity),
+						})),
+					},
+					fulfillments: {
+						create: fulfillments.map((vendorId, index) => ({
+							name: `${orderName}-F${index + 1}`,
+							vendorId: vendorId,
+						})),
+					},
+					address: {
+						create: parsedAddress,
+					},
+				},
+				include: {
+					lineItems: {
+						include: {
+							sample: true,
+						},
+					},
+					fulfillments: true,
+				},
+			});
+
+			// Add the order line-items as fulfillment line-items to the correct fulfillments
+			order.lineItems.map(async (orderLineItem) => {
+				const fulfillment = await prisma.fulfillment.findFirst({
+					where: {
+						orderId: order.id,
+						vendorId: orderLineItem.sample.vendorId,
+					},
+				});
+
+				if (!fulfillment)
+					throw new Error('Unable to find fulfillment!');
+
+				await prisma.fulfillmentLineItem.create({
+					data: {
+						orderLineItemId: orderLineItem.id,
+						fulfillmentId: fulfillment.id,
+					},
+				});
+			});
+
+			return order;
+		});
+
+		return redirect(`/orders/drafts/${response.id}`);
+	} catch (e) {
+		return badRequest({ errors: { form: 'Unable to complete order.' } });
+	}
 };
 
 export default function NewOrderPage() {
-	const data = useLoaderData();
+	const data = useLoaderData<typeof loader>();
+	const actionData = useActionData<typeof action>();
 	const search = useFetcher();
 	const shippingAddressForm = useRef(null);
 	const submit = useSubmit();
 	const [cart, setCart] = useState([]);
+	const addressFormId = 'address-form';
 
 	useEffect(() => {
-		console.log('cart', cart);
-	}, [cart]);
+		if (data?.searchHint) {
+			// setSearchHint(data.searchHint);
+			setSearchHint('8701218, 8701230, 8701231, 11254-SAMPLE');
+		}
+	}, [data.searchHint]);
+
+	useEffect(() => {
+		if (data?.orderName) {
+			setOrderName(data.orderName);
+		}
+	}, [data.orderName]);
+
+	const [orderName, setOrderName] = useState('');
+	const [searchHint, setSearchHint] = useState('');
+
+	const masterCheckboxRef = useRef(null) as RefObject<HTMLInputElement>;
+	const tableBodyRef = useRef(null) as RefObject<HTMLTableSectionElement>;
+
+	function getCheckboxes() {
+		if (!tableBodyRef.current) return;
+		const checkboxes: NodeListOf<HTMLInputElement> =
+			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
+		return checkboxes;
+	}
+
+	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
+		const checkboxes = getCheckboxes();
+
+		console.log('CHECKBOXES', checkboxes);
+		if (!checkboxes) return;
+		for (let i = 0; i < checkboxes.length; i++) {
+			if (e.currentTarget.checked) {
+				checkboxes[i].checked = true;
+			} else {
+				checkboxes[i].checked = false;
+			}
+		}
+	}
 
 	function handleSubmit() {
 		const form = shippingAddressForm.current;
@@ -84,12 +190,16 @@ export default function NewOrderPage() {
 			postalCode: form['zip'].value || undefined,
 		};
 
+		const orderName = form['orderName'].value;
+
 		let fields: {
 			cart: string;
 			address: string;
+			orderName: string;
 		} = {
 			cart: JSON.stringify(cart),
 			address: JSON.stringify(address),
+			orderName: orderName,
 		};
 
 		submit(fields, {
@@ -133,15 +243,52 @@ export default function NewOrderPage() {
 	}
 
 	return (
-		<div className="wrapper">
+		<>
 			<header className="page-header">
-				<h1 className="headline-h3">Create Order</h1>
+				{actionData?.errors?.form ? (
+					<div>
+						<h1 className="headline-h3">Create Order</h1>
+						<div className="error message">
+							{actionData.errors.form}
+						</div>
+					</div>
+				) : (
+					<h1 className="headline-h3">Create Order</h1>
+				)}
+
+				<div className="page-header__actions">
+					<div className="input">
+						<input
+							form={addressFormId}
+							placeholder="Order Name"
+							type="text"
+							id="order-name"
+							name="orderName"
+							value={orderName}
+							onChange={(e) => {
+								setOrderName(e.target.value);
+							}}
+						/>
+					</div>
+
+					<Link className="button" to="..">
+						Discard
+					</Link>
+
+					<button
+						type="button"
+						className="primary button full-width"
+						onClick={handleSubmit}
+					>
+						Save
+					</button>
+				</div>
 			</header>
 
 			<div className="foobar">
 				<section className="foobar-main-content">
 					<h2 className="headline-h6">Search for items</h2>
-					<search.Form method="post" action="/search">
+					<search.Form method="get" action="/swatch">
 						<div className="search-bar">
 							<SearchIcon
 								className="search-icon"
@@ -155,7 +302,10 @@ export default function NewOrderPage() {
 								id="query"
 								placeholder="Search"
 								autoComplete="off"
-								defaultValue={data.search ? data.search : ''}
+								value={searchHint}
+								onChange={(e) => {
+									setSearchHint(e.target.value);
+								}}
 							/>
 
 							<button className="button" type="submit">
@@ -164,106 +314,97 @@ export default function NewOrderPage() {
 						</div>
 					</search.Form>
 
-					{search.data ? (
-						search.data.results ? (
-							<table className="new-order-search-results">
-								<thead>
-									<tr>
-										<th className="caption"></th>
-										<th className="caption">Product</th>
-										<th className="caption">
-											Florim Item No.
-										</th>
-										<th>Material No.</th>
-									</tr>
-								</thead>
-								<tbody>
-									{search.data.results.map(
-										(item: {
-											id: string;
-											title: string;
-											sku: string;
-											vendorProduct: { itemNo: string };
-										}) => {
-											const checked = isAlreadyInCart(
-												item,
-												cart
-											);
+					{search?.data?.errors &&
+						search.data.errors.map((error: string) => (
+							<div key={error} className="error message">
+								{error}
+							</div>
+						))}
 
-											return (
-												<tr key={item.id}>
-													<td>
-														<input
-															id={`${item.id}-checkbox`}
-															type="checkbox"
-															onChange={(e) => {
-																handleChange(
-																	e,
-																	item
-																);
-															}}
-															defaultChecked={
-																checked
-															}
-														/>
-													</td>
-													<td>
-														<label
-															className="checkbox-label"
-															htmlFor={`${item.id}-checkbox`}
-														>
-															<div className="title">
-																{item.title}
-															</div>
-															<div className="caption">
-																{item.sku}
-															</div>
-														</label>
-													</td>
-													<td>
-														{item.vendorProduct
-															?.itemNo
-															? item.vendorProduct
-																	.itemNo
-															: 'MISSING'}
-													</td>
-													<td>
-														{item.vendorProduct
-															.sample
-															? item.vendorProduct
-																	.sample
-																	.materialNo
-															: null}
-													</td>
-												</tr>
-											);
-										}
-									)}
-								</tbody>
-							</table>
-						) : (
-							<div>No results</div>
-						)
+					{/* {data.searchResults ? (
+						<code>
+							{JSON.stringify(data.searchResults, null, 4)}
+						</code>
+					) : null} */}
+
+					{search?.data?.results ? (
+						<table className="new-order-search-results">
+							<tbody ref={tableBodyRef}>
+								<tr>
+									<th className="caption">
+										{/* <input
+											ref={masterCheckboxRef}
+											id="master-checkbox"
+											type="checkbox"
+											onChange={
+												handleMasterCheckboxChange
+											}
+										/> */}
+									</th>
+									<th className="caption">Material No.</th>
+									<th className="caption">Description</th>
+								</tr>
+								{search.data.results.map((item) => {
+									const checked = isAlreadyInCart(item, cart);
+
+									return (
+										<tr key={item.id}>
+											<td>
+												<input
+													name="item"
+													id={`${item.id}-checkbox`}
+													type="checkbox"
+													onChange={(e) => {
+														handleChange(e, item);
+													}}
+													value={item.id}
+													defaultChecked={checked}
+												/>
+											</td>
+											<td>{item.materialNo}</td>
+											<td>
+												<label
+													className="checkbox-label"
+													htmlFor={`${item.id}-checkbox`}
+												>
+													<div className="title">
+														{item.seriesName}
+													</div>
+													<div className="caption">
+														{item.color}
+													</div>
+												</label>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
 					) : null}
 				</section>
 
 				<aside className="foobar-sidebar sample-cart">
 					<Form className="inline-form" method="get" replace>
-						<Input
-							label="Shopify Order No."
-							id="order"
-							name="order"
-							defaultValue={
-								data.order?.name ? data.order.name : ''
-							}
-						/>
+						<div className="input">
+							<label htmlFor="autofill-query">
+								Shopify Order No.
+							</label>
+							<input
+								autoFocus
+								type="text"
+								id="autofill-query"
+								name="query"
+								defaultValue="#2740"
+								placeholder="e.g. #2740"
+							/>
+						</div>
 						<button type="submit" className="button">
-							Get Address
+							Autofill
 						</button>
 					</Form>
 
 					<div className="shipping-info">
-						<form ref={shippingAddressForm}>
+						<form ref={shippingAddressForm} id={addressFormId}>
 							<div className="input input--sm">
 								<label htmlFor="ship-to-name">Name</label>
 								<input
@@ -273,7 +414,7 @@ export default function NewOrderPage() {
 									name="name"
 									defaultValue={
 										data.order?.shippingAddress?.name
-											? data.order?.shippingAddress?.name
+											? data.order.shippingAddress.name
 											: ''
 									}
 								/>
@@ -290,8 +431,8 @@ export default function NewOrderPage() {
 									name="address1"
 									defaultValue={
 										data.order?.shippingAddress?.address1
-											? data.order?.shippingAddress
-													?.address1
+											? data.order.shippingAddress
+													.address1
 											: ''
 									}
 								/>
@@ -308,8 +449,8 @@ export default function NewOrderPage() {
 									name="address2"
 									defaultValue={
 										data.order?.shippingAddress?.address2
-											? data.order?.shippingAddress
-													?.address2
+											? data.order.shippingAddress
+													.address2
 											: ''
 									}
 								/>
@@ -324,7 +465,7 @@ export default function NewOrderPage() {
 									name="city"
 									defaultValue={
 										data.order?.shippingAddress?.city
-											? data.order?.shippingAddress?.city
+											? data.order.shippingAddress.city
 											: ''
 									}
 								/>
@@ -339,8 +480,8 @@ export default function NewOrderPage() {
 									name="province"
 									defaultValue={
 										data.order?.shippingAddress?.province
-											? data.order?.shippingAddress
-													?.province
+											? data.order.shippingAddress
+													.province
 											: ''
 									}
 								/>
@@ -355,19 +496,11 @@ export default function NewOrderPage() {
 									name="zip"
 									defaultValue={
 										data.order?.shippingAddress?.zip
-											? data.order?.shippingAddress?.zip
+											? data.order.shippingAddress.zip
 											: ''
 									}
 								/>
 							</div>
-
-							<button
-								type="button"
-								className="primary button full-width"
-								onClick={handleSubmit}
-							>
-								Save
-							</button>
 						</form>
 					</div>
 
@@ -384,48 +517,41 @@ export default function NewOrderPage() {
 						) : null}
 
 						<ul className="sample-cart-list">
-							{cart.map(
-								(item: {
-									id: string;
-									sku: string;
-									title: string;
-								}) => (
-									<li
-										className="sample-cart-item"
-										key={item.id}
-									>
-										<div className="sample-cart-item__description">
-											<div className="">{item.title}</div>
-											<div className="caption">
-												{item.sku}
-											</div>
+							{cart.map((item) => (
+								<li className="sample-cart-item" key={item.id}>
+									<div className="sample-cart-item__description">
+										<div className="">
+											{item.materialNo}
 										</div>
+										{/* <div className="caption">
+											{item.sku}
+										</div> */}
+									</div>
 
-										<Counter
-											min={1}
-											name={`quantity-${item.sku}`}
-											onChange={(quantity) => {
-												handleQtyChange(quantity, item);
-											}}
-											defaultValue={1}
-										/>
+									<Counter
+										min={1}
+										name={`quantity-${item.materialNo}`}
+										onChange={(quantity) => {
+											handleQtyChange(quantity, item);
+										}}
+										defaultValue={1}
+									/>
 
-										<button
-											aria-label="Delete"
-											className="sample-cart-delete-button"
-											onClick={() => {
-												removeFromCart(item);
-											}}
-										>
-											<TrashIcon />
-										</button>
-									</li>
-								)
-							)}
+									<button
+										aria-label="Delete"
+										className="sample-cart-delete-button"
+										onClick={() => {
+											removeFromCart(item);
+										}}
+									>
+										<TrashIcon />
+									</button>
+								</li>
+							))}
 						</ul>
 					</div>
 				</aside>
 			</div>
-		</div>
+		</>
 	);
 }
