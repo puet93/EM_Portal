@@ -49,7 +49,7 @@ export default function UserPage() {
 	];
 
 	return (
-		<div className="content-wrapper">
+		<div className="wrapper">
 			<header>
 				{data.user ? (
 					<h1 className="headline-h3">

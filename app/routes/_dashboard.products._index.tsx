@@ -187,7 +187,7 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<div className="wrapper">
+		<>
 			<header className="page-header">
 				<h1>Products</h1>
 				<div className="page-header__actions">
@@ -319,6 +319,6 @@ export default function ProductsPage() {
 					</table>
 				</>
 			) : null}
-		</div>
+		</>
 	);
 }

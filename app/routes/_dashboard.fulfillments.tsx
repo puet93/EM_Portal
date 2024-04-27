@@ -1,6 +1,6 @@
 import { Outlet } from '@remix-run/react';
 
-export default function RetailerProductPage() {
+export default function FulFillmentsPage() {
 	return (
 		<main className="content">
 			<div className="wrapper">

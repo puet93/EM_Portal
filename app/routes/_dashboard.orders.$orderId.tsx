@@ -18,6 +18,12 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 		where: { id: orderId },
 		include: {
 			address: true,
+			lineItems: true,
+			fulfillments: {
+				include: {
+					vendor: true,
+				},
+			},
 			items: {
 				include: {
 					product: {
@@ -58,13 +64,17 @@ export default function OrderPage() {
 	const actionData = useLoaderData<typeof action>();
 
 	return (
-		<div className="orders-detail-page">
+		<>
 			<header className="page-header">
 				<div>
 					<h1 className="headline-h3">Sample Order</h1>
 					<p className="caption">{data.order?.id}</p>
 				</div>
 			</header>
+
+			{data?.order ? (
+				<code>{JSON.stringify(data.order, null, 4)}</code>
+			) : null}
 
 			{data.order.address ? (
 				<>
@@ -185,6 +195,6 @@ export default function OrderPage() {
 					))}
 				</tbody>
 			</table>
-		</div>
+		</>
 	);
 }

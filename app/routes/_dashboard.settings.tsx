@@ -45,8 +45,8 @@ export default function SettingsPage() {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<main className="dashboard-content">
-			<div className="settings-page">
+		<main className="content">
+			<div className="wrapper">
 				<header>
 					<h1 className="headline-h3">Settings Page</h1>
 				</header>

@@ -40,7 +40,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 
 export default function VendorsPage() {
 	return (
-		<main className="main-content">
+		<main className="content">
 			<div className="wrapper">
 				<Outlet />
 			</div>

@@ -114,7 +114,7 @@ export default function NewUserPage() {
 	// const isActionSubmission = navigation.state === 'submitting';
 
 	return (
-		<div className="content-wrapper">
+		<div className="wrapper">
 			<header>
 				<h1 className="headline-h3">Create User</h1>
 			</header>

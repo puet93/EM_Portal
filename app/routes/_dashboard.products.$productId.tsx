@@ -149,7 +149,7 @@ export default function ProductDetailPage() {
 	}
 
 	return (
-		<div className="wrapper">
+		<>
 			<header>
 				<h1 className="headline-h3">Product Details</h1>
 				<div className="text">{data.product.title}</div>
@@ -338,6 +338,6 @@ export default function ProductDetailPage() {
 
 				<Outlet />
 			</div>
-		</div>
+		</>
 	);
 }

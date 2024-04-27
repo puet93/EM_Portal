@@ -88,7 +88,7 @@ export default function UserPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<div className="content-wrapper">
+		<div className="wrapper">
 			<header>
 				<h1 className="headline-h3">Users</h1>
 			</header>

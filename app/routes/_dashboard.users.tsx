@@ -10,7 +10,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 
 export default function UserPage() {
 	return (
-		<main className="main-content">
+		<main className="content">
 			<Outlet />
 		</main>
 	);
