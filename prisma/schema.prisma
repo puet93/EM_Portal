@@ -81,6 +81,7 @@ model TrackingInfo {
 
 model Order {
     id           String          @id @default(uuid())
+    name         String?         @unique
     createdAt    DateTime        @default(now())
     address      Address         @relation(fields: [addressId], references: [id])
     addressId    String
