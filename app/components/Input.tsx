@@ -11,7 +11,7 @@ export default function Input({
 	label: string;
 	name: string;
 	type?: string;
-	autoFocus: boolean;
+	autoFocus?: boolean;
 	className?: string;
 	defaultValue?: string;
 }) {
