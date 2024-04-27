@@ -143,9 +143,7 @@ export const fetchOrderByName = async (name: string) => {
 
 	if (orders.length > 0) {
 		order = orders[0];
-		console.log('ORDER', order);
 	} else {
-		console.log('ORDER NOT FOUND');
 		return;
 	}
 
