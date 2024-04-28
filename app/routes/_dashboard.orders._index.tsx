@@ -248,7 +248,7 @@ export default function OrderIndex() {
 												</>
 											) : (
 												<span className="caption">
-													Add tracking info
+													Needs tracking info
 												</span>
 											)}
 										</Link>
@@ -283,13 +283,13 @@ export default function OrderIndex() {
 					<div className="page-section-header">
 						<h2 className="headline-h5">Old System</h2>
 						<p>
-							The section below will be phased out and will only
-							appear to Edward Martin. Vendors cannot interact
+							The section below only appears to Edward Martin and
+							will be phased out entirely. Vendors cannot interact
 							with this.
 						</p>
 					</div>
 
-					{/* <div className="table-toolbar">
+					<div className="table-toolbar">
 						<Form method="get" replace>
 							<fieldset style={{ display: 'flex' }}>
 								<legend>Status</legend>
@@ -320,7 +320,7 @@ export default function OrderIndex() {
 								Search
 							</button>
 						</Form>
-					</div> */}
+					</div>
 
 					<table>
 						<thead>
