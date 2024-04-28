@@ -273,8 +273,7 @@ export default function NewOrderPage() {
 								type="text"
 								id="autofill-query"
 								name="query"
-								defaultValue="#2740"
-								placeholder="e.g. #2740"
+								placeholder="#2743"
 							/>
 						</div>
 						<button type="submit" className="button">
