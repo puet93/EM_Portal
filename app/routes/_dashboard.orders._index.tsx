@@ -59,6 +59,9 @@ export const loader = async ({ request }: LoaderArgs) => {
 			status: {
 				in: fulfillmentStatusFilters as FulfillmentStatus[],
 			},
+			order: {
+				status: { not: 'DRAFT' },
+			},
 			vendorId: user.role === 'SUPERADMIN' ? {} : user.vendorId,
 		},
 		include: {
@@ -73,7 +76,13 @@ export const loader = async ({ request }: LoaderArgs) => {
 	});
 
 	if (user.role !== 'SUPERADMIN')
-		return json({ filters, fulfillments, name, orders: null });
+		return json({
+			filters,
+			fulfillments,
+			name,
+			orders: null,
+			userRole: user.role,
+		});
 
 	const orders = await prisma.order.findMany({
 		where: {
@@ -97,7 +106,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 		},
 	});
 
-	return json({ filters, fulfillments, name, orders });
+	return json({ filters, fulfillments, name, orders, userRole: user.role });
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -159,12 +168,13 @@ export default function OrderIndex() {
 		<>
 			<header className="page-header">
 				<h1 className="headline-h3">Orders</h1>
-
-				<div className="page-header__actions">
-					<Link to="new" className="primary button">
-						Create Order
-					</Link>
-				</div>
+				{data.userRole === 'SUPERADMIN' ? (
+					<div className="page-header__actions">
+						<Link to="new" className="primary button">
+							Create Order
+						</Link>
+					</div>
+				) : null}
 			</header>
 
 			{data.fulfillments ? (
