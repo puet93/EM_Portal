@@ -11,13 +11,13 @@ export default function Counter({
 	max?: number;
 	name: string;
 	defaultValue: number;
-	onChange: (count: number) => void;
+	onChange?: (count: number) => void;
 }) {
 	const [count, setCount] = useState(defaultValue);
 	const id = useId();
 
 	useEffect(() => {
-		onChange(count);
+		onChange?.(count);
 	}, [count]);
 
 	function handleMinus() {
@@ -32,7 +32,11 @@ export default function Counter({
 
 	return (
 		<div className="counter">
-			<button className="counter__button" onClick={handleMinus}>
+			<button
+				type="button"
+				className="counter__button"
+				onClick={handleMinus}
+			>
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
 					<path
 						d="M16 12H8"
@@ -44,7 +48,11 @@ export default function Counter({
 				</svg>
 			</button>
 			<div className="counter__value">{count}</div>
-			<button className="counter__button" onClick={handlePlus}>
+			<button
+				type="button"
+				className="counter__button"
+				onClick={handlePlus}
+			>
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
 					<path
 						d="M12 8V16"
