@@ -59,7 +59,7 @@ export default function SampleDetailPage() {
 		<div className="foobar-sidebar">
 			<h1>Edit Sample Swatch</h1>
 
-			<Form method="post" replace>
+			<Form method="post">
 				<Dropdown name="vendorId" options={data.vendorOptions} />
 
 				<Input

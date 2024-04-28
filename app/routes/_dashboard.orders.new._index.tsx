@@ -1,4 +1,3 @@
-import type { RefObject, SyntheticEvent } from 'react';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
@@ -11,21 +10,21 @@ import {
 } from '@remix-run/react';
 import { fetchOrderByName } from '~/utils/shopify.server';
 import { prisma } from '~/db.server';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 import { badRequest } from '~/utils/request.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
-	const orderName = searchParams.get('query');
+	const query = searchParams.get('query');
 
 	// Shopify sample order search
 	let errors: { order?: string; searchHint?: string } = {};
 	let order;
 	let searchHint;
-	if (orderName) {
-		order = await fetchOrderByName(orderName);
+	if (query) {
+		order = await fetchOrderByName(query);
 
 		if (order?.lineItems) {
 			let skus = order.lineItems.map((item) => item.sku);
@@ -34,7 +33,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	}
 
 	if (Object.keys(errors).length !== 0) return json({ errors });
-	return json({ order, orderName, searchHint });
+	return json({ order, searchHint });
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -137,111 +136,6 @@ export default function NewOrderPage() {
 	const [cart, setCart] = useState([]);
 	const addressFormId = 'address-form';
 
-	useEffect(() => {
-		if (data?.searchHint) {
-			// setSearchHint(data.searchHint);
-			setSearchHint('8701218, 8701230, 8701231, 11254-SAMPLE');
-		}
-	}, [data.searchHint]);
-
-	useEffect(() => {
-		if (data?.orderName) {
-			setOrderName(data.orderName);
-		}
-	}, [data.orderName]);
-
-	const [orderName, setOrderName] = useState('');
-	const [searchHint, setSearchHint] = useState('');
-
-	const masterCheckboxRef = useRef(null) as RefObject<HTMLInputElement>;
-	const tableBodyRef = useRef(null) as RefObject<HTMLTableSectionElement>;
-
-	function getCheckboxes() {
-		if (!tableBodyRef.current) return;
-		const checkboxes: NodeListOf<HTMLInputElement> =
-			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
-		return checkboxes;
-	}
-
-	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
-		const checkboxes = getCheckboxes();
-
-		console.log('CHECKBOXES', checkboxes);
-		if (!checkboxes) return;
-		for (let i = 0; i < checkboxes.length; i++) {
-			if (e.currentTarget.checked) {
-				checkboxes[i].checked = true;
-			} else {
-				checkboxes[i].checked = false;
-			}
-		}
-	}
-
-	function handleSubmit() {
-		const form = shippingAddressForm.current;
-		if (!form) return;
-
-		const address = {
-			line1: form['name'].value || undefined,
-			line2: form['address1'].value || undefined,
-			line3: form['address2'].value || undefined,
-			city: form['city'].value || undefined,
-			state: form['province'].value || undefined,
-			postalCode: form['zip'].value || undefined,
-		};
-
-		const orderName = form['orderName'].value;
-
-		let fields: {
-			cart: string;
-			address: string;
-			orderName: string;
-		} = {
-			cart: JSON.stringify(cart),
-			address: JSON.stringify(address),
-			orderName: orderName,
-		};
-
-		submit(fields, {
-			method: 'post',
-			encType: 'application/x-www-form-urlencoded',
-		});
-	}
-
-	function handleQtyChange(quantity, item) {
-		const newCartItems = cart.map((cartItem) => {
-			if (cartItem.id !== item.id) {
-				return cartItem;
-			} else {
-				return {
-					...cartItem,
-					quantity: quantity,
-				};
-			}
-		});
-
-		setCart(newCartItems);
-	}
-
-	function handleChange(e, item: { id: string }) {
-		if (e.target.checked) {
-			setCart([...cart, item]);
-		} else {
-			setCart(cart.filter((cartItem) => cartItem.id !== item.id));
-		}
-	}
-
-	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
-		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
-	}
-
-	function removeFromCart(item: { id: string }) {
-		setCart(cart.filter((cartItem) => cartItem.id !== item.id));
-		const checkbox = document.getElementById(item.id + '-checkbox');
-		if (checkbox === null) return;
-		checkbox.checked = false;
-	}
-
 	return (
 		<>
 			<header className="page-header">
@@ -264,10 +158,7 @@ export default function NewOrderPage() {
 							type="text"
 							id="order-name"
 							name="orderName"
-							value={orderName}
-							onChange={(e) => {
-								setOrderName(e.target.value);
-							}}
+							defaultValue={data.order?.name}
 						/>
 					</div>
 
@@ -302,10 +193,7 @@ export default function NewOrderPage() {
 								id="query"
 								placeholder="Search"
 								autoComplete="off"
-								value={searchHint}
-								onChange={(e) => {
-									setSearchHint(e.target.value);
-								}}
+								defaultValue={data.searchHint}
 							/>
 
 							<button className="button" type="submit">
@@ -329,18 +217,9 @@ export default function NewOrderPage() {
 
 					{search?.data?.results ? (
 						<table className="new-order-search-results">
-							<tbody ref={tableBodyRef}>
+							<tbody>
 								<tr>
-									<th className="caption">
-										{/* <input
-											ref={masterCheckboxRef}
-											id="master-checkbox"
-											type="checkbox"
-											onChange={
-												handleMasterCheckboxChange
-											}
-										/> */}
-									</th>
+									<th></th>
 									<th className="caption">Material No.</th>
 									<th className="caption">Description</th>
 								</tr>
@@ -523,9 +402,6 @@ export default function NewOrderPage() {
 										<div className="">
 											{item.materialNo}
 										</div>
-										{/* <div className="caption">
-											{item.sku}
-										</div> */}
 									</div>
 
 									<Counter
@@ -554,4 +430,69 @@ export default function NewOrderPage() {
 			</div>
 		</>
 	);
+
+	function handleSubmit() {
+		const form = shippingAddressForm.current;
+		if (!form) return;
+
+		const address = {
+			line1: form['name'].value || undefined,
+			line2: form['address1'].value || undefined,
+			line3: form['address2'].value || undefined,
+			city: form['city'].value || undefined,
+			state: form['province'].value || undefined,
+			postalCode: form['zip'].value || undefined,
+		};
+
+		const orderName = form['orderName'].value;
+
+		let fields: {
+			cart: string;
+			address: string;
+			orderName: string;
+		} = {
+			cart: JSON.stringify(cart),
+			address: JSON.stringify(address),
+			orderName: orderName,
+		};
+
+		submit(fields, {
+			method: 'post',
+			encType: 'application/x-www-form-urlencoded',
+		});
+	}
+
+	function handleQtyChange(quantity, item) {
+		const newCartItems = cart.map((cartItem) => {
+			if (cartItem.id !== item.id) {
+				return cartItem;
+			} else {
+				return {
+					...cartItem,
+					quantity: quantity,
+				};
+			}
+		});
+
+		setCart(newCartItems);
+	}
+
+	function handleChange(e, item: { id: string }) {
+		if (e.target.checked) {
+			setCart([...cart, item]);
+		} else {
+			setCart(cart.filter((cartItem) => cartItem.id !== item.id));
+		}
+	}
+
+	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
+		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
+	}
+
+	function removeFromCart(item: { id: string }) {
+		setCart(cart.filter((cartItem) => cartItem.id !== item.id));
+		const checkbox = document.getElementById(item.id + '-checkbox');
+		if (checkbox === null) return;
+		checkbox.checked = false;
+	}
 }

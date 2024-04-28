@@ -11,7 +11,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 	const orderId = params.orderId;
 
 	if (typeof orderId !== 'string' || orderId.length === 0) {
-		return json({});
+		return badRequest({ order: null });
 	}
 
 	const order = await prisma.order.findUnique({
@@ -68,15 +68,13 @@ export default function OrderPage() {
 			<header className="page-header">
 				<div>
 					<h1 className="headline-h3">Sample Order</h1>
-					<p className="caption">{data.order?.id}</p>
+					<p className="caption">
+						{data.order?.name ? data.order.name : data.order?.id}
+					</p>
 				</div>
 			</header>
 
-			{data?.order ? (
-				<code>{JSON.stringify(data.order, null, 4)}</code>
-			) : null}
-
-			{data.order.address ? (
+			{data.order?.address ? (
 				<>
 					<h2 className="headline-h5">Ship To</h2>
 					<address className="text">
@@ -107,7 +105,7 @@ export default function OrderPage() {
 							defaultValue={
 								actionData?.order?.status
 									? actionData.order.status
-									: data.order.status
+									: data.order?.status
 							}
 						/>
 						<button
@@ -151,18 +149,18 @@ export default function OrderPage() {
 
 							<td>
 								<p className="title">
-									{item.product.vendorProduct.seriesName}
-									{item.product.vendorProduct.finish
-										? ` ${item.product.vendorProduct.finish} `
+									{item.product.vendorProduct?.seriesName}
+									{item.product.vendorProduct?.finish
+										? ` ${item.product.vendorProduct?.finish} `
 										: null}
-									{item.product.vendorProduct.color}
+									{item.product.vendorProduct?.color}
 								</p>
 								<p className="caption">
-									{item.product.vendorProduct.itemNo}
+									{item.product.vendorProduct?.itemNo}
 								</p>
 							</td>
 							<td>
-								{item.product.vendorProduct.sample
+								{item.product.vendorProduct?.sample
 									?.materialNo ? (
 									<>
 										<p className="title">

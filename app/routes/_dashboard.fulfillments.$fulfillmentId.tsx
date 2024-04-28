@@ -74,11 +74,26 @@ export const action: ActionFunction = async ({ params, request }) => {
 			return json({ success: 'Status updated' });
 		}
 		case 'save': {
+			const fulfillment = await prisma.fulfillment.findUnique({
+				where: { id: params.fulfillmentId },
+				include: {
+					trackingInfo: true,
+				},
+			});
+
+			if (!fulfillment)
+				return badRequest({ errors: { form: 'Invalid request' } });
+
 			if (
 				typeof trackingNumber !== 'string' ||
 				trackingNumber.length == 0
 			) {
-				return badRequest({ errors: 'Invalid tracking number' });
+				if (fulfillment.trackingInfo)
+					await prisma.trackingInfo.delete({
+						where: { fulfillmentId: params.fulfillmentId },
+					});
+
+				return json({ success: 'Tracking info deleted.' });
 			}
 
 			if (
@@ -121,8 +136,16 @@ export default function OrderPage() {
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
 
+	const isSaving = navigation.state === 'submitting';
+
 	const [isEditing, setIsEditing] = useState(false);
 	const trackingNumberRef = useRef(null);
+
+	useEffect(() => {
+		if (!isSaving) {
+			setIsEditing(false);
+		}
+	}, [isSaving]);
 
 	useEffect(() => {
 		if (isEditing) {
@@ -240,7 +263,6 @@ export default function OrderPage() {
 										type="text"
 										name="trackingNumber"
 										placeholder="Tracking number"
-										// defaultValue="12031414124u18u41"
 										defaultValue={
 											data.fulfillment?.trackingInfo
 												?.number
@@ -253,7 +275,6 @@ export default function OrderPage() {
 										type="text"
 										name="shippingCarrier"
 										placeholder="Shipping carrier"
-										// defaultValue="FedEx"
 										defaultValue={
 											data.fulfillment?.trackingInfo
 												?.company
@@ -263,36 +284,21 @@ export default function OrderPage() {
 
 								<div className="form-actions">
 									<button
+										className="primary button"
+										type="submit"
+										name="_action"
+										value="save"
+										disabled={isSaving}
+									>
+										{isSaving ? 'Saving...' : 'Save'}
+									</button>
+
+									<button
 										className="button"
 										type="button"
 										onClick={() => setIsEditing(false)}
 									>
 										Cancel
-									</button>
-
-									<button
-										className="button"
-										style={{ marginLeft: 'auto' }}
-										type="submit"
-										name="_action"
-										value="save"
-										disabled={
-											navigation.state === 'submitting'
-										}
-									>
-										Save
-									</button>
-
-									<button
-										className="button primary"
-										type="submit"
-										name="_action"
-										value="complete"
-										disabled={
-											navigation.state === 'submitting'
-										}
-									>
-										Save and Complete
 									</button>
 								</div>
 							</Form>
@@ -336,11 +342,11 @@ export default function OrderPage() {
 							</div>
 						)}
 
-						{actionData?.success ? (
+						{/* {actionData?.success ? (
 							<div className="success message">
 								{actionData.success}
 							</div>
-						) : null}
+						) : null} */}
 
 						{actionData?.errors?.form ? (
 							<div className="error message">

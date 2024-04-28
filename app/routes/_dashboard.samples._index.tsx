@@ -6,12 +6,19 @@ import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,
 } from '@remix-run/node';
-import { Form, Link, useActionData, useLoaderData } from '@remix-run/react';
+import {
+	Form,
+	Link,
+	useActionData,
+	useFetcher,
+	useLoaderData,
+} from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import { graphqlClient } from '~/utils/shopify.server';
 import FileDropInput from '~/components/FileDropInput';
+import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
 import { parseCSV } from '~/utils/csv';
 
@@ -22,9 +29,40 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const seriesName = searchParams.get('series');
 	const finish = searchParams.get('finish');
 	const color = searchParams.get('color');
+	const vendorId = searchParams.get('vendorId');
 
-	const query = {};
-	const fields = {};
+	const vendors = await prisma.vendor.findMany({});
+	const vendorFilterOptions = [
+		{ value: '', label: '' },
+		{ value: 'no vendor', label: 'No vendor' },
+	];
+	const vendorOptions = [];
+	if (vendors && vendors.length > 0) {
+		for (let i = 0; i < vendors.length; i++) {
+			vendorFilterOptions.push({
+				value: vendors[i].id,
+				label: vendors[i].name,
+			});
+			vendorOptions.push({
+				value: vendors[i].id,
+				label: vendors[i].name,
+			});
+		}
+	}
+
+	const fields: {
+		series?: string;
+		finish?: string;
+		color?: string;
+		vendorId?: string;
+	} = {};
+
+	const query: {
+		OR?: {};
+		finish?: { contains: string; mode: string };
+		color?: { contains: string; mode: string };
+		AND?: {};
+	} = {};
 
 	if (seriesName) {
 		fields['series'] = seriesName;
@@ -61,6 +99,14 @@ export const loader: LoaderFunction = async ({ request }) => {
 		};
 	}
 
+	if (vendorId) {
+		fields['vendorId'] = vendorId;
+
+		query['AND'] = {
+			vendorId: vendorId === 'no vendor' ? null : vendorId,
+		};
+	}
+
 	const samples = await prisma.sample.findMany({
 		where: query,
 		include: {
@@ -72,108 +118,156 @@ export const loader: LoaderFunction = async ({ request }) => {
 		orderBy: [{ seriesName: 'asc' }, { materialNo: 'asc' }],
 	});
 
-	return json({ samples, fields });
+	return json({
+		samples,
+		fields,
+		vendorFilterOptions,
+		vendorOptions,
+	});
 };
 
 export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
 
-	const handler = unstable_createMemoryUploadHandler();
-	const formData = await unstable_parseMultipartFormData(request, handler);
-	const _action = formData.get('_action');
+	const formData = await request.formData();
+	const { _action, ...entries } = Object.fromEntries(formData);
 
-	switch (_action) {
-		case 'upsert': {
-			const file = formData.get(FILE) as File;
-			const data = await parseCSV(file);
+	const sampleId = String(entries.sampleId);
+	const vendorId = String(entries.vendorId);
 
-			// const exists = await prisma.$transaction(
-			// 	data.map((sample) => {
-			// 		return prisma.sample.findUnique({
-			// 			where: { materialNo: sample.materialNo },
-			// 		});
-			// 	})
-			// );
+	await prisma.sample.update({
+		where: { id: sampleId },
+		data: { vendorId: vendorId },
+	});
 
-			// console.log('EXISTS?', exists); // returns null if it doesn't exist
+	return json({});
 
-			const upsertedSamples = await prisma.$transaction(
-				data.map((sample) => {
-					return prisma.sample.upsert({
-						where: { materialNo: sample.materialNo },
-						update: {
-							seriesName: sample.seriesName, // Vendor's series name
-							color: sample.color,
-							finish: sample.finish || undefined,
-							seriesAlias: sample.seriesAlias || undefined,
-							colorAlias: sample.colorAlias || undefined,
-						},
-						create: {
-							materialNo: sample.materialNo,
-							seriesName: sample.seriesName,
-							color: sample.color,
-							finish: sample.finish || undefined,
-							seriesAlias: sample.seriesAlias || undefined,
-							colorAlias: sample.colorAlias || undefined,
-						},
-					});
-				})
-			);
+	// TODO: Move bulk uploader to another route
+	// const handler = unstable_createMemoryUploadHandler();
+	// const formData = await unstable_parseMultipartFormData(request, handler);
+	// const _action = formData.get('_action');
 
-			return json({ upsertedSamples });
-		}
-		case 'update': {
-			const file = formData.get(FILE) as File;
-			const data = await parseCSV(file);
+	// switch (_action) {
+	// 	case 'upsert': {
+	// 		const file = formData.get(FILE) as File;
+	// 		const data = await parseCSV(file);
 
-			const updatedSamples = await prisma.$transaction(
-				data.map((sample) => {
-					return prisma.sample.update({
-						where: { materialNo: sample.materialNo },
-						data: { finish: sample.finish },
-					});
-				})
-			);
+	// 		// const exists = await prisma.$transaction(
+	// 		// 	data.map((sample) => {
+	// 		// 		return prisma.sample.findUnique({
+	// 		// 			where: { materialNo: sample.materialNo },
+	// 		// 		});
+	// 		// 	})
+	// 		// );
 
-			console.log('UPDATED:', updatedSamples);
+	// 		// console.log('EXISTS?', exists); // returns null if it doesn't exist
 
-			return json({ data: updatedSamples });
-		}
-		case 'metafields': {
-			const metafieldQuery = formData.get('metafieldQuery');
+	// 		const upsertedSamples = await prisma.$transaction(
+	// 			data.map((sample) => {
+	// 				return prisma.sample.upsert({
+	// 					where: { materialNo: sample.materialNo },
+	// 					update: {
+	// 						seriesName: sample.seriesName, // Vendor's series name
+	// 						color: sample.color,
+	// 						finish: sample.finish || undefined,
+	// 						seriesAlias: sample.seriesAlias || undefined,
+	// 						colorAlias: sample.colorAlias || undefined,
+	// 					},
+	// 					create: {
+	// 						materialNo: sample.materialNo,
+	// 						seriesName: sample.seriesName,
+	// 						color: sample.color,
+	// 						finish: sample.finish || undefined,
+	// 						seriesAlias: sample.seriesAlias || undefined,
+	// 						colorAlias: sample.colorAlias || undefined,
+	// 					},
+	// 				});
+	// 			})
+	// 		);
 
-			const response = await graphqlClient.query({
-				data: `{
-					products(first: 250, query: "title:${metafieldQuery}* AND status:ACTIVE AND tag_not:sample") {
-						edges {
-							node {
-							id
-							title
-								metafield(namespace: "pdp", key: "sample") {
-									id
-									value
-								}
-							}
-						}
-					}
-				}`,
-			});
+	// 		return json({ upsertedSamples });
+	// 	}
+	// 	case 'update': {
+	// 		const file = formData.get(FILE) as File;
+	// 		const data = await parseCSV(file);
 
-			const productCount = response.body.data.products.edges.length;
-			const products = response.body.data.products.edges.map(
-				(product) => product.node
-			);
+	// 		const updatedSamples = await prisma.$transaction(
+	// 			data.map((sample) => {
+	// 				return prisma.sample.update({
+	// 					where: { materialNo: sample.materialNo },
+	// 					data: { finish: sample.finish },
+	// 				});
+	// 			})
+	// 		);
 
-			const needToConnect = products.filter(
-				(product) => product.metafield === null
-			);
+	// 		console.log('UPDATED:', updatedSamples);
 
-			return json({ empty: needToConnect, productCount });
-		}
-		default:
-			return badRequest({ message: 'Invalid action' });
-	}
+	// 		return json({ data: updatedSamples });
+	// 	}
+	// 	case 'metafields': {
+	// 		const metafieldQuery = formData.get('metafieldQuery');
+
+	// 		const response = await graphqlClient.query({
+	// 			data: `{
+	// 				products(first: 250, query: "title:${metafieldQuery}* AND status:ACTIVE AND tag_not:sample") {
+	// 					edges {
+	// 						node {
+	// 						id
+	// 						title
+	// 							metafield(namespace: "pdp", key: "sample") {
+	// 								id
+	// 								value
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 			}`,
+	// 		});
+
+	// 		const productCount = response.body.data.products.edges.length;
+	// 		const products = response.body.data.products.edges.map(
+	// 			(product) => product.node
+	// 		);
+
+	// 		const needToConnect = products.filter(
+	// 			(product) => product.metafield === null
+	// 		);
+
+	// 		return json({ empty: needToConnect, productCount });
+	// 	}
+	// 	default:
+	// 		return badRequest({ message: 'Invalid action' });
+	// }
 };
+
+function SampleVendorItem({
+	sampleId,
+	vendorOptions,
+}: {
+	sampleId: string;
+	vendorOptions: { value: string; label: string }[];
+}) {
+	let fetcher = useFetcher();
+	let isSaving = fetcher.submission?.formData?.get('sampleId') === sampleId;
+
+	return (
+		<fetcher.Form method="post">
+			<input type="hidden" name="sampleId" value={sampleId} />
+
+			<select name="vendorId">
+				{vendorOptions.map(({ value, label }) => (
+					<option key={value} value={value}>
+						{label}
+					</option>
+				))}
+			</select>
+
+			<button type="submit" name="_action" value="vendor">
+				{isSaving ? 'Saving...' : 'Save'}
+			</button>
+		</fetcher.Form>
+	);
+}
 
 export default function SamplesPage() {
 	const data = useLoaderData<typeof loader>();
@@ -251,7 +345,8 @@ export default function SamplesPage() {
 			<h1 className="headline-h3">Samples List</h1>
 
 			{/* Bulk Upload Form */}
-			<Form method="post" encType="multipart/form-data">
+			{/* TODO: Move to own component */}
+			{/* <Form method="post" encType="multipart/form-data">
 				<FileDropInput id="file" name={FILE} accept=".csv" />
 				<button
 					className="button"
@@ -261,7 +356,7 @@ export default function SamplesPage() {
 				>
 					Upload
 				</button>
-			</Form>
+			</Form> */}
 
 			{/* <div className="table-toolbar">
 				<Form method="post" className="inline-form">
@@ -334,6 +429,12 @@ export default function SamplesPage() {
 						defaultValue={data.fields.finish}
 					/>
 
+					<Dropdown
+						name="vendorId"
+						options={data.vendorFilterOptions}
+						defaultValue={data.fields.vendorId}
+					/>
+
 					<button className="primary button" type="submit">
 						Search
 					</button>
@@ -344,86 +445,90 @@ export default function SamplesPage() {
 				</Form>
 			</div>
 
+			<div>Displaying {data.samples.length} samples</div>
+
 			{data.samples ? (
-				<Form method="post">
-					<table>
-						<tbody ref={tableBodyRef}>
-							<tr>
-								<th>
+				<table>
+					<tbody ref={tableBodyRef}>
+						<tr>
+							<th>
+								<input
+									ref={masterCheckboxRef}
+									id="master-checkbox"
+									type="checkbox"
+									onChange={handleMasterCheckboxChange}
+								/>
+							</th>
+							<th>Vendor</th>
+							<th>Material No.</th>
+							<th>Series</th>
+							<th>Linked Items</th>
+							<th style={{ textAlign: 'center' }}>Shopify</th>
+						</tr>
+						{data.samples.map((sample) => (
+							<tr className="row" key={sample.id}>
+								<td>
 									<input
-										ref={masterCheckboxRef}
-										id="master-checkbox"
 										type="checkbox"
-										onChange={handleMasterCheckboxChange}
+										name="sampleId"
+										value={sample.id}
+										onChange={handleChange}
 									/>
-								</th>
-								<th>Vendor</th>
-								<th>Material No.</th>
-								<th>Series</th>
-								<th>Linked Items</th>
-								<th style={{ textAlign: 'center' }}>Shopify</th>
-							</tr>
-							{data.samples.map((sample) => (
-								<tr className="row" key={sample.id}>
-									<td>
-										<input
-											type="checkbox"
-											name="sampleId"
-											value={sample.id}
-											onChange={handleChange}
+								</td>
+								<td>
+									{sample.vendor?.name ? (
+										sample.vendor?.name
+									) : (
+										<SampleVendorItem
+											sampleId={sample.id}
+											vendorOptions={data.vendorOptions}
 										/>
-									</td>
-									<td>
-										{sample.vendor?.name
-											? sample.vendor?.name
-											: null}
-									</td>
-									<td>
-										<Link to={sample.id}>
-											{sample.materialNo}
-										</Link>
-									</td>
-									<td>
-										<Link to={sample.id}>
-											{sample.seriesName} - {sample.color}{' '}
-											{sample.finish}
-										</Link>
-									</td>
-									<td>
-										<Link to={sample.id}>
-											{sample.vendorProducts.map(
-												(vendorProduct) => (
-													<div
-														key={
-															vendorProduct
-																.retailerProduct
-																.id
-														}
-													>
-														{
-															vendorProduct
-																.retailerProduct
-																.title
-														}
-													</div>
-												)
-											)}
-										</Link>
-									</td>
-									<td style={{ textAlign: 'center' }}>
-										{sample.gid ? (
-											<span className="success indicator"></span>
-										) : (
-											<Link to={`${sample.id}/edit`}>
-												Edit
-											</Link>
+									)}
+								</td>
+								<td>
+									<Link to={sample.id}>
+										{sample.materialNo}
+									</Link>
+								</td>
+								<td>
+									<Link to={sample.id}>
+										{sample.seriesName} - {sample.color}{' '}
+										{sample.finish}
+									</Link>
+								</td>
+								<td>
+									<Link to={sample.id}>
+										{sample.vendorProducts.map(
+											(vendorProduct) => (
+												<div
+													key={
+														vendorProduct
+															.retailerProduct.id
+													}
+												>
+													{
+														vendorProduct
+															.retailerProduct
+															.title
+													}
+												</div>
+											)
 										)}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</Form>
+									</Link>
+								</td>
+								<td style={{ textAlign: 'center' }}>
+									{sample.gid ? (
+										<span className="success indicator"></span>
+									) : (
+										<Link to={`${sample.id}/edit`}>
+											Edit
+										</Link>
+									)}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			) : null}
 		</div>
 	);
