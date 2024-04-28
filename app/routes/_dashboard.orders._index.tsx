@@ -167,139 +167,120 @@ export default function OrderIndex() {
 				</div>
 			</header>
 
-			<div className="table-toolbar">
-				<Form method="get" className="inline-form" replace>
-					<fieldset style={{ display: 'flex' }}>
-						<legend>Status</legend>
-
-						{statusFilters.map(({ label, value }) => (
-							<label key={value}>
-								<input
-									type="checkbox"
-									name="status"
-									value={value}
-									defaultChecked={data.filters.includes(
-										value
-									)}
-								/>
-								{label}
-							</label>
-						))}
-					</fieldset>
-
-					<Input
-						label="Search by name or order number"
-						name="name"
-						id="name"
-						defaultValue={data.name}
-					/>
-
-					<button className="primary button" type="submit">
-						Search
-					</button>
-				</Form>
-			</div>
-
 			{data.fulfillments ? (
-				<table>
-					<tbody>
-						<tr>
-							<th>Order No.</th>
-							<th>Name</th>
-							<th>Shipping Address</th>
-							<th>Tracking Info</th>
-							<th>Status</th>
-							<th></th>
-						</tr>
-						{data.fulfillments.map((fulfillment) => (
-							<tr key={fulfillment.id}>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										{fulfillment.name}
-									</Link>
-								</td>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										{fulfillment.order.address.line1}
-									</Link>
-								</td>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<address className="text">
-											{fulfillment.order.address.line2 &&
-												`${fulfillment.order.address.line2}\n`}
-											{fulfillment.order.address.line3 &&
-												`${fulfillment.order.address.line3}\n`}
-											{fulfillment.order.address.line4 &&
-												`${fulfillment.order.address.line4}\n`}
-											{fulfillment.order.address.city},{' '}
-											{fulfillment.order.address.state}{' '}
-											{
-												fulfillment.order.address
-													.postalCode
-											}
-										</address>
-									</Link>
-								</td>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										{fulfillment.trackingInfo?.number ? (
-											<>
-												<div>
-													{
-														fulfillment.trackingInfo
-															.number
-													}
-												</div>
-												<div className="caption">
-													{
-														fulfillment.trackingInfo
-															.company
-													}
-												</div>
-											</>
-										) : (
-											<span className="caption">
-												Add tracking info
-											</span>
-										)}
-									</Link>
-								</td>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<span
-											className={`${fulfillment.status.toLowerCase()} badge`}
-										>
-											{fulfillment.status}
-										</span>
-									</Link>
-								</td>
-								<td>
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										{fulfillment.vendor?.name}
-									</Link>
-								</td>
+				<section className="page-section">
+					<table>
+						<thead>
+							<tr>
+								<th>Order No.</th>
+								<th>Name</th>
+								<th>Shipping Address</th>
+								<th>Tracking Info</th>
+								<th>Status</th>
+								<th></th>
 							</tr>
-						))}
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{data.fulfillments.map((fulfillment) => (
+								<tr key={fulfillment.id}>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											{fulfillment.name}
+										</Link>
+									</td>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											{fulfillment.order.address.line1}
+										</Link>
+									</td>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											<address className="text">
+												{fulfillment.order.address
+													.line2 &&
+													`${fulfillment.order.address.line2}\n`}
+												{fulfillment.order.address
+													.line3 &&
+													`${fulfillment.order.address.line3}\n`}
+												{fulfillment.order.address
+													.line4 &&
+													`${fulfillment.order.address.line4}\n`}
+												{fulfillment.order.address.city}
+												,{' '}
+												{
+													fulfillment.order.address
+														.state
+												}{' '}
+												{
+													fulfillment.order.address
+														.postalCode
+												}
+											</address>
+										</Link>
+									</td>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											{fulfillment.trackingInfo
+												?.number ? (
+												<>
+													<div>
+														{
+															fulfillment
+																.trackingInfo
+																.number
+														}
+													</div>
+													<div className="caption">
+														{
+															fulfillment
+																.trackingInfo
+																.company
+														}
+													</div>
+												</>
+											) : (
+												<span className="caption">
+													Add tracking info
+												</span>
+											)}
+										</Link>
+									</td>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											<span
+												className={`${fulfillment.status.toLowerCase()} badge`}
+											>
+												{fulfillment.status}
+											</span>
+										</Link>
+									</td>
+									<td>
+										<Link
+											to={`/fulfillments/${fulfillment.id}`}
+										>
+											{fulfillment.vendor?.name}
+										</Link>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</section>
 			) : null}
 
 			{data.orders ? (
-				<>
-					<div>
+				<section className="page-section">
+					<div className="page-section-header">
 						<h2 className="headline-h5">Old System</h2>
 						<p>
 							The section below will be phased out and will only
@@ -307,6 +288,39 @@ export default function OrderIndex() {
 							with this.
 						</p>
 					</div>
+
+					{/* <div className="table-toolbar">
+						<Form method="get" replace>
+							<fieldset style={{ display: 'flex' }}>
+								<legend>Status</legend>
+
+								{statusFilters.map(({ label, value }) => (
+									<label key={value}>
+										<input
+											type="checkbox"
+											name="status"
+											value={value}
+											defaultChecked={data.filters.includes(
+												value
+											)}
+										/>
+										{label}
+									</label>
+								))}
+							</fieldset>
+
+							<Input
+								label="Search by name or order number"
+								name="name"
+								id="name"
+								defaultValue={data.name}
+							/>
+
+							<button className="primary button" type="submit">
+								Search
+							</button>
+						</Form>
+					</div> */}
 
 					<table>
 						<thead>
@@ -390,7 +404,7 @@ export default function OrderIndex() {
 							})}
 						</tbody>
 					</table>
-				</>
+				</section>
 			) : null}
 		</>
 	);
