@@ -1,12 +1,14 @@
 import { useEffect, useId, useState } from 'react';
 
 export default function Counter({
+	form,
 	min,
 	max,
 	name,
 	defaultValue,
 	onChange,
 }: {
+	form?: string;
 	min?: number;
 	max?: number;
 	name: string;
@@ -70,7 +72,13 @@ export default function Counter({
 					/>
 				</svg>
 			</button>
-			<input type="hidden" name={name} id={id} value={count} />
+			<input
+				type="hidden"
+				name={name}
+				id={id}
+				value={count}
+				form={form}
+			/>
 		</div>
 	);
 }

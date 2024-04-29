@@ -1,24 +1,37 @@
-import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
+	Form,
+	Link,
 	useActionData,
 	useFetcher,
 	useLoaderData,
 	useNavigation,
 	useSubmit,
 } from '@remix-run/react';
-import { prisma } from '~/db.server';
 import { useEffect, useRef, useState } from 'react';
-import type { RefObject, SyntheticEvent } from 'react';
+import { prisma } from '~/db.server';
+import { badRequest } from '~/utils/request.server';
 import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
-import { badRequest } from '~/utils/request.server';
+import Dropdown from '~/components/Dropdown';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
+import type { RefObject, SyntheticEvent } from 'react';
+import { OrderStatus } from '@prisma/client';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	const orderId = params.orderId;
 	if (typeof orderId !== 'string') {
 		return redirect('/orders/new');
 	}
+
+	const statusOptions: { value: OrderStatus; label: string }[] = [
+		{ value: 'DRAFT', label: 'Draft' },
+		{ value: 'NEW', label: 'New' },
+		{ value: 'PROCESSING', label: 'Processing' },
+		{ value: 'COMPLETE', label: 'Complete' },
+		{ value: 'CANCELLED', label: 'Cancelled' },
+		{ value: 'ERROR', label: 'Error' },
+	];
 
 	const order = await prisma.order.findUnique({
 		where: {
@@ -28,9 +41,14 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 			address: true,
 			fulfillments: {
 				include: {
+					vendor: true,
 					lineItems: {
 						include: {
-							orderLineItem: true,
+							orderLineItem: {
+								include: {
+									sample: true,
+								},
+							},
 						},
 					},
 				},
@@ -57,16 +75,47 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	});
 
 	const mutatedOrder = { ...order, items };
-	return json({ order: mutatedOrder, code: order });
+	return json({ order: mutatedOrder, code: order, statusOptions });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
 	const formData = await request.formData();
-	const _action = formData.get('_action');
+	const { _action, status, ...entries } = Object.fromEntries(formData);
 
 	switch (_action) {
-		case 'clear': {
-			return null;
+		case 'save': {
+			const isStatusValid =
+				typeof status === 'string' &&
+				Object.values(OrderStatus).includes(status as OrderStatus);
+
+			if (!isStatusValid) {
+				return badRequest({ error: { message: 'Invalid status' } });
+			}
+
+			let entriesArray: { id: string; quantity: number }[] = [];
+			Object.entries(entries).forEach(([key, value]) => {
+				const quantity = Number(value);
+				if (isNaN(quantity)) return;
+				entriesArray.push({ id: key, quantity });
+			});
+
+			function initTransactions() {
+				return entriesArray.map((orderLineItem) => {
+					return prisma.orderLineItem.update({
+						where: { id: orderLineItem.id },
+						data: { quantity: orderLineItem.quantity },
+					});
+				});
+			}
+
+			await prisma.$transaction(initTransactions());
+
+			await prisma.order.update({
+				where: { id: params.orderId },
+				data: { status: status as OrderStatus },
+			});
+
+			return json({});
 		}
 		case 'search': {
 			return json({});
@@ -79,10 +128,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 			const status = String(formData.get('status'));
 			const errors: { cart?: string; form?: string; status?: string } =
 				{};
-
-			if (_action === 'clear') {
-				return null;
-			}
 
 			if (typeof cart !== 'string' || cart.length === 0) {
 				errors.cart = 'Unable to read cart.';
@@ -185,10 +230,9 @@ export default function NewOrderDetailsPage() {
 	const search = useFetcher();
 	const submit = useSubmit();
 	const initialCart = data.order.items ?? [];
-	const initialStatus = data.order.status ?? 'DRAFT';
 	const [cart, setCart] = useState(initialCart);
-	const [status, setStatus] = useState(initialStatus);
 	const [isEditing, setIsEditing] = useState(false);
+	const orderFormId = 'order-form';
 
 	useEffect(() => {
 		if (address.state === 'idle' && address.data == null) {
@@ -199,88 +243,6 @@ export default function NewOrderDetailsPage() {
 	const masterCheckboxRef = useRef(null) as RefObject<HTMLInputElement>;
 	const tableBodyRef = useRef(null) as RefObject<HTMLTableSectionElement>;
 
-	function getCheckboxes() {
-		if (!tableBodyRef.current) return;
-		const checkboxes: NodeListOf<HTMLInputElement> =
-			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
-		return checkboxes;
-	}
-
-	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
-		const checkboxes = getCheckboxes();
-
-		console.log('CHECKBOXES', checkboxes);
-		if (!checkboxes) return;
-		for (let i = 0; i < checkboxes.length; i++) {
-			if (e.currentTarget.checked) {
-				checkboxes[i].checked = true;
-			} else {
-				checkboxes[i].checked = false;
-			}
-		}
-	}
-
-	function handleDiscard() {
-		setCart(initialCart);
-		setStatus(initialStatus);
-		search.submit(
-			{ _action: 'clear' },
-			{
-				replace: true,
-				method: 'post',
-				action: `/orders/new/${data.order.id}`,
-			}
-		);
-	}
-
-	function handleSubmit() {
-		submit(
-			{ cart: JSON.stringify(cart), status: JSON.stringify(status) },
-			{
-				method: 'post',
-				encType: 'application/x-www-form-urlencoded',
-			}
-		);
-	}
-
-	function handleQtyChange(quantity, item) {
-		const newCartItems = cart.map((cartItem) => {
-			if (cartItem.id !== item.id) {
-				return cartItem;
-			} else {
-				return {
-					...cartItem,
-					quantity: quantity,
-				};
-			}
-		});
-
-		setCart(newCartItems);
-	}
-
-	function handleChange(e, item: { id: string }) {
-		if (e.target.checked) {
-			setCart([...cart, item]);
-		} else {
-			setCart(cart.filter((cartItem) => cartItem.id !== item.id));
-		}
-	}
-
-	function handleEditClick() {
-		setIsEditing(!isEditing);
-	}
-
-	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
-		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
-	}
-
-	function removeFromCart(item: { id: string }) {
-		setCart(cart.filter((cartItem) => cartItem.id !== item.id));
-		const checkbox = document.getElementById(item.id + '-checkbox');
-		if (checkbox === null) return;
-		checkbox.checked = false;
-	}
-
 	return (
 		<>
 			<header className="page-header">
@@ -289,37 +251,97 @@ export default function NewOrderDetailsPage() {
 				) : (
 					<h1 className="headline-h3">Order {data.order.id}</h1>
 				)}
+
+				<div className="page-header__actions">
+					<Form
+						method="post"
+						className="inline-form"
+						id={orderFormId}
+					>
+						<Dropdown
+							name="status"
+							options={data.statusOptions}
+							defaultValue={data.order.status}
+						/>
+
+						<Link className="button" to="/orders">
+							Discard
+						</Link>
+
+						<button
+							className="primary button"
+							disabled={navigation.state === 'submitting'}
+							name="_action"
+							value="save"
+						>
+							{navigation.state === 'submitting'
+								? 'Saving...'
+								: 'Save'}
+						</button>
+					</Form>
+				</div>
 			</header>
 
 			<div className="foobar">
 				<section className="foobar-main-content">
-					<h2 className="headline-h6">Search for items</h2>
-					<search.Form method="post" action="/search" replace>
-						<div className="search-bar">
-							<SearchIcon
-								className="search-icon"
-								id="search-icon"
-							/>
-							<input
-								aria-labelledby="search-icon"
-								className="search-input"
-								type="search"
-								name="query"
-								id="query"
-								placeholder="Search"
-								autoComplete="off"
-							/>
-
-							<button
-								className="button"
-								type="submit"
-								name="_action"
-								value="search"
-							>
-								Search
-							</button>
-						</div>
-					</search.Form>
+					{data.order.fulfillments.map((fulfillment) => (
+						<section className="page-section" key={fulfillment.id}>
+							<div className="page-section-header">
+								<h2 className="">{fulfillment.vendor.name}</h2>
+							</div>
+							<table>
+								<thead>
+									<tr>
+										<th>Material No.</th>
+										<th>{fulfillment.vendor.name}</th>
+										<th>Edward Martin</th>
+										<th>Quantity</th>
+									</tr>
+								</thead>
+								<tbody>
+									{fulfillment.lineItems.map((lineItem) => {
+										const {
+											materialNo,
+											seriesName,
+											seriesAlias,
+											color,
+											colorAlias,
+											finish,
+										} = lineItem.orderLineItem.sample;
+										return (
+											<tr key={lineItem.orderLineItem.id}>
+												<td>{materialNo}</td>
+												<td>
+													{seriesName} {finish}{' '}
+													{color}
+												</td>
+												<td>
+													{seriesAlias} {finish}{' '}
+													{colorAlias}
+												</td>
+												<td>
+													<Counter
+														min={1}
+														name={
+															lineItem
+																.orderLineItem
+																.id
+														}
+														form={orderFormId}
+														defaultValue={
+															lineItem
+																.orderLineItem
+																.quantity
+														}
+													/>
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</section>
+					))}
 
 					{data.order ? (
 						<code>{JSON.stringify(data.order, null, 4)}</code>
@@ -415,70 +437,11 @@ export default function NewOrderDetailsPage() {
 				</section>
 
 				<aside className="foobar-sidebar sample-cart">
-					<h2 className="headline-h6">Selected Samples</h2>
-
-					<div className="sample-cart-actions">
-						<button
-							className={
-								navigation.state !== 'submitting'
-									? 'primary button full-width'
-									: 'deactive button full-width'
-							}
-							disabled={navigation.state === 'submitting'}
-							onClick={handleSubmit}
-						>
-							{navigation.state === 'submitting'
-								? 'Saving...'
-								: 'Save'}
-						</button>
-
-						<button onClick={handleDiscard} className="button">
-							Discard Changes
-						</button>
-					</div>
-
-					<div className="input">
-						<label htmlFor="status">Status</label>
-						<select
-							name="status"
-							id="status"
-							value={status}
-							onChange={(e) => {
-								setStatus(e.target.value);
-							}}
-						>
-							<option value="DRAFT">Draft</option>
-							<option value="NEW">New</option>
-							<option value="PROCESSING">Processing</option>
-							<option value="COMPLETE">Complete</option>
-							<option value="CANCELLED">Cancelled</option>
-						</select>
+					<div className="page-section-header">
+						<h2>Ship To</h2>
 					</div>
 
 					<div className="shipping-info">
-						<header className="shipping-info-header">
-							<h2 className="headline-h6">Ship To</h2>
-
-							{isEditing ? (
-								<button
-									className="close-button"
-									onClick={() => {
-										setIsEditing(false);
-									}}
-								>
-									Cancel
-								</button>
-							) : (
-								<button
-									className="icon-button"
-									aria-label="Edit address"
-									onClick={handleEditClick}
-								>
-									<EditIcon />
-								</button>
-							)}
-						</header>
-
 						{isEditing ? (
 							<address.Form
 								method="post"
@@ -560,39 +523,52 @@ export default function NewOrderDetailsPage() {
 									/>
 								</div>
 
-								{address.state === 'submitting' ? (
-									<button
-										type="submit"
-										className="deactive button full-width"
-										disabled
-									>
-										Saving...
-									</button>
-								) : (
-									<button
-										type="submit"
-										className="primary button full-width"
-									>
-										Save
-									</button>
-								)}
+								<div>
+									{address.state === 'submitting' ? (
+										<button
+											type="button"
+											className="deactive button"
+											disabled
+										>
+											Saving...
+										</button>
+									) : (
+										<button
+											type="submit"
+											className="primary button"
+										>
+											Update Address
+										</button>
+									)}
+
+									<button className="button">Cancel</button>
+								</div>
 							</address.Form>
 						) : null}
 
 						{!isEditing ? (
-							<address>
-								{data.order.address.line1}
-								<br />
-								{data.order.address.line2}
-								<br />
-								{data.order.address.line3 ? (
-									<>
-										{data.order.address.line3}
-										<br />
-									</>
-								) : null}
-								{`${data.order.address.city}, ${data.order.address.state} ${data.order.address.postalCode}`}
-							</address>
+							<>
+								<address>
+									{data.order.address.line1}
+									<br />
+									{data.order.address.line2}
+									<br />
+									{data.order.address.line3 ? (
+										<>
+											{data.order.address.line3}
+											<br />
+										</>
+									) : null}
+									{`${data.order.address.city}, ${data.order.address.state} ${data.order.address.postalCode}`}
+								</address>
+
+								<button
+									className="link"
+									onClick={handleEditClick}
+								>
+									Edit
+								</button>
+							</>
 						) : null}
 
 						{actionData?.success ? (
@@ -653,4 +629,73 @@ export default function NewOrderDetailsPage() {
 			</div>
 		</>
 	);
+
+	function getCheckboxes() {
+		if (!tableBodyRef.current) return;
+		const checkboxes: NodeListOf<HTMLInputElement> =
+			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
+		return checkboxes;
+	}
+
+	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
+		const checkboxes = getCheckboxes();
+
+		console.log('CHECKBOXES', checkboxes);
+		if (!checkboxes) return;
+		for (let i = 0; i < checkboxes.length; i++) {
+			if (e.currentTarget.checked) {
+				checkboxes[i].checked = true;
+			} else {
+				checkboxes[i].checked = false;
+			}
+		}
+	}
+
+	function handleSubmit() {
+		submit(
+			{ cart: JSON.stringify(cart), status: JSON.stringify(status) },
+			{
+				method: 'post',
+				encType: 'application/x-www-form-urlencoded',
+			}
+		);
+	}
+
+	function handleQtyChange(quantity, item) {
+		const newCartItems = cart.map((cartItem) => {
+			if (cartItem.id !== item.id) {
+				return cartItem;
+			} else {
+				return {
+					...cartItem,
+					quantity: quantity,
+				};
+			}
+		});
+
+		setCart(newCartItems);
+	}
+
+	function handleChange(e, item: { id: string }) {
+		if (e.target.checked) {
+			setCart([...cart, item]);
+		} else {
+			setCart(cart.filter((cartItem) => cartItem.id !== item.id));
+		}
+	}
+
+	function handleEditClick() {
+		setIsEditing(!isEditing);
+	}
+
+	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
+		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
+	}
+
+	function removeFromCart(item: { id: string }) {
+		setCart(cart.filter((cartItem) => cartItem.id !== item.id));
+		const checkbox = document.getElementById(item.id + '-checkbox');
+		if (checkbox === null) return;
+		checkbox.checked = false;
+	}
 }

@@ -1,19 +1,13 @@
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
+import { OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { EditIcon, TrashIcon } from '~/components/Icons';
 import Input from '~/components/Input';
-import type { FulfillmentStatus, OrderStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
-
-const statusFilters = [
-	{ label: 'Draft', value: 'DRAFT' },
-	{ label: 'New', value: 'NEW' },
-	{ label: 'Processing', value: 'PROCESSING' },
-	{ label: 'Complete', value: 'COMPLETE' },
-	{ label: 'Cancelled', value: 'CANCELLED' },
-];
+import { toCapitalCase } from '~/utils/helpers';
+import type { ActionFunction, LoaderArgs } from '@remix-run/node';
+import type { FulfillmentStatus } from '@prisma/client';
 
 export const loader = async ({ request }: LoaderArgs) => {
 	const user = await requireUser(request);
@@ -28,6 +22,10 @@ export const loader = async ({ request }: LoaderArgs) => {
 	];
 	let newFilters = [];
 	let name = '';
+
+	const statusFilters = Object.values(OrderStatus).map((orderStatus) => {
+		return { value: orderStatus, label: toCapitalCase(orderStatus) };
+	});
 
 	for (const [key, value] of searchParams) {
 		if (key === 'status') {
@@ -81,6 +79,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 			fulfillments,
 			name,
 			orders: null,
+			statusFilters,
 			userRole: user.role,
 		});
 
@@ -106,7 +105,14 @@ export const loader = async ({ request }: LoaderArgs) => {
 		},
 	});
 
-	return json({ filters, fulfillments, name, orders, userRole: user.role });
+	return json({
+		filters,
+		fulfillments,
+		name,
+		orders,
+		statusFilters,
+		userRole: user.role,
+	});
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -304,7 +310,7 @@ export default function OrderIndex() {
 							<fieldset style={{ display: 'flex' }}>
 								<legend>Status</legend>
 
-								{statusFilters.map(({ label, value }) => (
+								{data.statusFilters.map(({ label, value }) => (
 									<label key={value}>
 										<input
 											type="checkbox"

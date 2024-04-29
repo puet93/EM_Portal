@@ -220,8 +220,9 @@ export default function NewOrderPage() {
 							<tbody>
 								<tr>
 									<th></th>
-									<th className="caption">Material No.</th>
-									<th className="caption">Description</th>
+									<th>Material No.</th>
+									<th>Description</th>
+									<th>Vendor</th>
 								</tr>
 								{search.data.results.map((item) => {
 									const checked = isAlreadyInCart(item, cart);
@@ -254,6 +255,7 @@ export default function NewOrderPage() {
 													</div>
 												</label>
 											</td>
+											<td>{item.vendor?.name}</td>
 										</tr>
 									);
 								})}

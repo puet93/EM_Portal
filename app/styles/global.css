@@ -578,9 +578,13 @@ th,
 	margin: 56px 0;
 }
 
+.page-section:first-child {
+	margin-top: 0;
+}
+
 .page-section-header {
 	max-width: 540px;
-	margin: 32px 0;
+	margin-bottom: 32px;
 }
 
 .foobar-sidebar.sample-cart {
@@ -1183,12 +1187,6 @@ input::file-selector-button {
 .foobar-main-content {
 	width: 100%;
 	margin-right: 32px;
-}
-
-@media screen and (min-width: 1440px) {
-	.foobar-main-content {
-		margin-right: 80px;
-	}
 }
 
 .foobar-sidebar {
