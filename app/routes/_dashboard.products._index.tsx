@@ -189,11 +189,13 @@ export default function ProductsPage() {
 	return (
 		<>
 			<header className="page-header">
-				<h1>Products</h1>
-				<div className="page-header__actions">
-					<Link className="button" to="import">
-						Import
-					</Link>
+				<div className="page-header__row">
+					<h1>Products</h1>
+					<div className="page-header__actions">
+						<Link className="button" to="import">
+							Import
+						</Link>
+					</div>
 				</div>
 			</header>
 
