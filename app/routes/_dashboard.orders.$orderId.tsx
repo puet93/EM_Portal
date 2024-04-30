@@ -66,11 +66,52 @@ export default function OrderPage() {
 	return (
 		<>
 			<header className="page-header">
-				<div>
+				<div className="page-header__row">
 					<h1 className="headline-h3">Sample Order</h1>
-					<p className="caption">
-						{data.order?.name ? data.order.name : data.order?.id}
-					</p>
+
+					<div className="page-header__actions">
+						<Form method="post" className="inline-form">
+							<Dropdown
+								name="status"
+								options={[
+									{ label: 'Draft', value: 'DRAFT' },
+									{ label: 'New', value: 'NEW' },
+									{
+										label: 'Processing',
+										value: 'PROCESSING',
+									},
+									{ label: 'Complete', value: 'COMPLETE' },
+									{ label: 'Cancelled', value: 'CANCELLED' },
+								]}
+								defaultValue={
+									actionData?.order?.status
+										? actionData.order.status
+										: data.order?.status
+								}
+							/>
+							<button
+								className="button"
+								type="submit"
+								name="_action"
+								value="setStatus"
+							>
+								Save
+							</button>
+						</Form>
+
+						<Link
+							className="primary button"
+							to="labels"
+							target="_blank"
+							reloadDocument
+						>
+							Print Labels
+						</Link>
+					</div>
+				</div>
+
+				<div className="page-header__row">
+					{data.order?.name ? data.order.name : data.order?.id}
 				</div>
 			</header>
 
@@ -87,47 +128,6 @@ export default function OrderPage() {
 					</address>
 				</>
 			) : null}
-
-			<div className="table-toolbar">
-				<h2 className="table-toolbar-title headline-h5">Line Items</h2>
-
-				<div className="table-toolbar-actions">
-					<Form method="post" className="inline-form">
-						<Dropdown
-							name="status"
-							options={[
-								{ label: 'Draft', value: 'DRAFT' },
-								{ label: 'New', value: 'NEW' },
-								{ label: 'Processing', value: 'PROCESSING' },
-								{ label: 'Complete', value: 'COMPLETE' },
-								{ label: 'Cancelled', value: 'CANCELLED' },
-							]}
-							defaultValue={
-								actionData?.order?.status
-									? actionData.order.status
-									: data.order?.status
-							}
-						/>
-						<button
-							className="button"
-							type="submit"
-							name="_action"
-							value="setStatus"
-						>
-							Save
-						</button>
-					</Form>
-
-					<Link
-						className="primary button"
-						to="labels"
-						target="_blank"
-						reloadDocument
-					>
-						Print Labels
-					</Link>
-				</div>
-			</div>
 
 			<table>
 				<thead>
