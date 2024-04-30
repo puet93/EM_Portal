@@ -211,6 +211,7 @@ export default function OrderPage() {
 					<table>
 						<thead>
 							<tr>
+								<th>Material No.</th>
 								<th>Description</th>
 								<th>Quantity</th>
 							</tr>
@@ -219,6 +220,9 @@ export default function OrderPage() {
 						<tbody>
 							{data.fulfillment?.lineItems.map((item) => (
 								<tr key={item.id}>
+									<td>
+										{item.orderLineItem.sample.materialNo}
+									</td>
 									<td>
 										<p className="title">
 											{
@@ -231,7 +235,12 @@ export default function OrderPage() {
 										<p className="caption">
 											{
 												item.orderLineItem.sample
-													.materialNo
+													.seriesAlias
+											}{' '}
+											{item.orderLineItem.sample.finish}{' '}
+											{
+												item.orderLineItem.sample
+													.colorAlias
 											}
 										</p>
 									</td>
