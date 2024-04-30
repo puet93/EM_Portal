@@ -4,19 +4,12 @@ import {
 	unstable_parseMultipartFormData,
 	json,
 } from '@remix-run/node';
-import {
-	Form,
-	Link,
-	Outlet,
-	useActionData,
-	useLoaderData,
-} from '@remix-run/react';
+import { Form, Link, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
 import { combineArrays, standardizeQueryString } from '~/utils/helpers';
 import { badRequest } from '~/utils/request.server';
-import { SearchIcon } from '~/components/Icons';
 
 import Input from '~/components/Input';
 
@@ -60,12 +53,13 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 
 	const products = await prisma.vendorProduct.findMany({
 		where: fields,
-		orderBy: { seriesName: 'asc' },
+		orderBy: [{ seriesName: 'asc' }, { itemNo: 'asc' }],
 		include: {
 			retailerProduct: true,
 			sample: true,
 		},
 	});
+
 	return json({ vendor, products });
 };
 
@@ -205,7 +199,6 @@ export const action = async ({ params, request }: ActionArgs) => {
 
 export default function VendorProductsPage() {
 	const data = useLoaderData<typeof loader>();
-	const actionData = useActionData<typeof action>();
 
 	return (
 		<>
@@ -223,7 +216,7 @@ export default function VendorProductsPage() {
 			</header>
 
 			<div className="page-layout">
-				<Form method="get">
+				<Form method="get" replace>
 					<div
 						style={{
 							display: 'flex',
@@ -233,6 +226,7 @@ export default function VendorProductsPage() {
 						<Input id="series" label="Series" name="seriesName" />
 						<Input id="color" label="Color" name="color" />
 						<Input id="finish" label="finish" name="finish" />
+
 						<button
 							className="primary button"
 							type="submit"
@@ -240,79 +234,12 @@ export default function VendorProductsPage() {
 							value="search"
 							style={{ marginBottom: 20 }}
 						>
-							Search
+							Filter
 						</button>
 					</div>
 				</Form>
 
-				{actionData?.formError ? (
-					<div className="error message">{actionData.formError}</div>
-				) : null}
-
-				{actionData?.results ? (
-					<>
-						<p>
-							{actionData.results.length === 1
-								? `${actionData.results.length} result`
-								: `${actionData.results.length} results`}
-						</p>
-						<table style={{ marginTop: '36px' }}>
-							<tbody>
-								<tr>
-									<th>Series</th>
-									<th>Color</th>
-									<th>Finish</th>
-									<th>Description</th>
-									<th>Item No.</th>
-									<th>Sample</th>
-									<th>SKU</th>
-								</tr>
-								{actionData.results.map((product) => (
-									<tr key={product.id}>
-										<td>{product.seriesName}</td>
-										<td>{product.color}</td>
-										<td>{product.finish}</td>
-										<td>
-											<i>Description goes here</i>
-										</td>
-										<td>{product.itemNo}</td>
-										<td>
-											{product.sampleMaterialNo ? (
-												<Link
-													to={`samples/${product.sampleMaterialNo}`}
-												>
-													{product.sample.id}
-												</Link>
-											) : (
-												<Link
-													to={`${product.id}/samples`}
-												>
-													Connect
-												</Link>
-											)}
-										</td>
-										<td>
-											{product.retailProduct?.sku ? (
-												<Link
-													to={`/products/${product.retailerProduct.id}`}
-												>
-													{
-														product.retailProduct
-															.title
-													}
-												</Link>
-											) : (
-												'No retailer product.'
-											)}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</>
-				) : null}
-
-				{!actionData && data.products ? (
+				{data.products ? (
 					<>
 						<p>
 							{data.products.length === 1
@@ -322,68 +249,85 @@ export default function VendorProductsPage() {
 						<table style={{ marginTop: '36px' }}>
 							<tbody>
 								<tr>
-									<th>Series</th>
-									<th>Color</th>
-									<th>Finish</th>
-									<th>Description</th>
-									<th>Item No.</th>
-									<th>Sample</th>
-									<th></th>
+									<th>{data.vendor.name}</th>
+									<th>Edward Martin</th>
+									<th>Sample Swatch</th>
 								</tr>
 
-								{data.products.map((product) => (
-									<tr key={product.id}>
-										<td>{product.seriesName}</td>
-										<td>{product.color}</td>
-										<td>{product.finish}</td>
-										<td>
-											<i>Description goes here</i>
-										</td>
-										<td>
-											<Link to={`${product.id}/edit`}>
-												{product.itemNo}
-											</Link>
-										</td>
-										<td>
-											{product.sampleMaterialNo &&
-											product.sample ? (
-												<Link
-													to={`/samples/${product.sample.id}`}
-												>
-													{product.sampleMaterialNo}
-												</Link>
-											) : (
-												<Link
-													to={`${product.id}/samples`}
-													className="button"
-												>
-													Connect
-												</Link>
-											)}
-										</td>
-										{product.retailerProduct ? (
+								{data.products.map((product) => {
+									let vendorProductTitle = product.seriesName;
+									if (product.finish) {
+										vendorProductTitle += ` ${product.finish}`;
+									}
+									if (product.color) {
+										vendorProductTitle += ` ${product.color}`;
+									}
+
+									return (
+										<tr key={product.id}>
 											<td>
 												<Link
-													to={`/products/${product.retailerProduct.id}`}
+													to={`/vendors/${data.vendor.id}/products/${product.id}`}
 												>
-													{
-														product.retailerProduct
-															.title
-													}
+													<div className="title">
+														{vendorProductTitle}
+													</div>
+													<div className="caption">
+														{product.itemNo}
+													</div>
 												</Link>
 											</td>
-										) : (
-											<td>No retailer product</td>
-										)}
-									</tr>
-								))}
+											<td>
+												{product.retailerProduct ? (
+													<Link
+														to={`/products/${product.retailerProduct?.id}`}
+													>
+														<div className="title">
+															{
+																product
+																	.retailerProduct
+																	.title
+															}
+														</div>
+														<div className="caption">
+															{
+																product
+																	.retailerProduct
+																	.sku
+															}
+														</div>
+													</Link>
+												) : (
+													'Unable to find related product'
+												)}
+											</td>
+											<td>
+												{product.sampleMaterialNo &&
+												product.sample ? (
+													<Link
+														to={`/samples/${product.sample.id}`}
+													>
+														{
+															product.sampleMaterialNo
+														}
+													</Link>
+												) : (
+													<Link
+														to={`${product.id}/samples`}
+														className="button"
+													>
+														Connect
+													</Link>
+												)}
+											</td>
+										</tr>
+									);
+								})}
 							</tbody>
 						</table>
 					</>
 				) : null}
 			</div>
-
-			{/* <Outlet /> */}
 		</>
 	);
 }
