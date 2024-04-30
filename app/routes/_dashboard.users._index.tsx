@@ -88,16 +88,18 @@ export default function UserPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<div className="wrapper">
-			<header>
-				<h1 className="headline-h3">Users</h1>
-			</header>
+		<>
+			<header className="page-header">
+				<div className="page-header__row">
+					<h1 className="headline-h3">Users</h1>
 
-			<div className="table-toolbar">
-				<Link to="new" className="primary button">
-					Create New User
-				</Link>
-			</div>
+					<div className="page-header__actions">
+						<Link to="new" className="primary button">
+							Create New User
+						</Link>
+					</div>
+				</div>
+			</header>
 
 			{data.users ? (
 				<table>
@@ -126,6 +128,6 @@ export default function UserPage() {
 					</tbody>
 				</table>
 			) : null}
-		</div>
+		</>
 	);
 }

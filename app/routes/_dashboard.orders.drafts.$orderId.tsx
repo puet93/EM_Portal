@@ -11,7 +11,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
-import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
+import { TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 import Dropdown from '~/components/Dropdown';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
@@ -115,7 +115,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 				data: { status: status as OrderStatus },
 			});
 
-			return json({});
+			return redirect('/orders');
 		}
 		case 'search': {
 			return json({});
@@ -246,39 +246,41 @@ export default function NewOrderDetailsPage() {
 	return (
 		<>
 			<header className="page-header">
-				{data?.order?.name ? (
-					<h1 className="headline-h3">Order {data.order.name}</h1>
-				) : (
-					<h1 className="headline-h3">Order {data.order.id}</h1>
-				)}
+				<div className="page-header__row">
+					{data?.order?.name ? (
+						<h1 className="headline-h3">Order {data.order.name}</h1>
+					) : (
+						<h1 className="headline-h3">Order {data.order.id}</h1>
+					)}
 
-				<div className="page-header__actions">
-					<Form
-						method="post"
-						className="inline-form"
-						id={orderFormId}
-					>
-						<Dropdown
-							name="status"
-							options={data.statusOptions}
-							defaultValue={data.order.status}
-						/>
-
-						<Link className="button" to="/orders">
-							Discard
-						</Link>
-
-						<button
-							className="primary button"
-							disabled={navigation.state === 'submitting'}
-							name="_action"
-							value="save"
+					<div className="page-header__actions">
+						<Form
+							method="post"
+							className="inline-form"
+							id={orderFormId}
 						>
-							{navigation.state === 'submitting'
-								? 'Saving...'
-								: 'Save'}
-						</button>
-					</Form>
+							<Dropdown
+								name="status"
+								options={data.statusOptions}
+								defaultValue={data.order.status}
+							/>
+
+							<Link className="button" to="/orders">
+								Discard
+							</Link>
+
+							<button
+								className="primary button"
+								disabled={navigation.state === 'submitting'}
+								name="_action"
+								value="save"
+							>
+								{navigation.state === 'submitting'
+									? 'Saving...'
+									: 'Save'}
+							</button>
+						</Form>
+					</div>
 				</div>
 			</header>
 
@@ -286,8 +288,11 @@ export default function NewOrderDetailsPage() {
 				<section className="foobar-main-content">
 					{data.order.fulfillments.map((fulfillment) => (
 						<section className="page-section" key={fulfillment.id}>
-							<div className="page-section-header">
+							<div className="page-section-header align-baseline">
 								<h2 className="">{fulfillment.vendor.name}</h2>
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									{fulfillment.name}
+								</Link>
 							</div>
 							<table>
 								<thead>
@@ -342,10 +347,6 @@ export default function NewOrderDetailsPage() {
 							</table>
 						</section>
 					))}
-
-					{data.order ? (
-						<code>{JSON.stringify(data.order, null, 4)}</code>
-					) : null}
 
 					{search.data ? (
 						search.data.results ? (
@@ -640,7 +641,6 @@ export default function NewOrderDetailsPage() {
 	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
 		const checkboxes = getCheckboxes();
 
-		console.log('CHECKBOXES', checkboxes);
 		if (!checkboxes) return;
 		for (let i = 0; i < checkboxes.length; i++) {
 			if (e.currentTarget.checked) {
@@ -649,16 +649,6 @@ export default function NewOrderDetailsPage() {
 				checkboxes[i].checked = false;
 			}
 		}
-	}
-
-	function handleSubmit() {
-		submit(
-			{ cart: JSON.stringify(cart), status: JSON.stringify(status) },
-			{
-				method: 'post',
-				encType: 'application/x-www-form-urlencoded',
-			}
-		);
 	}
 
 	function handleQtyChange(quantity, item) {

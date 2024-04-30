@@ -173,14 +173,16 @@ export default function OrderIndex() {
 	return (
 		<>
 			<header className="page-header">
-				<h1 className="headline-h3">Orders</h1>
-				{data.userRole === 'SUPERADMIN' ? (
-					<div className="page-header__actions">
-						<Link to="new" className="primary button">
-							Create Order
-						</Link>
-					</div>
-				) : null}
+				<div className="page-header__row">
+					<h1 className="headline-h3">Orders</h1>
+					{data.userRole === 'SUPERADMIN' ? (
+						<div className="page-header__actions">
+							<Link to="new" className="primary button">
+								Create Order
+							</Link>
+						</div>
+					) : null}
+				</div>
 			</header>
 
 			{data.fulfillments ? (

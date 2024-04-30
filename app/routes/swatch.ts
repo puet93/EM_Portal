@@ -26,6 +26,11 @@ export const loader = async ({ request }: LoaderArgs) => {
 						search: query,
 					},
 				},
+				orderBy: {
+					vendor: {
+						name: 'asc',
+					},
+				},
 				include: {
 					vendor: {
 						select: {

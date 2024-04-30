@@ -11,7 +11,9 @@ export const loader = async ({ request }: LoaderArgs) => {
 export default function UserPage() {
 	return (
 		<main className="content">
-			<Outlet />
+			<div className="wrapper">
+				<Outlet />
+			</div>
 		</main>
 	);
 }

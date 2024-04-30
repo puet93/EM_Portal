@@ -139,41 +139,42 @@ export default function NewOrderPage() {
 	return (
 		<>
 			<header className="page-header">
+				<div className="page-header__row">
+					<h1 className="headline-h3">Create Order</h1>
+
+					<div className="page-header__actions">
+						<div className="input">
+							<input
+								form={addressFormId}
+								placeholder="Order Name"
+								type="text"
+								id="order-name"
+								name="orderName"
+								defaultValue={data.order?.name}
+							/>
+						</div>
+
+						<Link className="button" to="..">
+							Discard
+						</Link>
+
+						<button
+							type="button"
+							className="primary button full-width"
+							onClick={handleSubmit}
+						>
+							Save
+						</button>
+					</div>
+				</div>
+
 				{actionData?.errors?.form ? (
-					<div>
-						<h1 className="headline-h3">Create Order</h1>
+					<div className="page-header__row">
 						<div className="error message">
 							{actionData.errors.form}
 						</div>
 					</div>
-				) : (
-					<h1 className="headline-h3">Create Order</h1>
-				)}
-
-				<div className="page-header__actions">
-					<div className="input">
-						<input
-							form={addressFormId}
-							placeholder="Order Name"
-							type="text"
-							id="order-name"
-							name="orderName"
-							defaultValue={data.order?.name}
-						/>
-					</div>
-
-					<Link className="button" to="..">
-						Discard
-					</Link>
-
-					<button
-						type="button"
-						className="primary button full-width"
-						onClick={handleSubmit}
-					>
-						Save
-					</button>
-				</div>
+				) : null}
 			</header>
 
 			<div className="foobar">

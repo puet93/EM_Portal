@@ -114,7 +114,7 @@ export default function NewUserPage() {
 	// const isActionSubmission = navigation.state === 'submitting';
 
 	return (
-		<div className="wrapper">
+		<>
 			<header>
 				<h1 className="headline-h3">Create User</h1>
 			</header>
@@ -202,6 +202,6 @@ export default function NewUserPage() {
 					<div className="success message">{actionData.message}</div>
 				) : null}
 			</Form> */}
-		</div>
+		</>
 	);
 }

@@ -23,6 +23,14 @@ import Input from '~/components/Input';
 export const loader = async ({ params, request }: LoaderArgs) => {
 	await requireUserId(request);
 
+	const vendor = await prisma.vendor.findUnique({
+		where: { id: params.vendorId },
+	});
+
+	if (!vendor) {
+		throw new Error('Unable to find vendor');
+	}
+
 	const searchParams = new URL(request.url).searchParams;
 	const seriesName = searchParams.get('seriesName');
 	const finish = searchParams.get('finish');
@@ -58,7 +66,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 			sample: true,
 		},
 	});
-	return json({ products });
+	return json({ vendor, products });
 };
 
 export const action = async ({ params, request }: ActionArgs) => {
@@ -201,185 +209,181 @@ export default function VendorProductsPage() {
 
 	return (
 		<>
-			<Link to="import">Import</Link>
+			<header className="page-header">
+				<div className="page-header__row">
+					<h1>Vendor Products</h1>
 
-			<Form method="post">
-				<div className="search-bar">
-					<SearchIcon className="search-icon" id="search-icon" />
-					<input
-						className="search-input"
-						type="search"
-						name="query"
-					/>
-					<button
-						className="primary button"
-						type="submit"
-						name="_action"
-						value="search"
-					>
-						Search
-					</button>
+					<div className="page-header__actions">
+						<Link className="primary button" to="products/import">
+							Import
+						</Link>
+					</div>
 				</div>
-			</Form>
+				<div className="page-header__row">{data.vendor.name}</div>
+			</header>
 
-			<Form method="get">
-				<div
-					style={{
-						display: 'flex',
-						alignItems: 'flex-end',
-					}}
-				>
-					<Input id="series" label="Series" name="seriesName" />
-					<Input id="color" label="Color" name="color" />
-					<Input id="finish" label="finish" name="finish" />
-					<button
-						className="primary button"
-						type="submit"
-						name="_action"
-						value="search"
-						style={{ marginBottom: 20 }}
+			<div className="page-layout">
+				<Form method="get">
+					<div
+						style={{
+							display: 'flex',
+							alignItems: 'flex-end',
+						}}
 					>
-						Search
-					</button>
+						<Input id="series" label="Series" name="seriesName" />
+						<Input id="color" label="Color" name="color" />
+						<Input id="finish" label="finish" name="finish" />
+						<button
+							className="primary button"
+							type="submit"
+							name="_action"
+							value="search"
+							style={{ marginBottom: 20 }}
+						>
+							Search
+						</button>
+					</div>
+				</Form>
 
-					<Link className="button" to="edit">
-						Edit
-					</Link>
-				</div>
-			</Form>
+				{actionData?.formError ? (
+					<div className="error message">{actionData.formError}</div>
+				) : null}
 
-			{actionData?.formError ? (
-				<div className="error message">{actionData.formError}</div>
-			) : null}
-
-			{actionData?.results ? (
-				<>
-					<p>
-						{actionData.results.length === 1
-							? `${actionData.results.length} result`
-							: `${actionData.results.length} results`}
-					</p>
-					<table style={{ marginTop: '36px' }}>
-						<thead>
-							<tr>
-								<th>Series</th>
-								<th>Color</th>
-								<th>Finish</th>
-								<th>Description</th>
-								<th>Item No.</th>
-								<th>Sample</th>
-								<th>SKU</th>
-							</tr>
-						</thead>
-						<tbody>
-							{actionData.results.map((product) => (
-								<tr key={product.id}>
-									<td>{product.seriesName}</td>
-									<td>{product.color}</td>
-									<td>{product.finish}</td>
-									<td>
-										<i>Description goes here</i>
-									</td>
-									<td>{product.itemNo}</td>
-									<td>
-										{product.sampleMaterialNo ? (
-											<Link
-												to={`samples/${product.sampleMaterialNo}`}
-											>
-												{product.sample.id}
-											</Link>
-										) : (
-											<Link to={`${product.id}/samples`}>
-												Connect
-											</Link>
-										)}
-									</td>
-									<td>
-										{product.retailProduct?.sku ? (
-											<Link
-												to={`/products/${product.retailerProduct.id}`}
-											>
-												{product.retailProduct.title}
-											</Link>
-										) : (
-											'No retailer product.'
-										)}
-									</td>
+				{actionData?.results ? (
+					<>
+						<p>
+							{actionData.results.length === 1
+								? `${actionData.results.length} result`
+								: `${actionData.results.length} results`}
+						</p>
+						<table style={{ marginTop: '36px' }}>
+							<tbody>
+								<tr>
+									<th>Series</th>
+									<th>Color</th>
+									<th>Finish</th>
+									<th>Description</th>
+									<th>Item No.</th>
+									<th>Sample</th>
+									<th>SKU</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
-				</>
-			) : null}
-
-			{!actionData && data.products ? (
-				<>
-					<p>
-						{data.products.length === 1
-							? `${data.products.length} result`
-							: `${data.products.length} results`}
-					</p>
-					<table style={{ marginTop: '36px' }}>
-						<tbody>
-							<tr>
-								<th>Series</th>
-								<th>Color</th>
-								<th>Finish</th>
-								<th>Description</th>
-								<th>Item No.</th>
-								<th>Sample</th>
-								<th></th>
-							</tr>
-
-							{data.products.map((product) => (
-								<tr key={product.id}>
-									<td>{product.seriesName}</td>
-									<td>{product.color}</td>
-									<td>{product.finish}</td>
-									<td>
-										<i>Description goes here</i>
-									</td>
-									<td>
-										<Link to={`${product.id}/edit`}>
-											{product.itemNo}
-										</Link>
-									</td>
-									<td>
-										{product.sampleMaterialNo &&
-										product.sample ? (
-											<Link
-												to={`/samples/${product.sample.id}`}
-											>
-												{product.sampleMaterialNo}
-											</Link>
-										) : (
-											<Link
-												to={`${product.id}/samples`}
-												className="button"
-											>
-												Connect
-											</Link>
-										)}
-									</td>
-									{product.retailerProduct ? (
+								{actionData.results.map((product) => (
+									<tr key={product.id}>
+										<td>{product.seriesName}</td>
+										<td>{product.color}</td>
+										<td>{product.finish}</td>
 										<td>
-											<Link
-												to={`/products/${product.retailerProduct.id}`}
-											>
-												{product.retailerProduct.title}
+											<i>Description goes here</i>
+										</td>
+										<td>{product.itemNo}</td>
+										<td>
+											{product.sampleMaterialNo ? (
+												<Link
+													to={`samples/${product.sampleMaterialNo}`}
+												>
+													{product.sample.id}
+												</Link>
+											) : (
+												<Link
+													to={`${product.id}/samples`}
+												>
+													Connect
+												</Link>
+											)}
+										</td>
+										<td>
+											{product.retailProduct?.sku ? (
+												<Link
+													to={`/products/${product.retailerProduct.id}`}
+												>
+													{
+														product.retailProduct
+															.title
+													}
+												</Link>
+											) : (
+												'No retailer product.'
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</>
+				) : null}
+
+				{!actionData && data.products ? (
+					<>
+						<p>
+							{data.products.length === 1
+								? `${data.products.length} result`
+								: `${data.products.length} results`}
+						</p>
+						<table style={{ marginTop: '36px' }}>
+							<tbody>
+								<tr>
+									<th>Series</th>
+									<th>Color</th>
+									<th>Finish</th>
+									<th>Description</th>
+									<th>Item No.</th>
+									<th>Sample</th>
+									<th></th>
+								</tr>
+
+								{data.products.map((product) => (
+									<tr key={product.id}>
+										<td>{product.seriesName}</td>
+										<td>{product.color}</td>
+										<td>{product.finish}</td>
+										<td>
+											<i>Description goes here</i>
+										</td>
+										<td>
+											<Link to={`${product.id}/edit`}>
+												{product.itemNo}
 											</Link>
 										</td>
-									) : (
-										<td>No retailer product</td>
-									)}
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</>
-			) : null}
+										<td>
+											{product.sampleMaterialNo &&
+											product.sample ? (
+												<Link
+													to={`/samples/${product.sample.id}`}
+												>
+													{product.sampleMaterialNo}
+												</Link>
+											) : (
+												<Link
+													to={`${product.id}/samples`}
+													className="button"
+												>
+													Connect
+												</Link>
+											)}
+										</td>
+										{product.retailerProduct ? (
+											<td>
+												<Link
+													to={`/products/${product.retailerProduct.id}`}
+												>
+													{
+														product.retailerProduct
+															.title
+													}
+												</Link>
+											</td>
+										) : (
+											<td>No retailer product</td>
+										)}
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</>
+				) : null}
+			</div>
 
-			<Outlet />
+			{/* <Outlet /> */}
 		</>
 	);
 }

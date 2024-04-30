@@ -157,47 +157,53 @@ export default function OrderPage() {
 	return (
 		<>
 			<header className="page-header">
-				<div>
+				<div className="page-header__row">
 					<h1 className="headline-h5">
 						{data?.fulfillment?.name
 							? data.fulfillment.name
 							: 'Sample Order'}
 					</h1>
-					<p>{data?.fulfillment?.vendor?.name}</p>
-				</div>
 
-				<div className="page-header__actions">
-					<Form method="post" className="inline-form">
-						<Dropdown
-							name="status"
-							options={[
-								{ label: 'New', value: 'NEW' },
-								{ label: 'Processing', value: 'PROCESSING' },
-								{ label: 'Complete', value: 'COMPLETE' },
-								{ label: 'Cancelled', value: 'CANCELLED' },
-								{ label: 'Error', value: 'ERROR' },
-							]}
-							defaultValue={data.fulfillment?.status}
-						/>
-						<button
-							className="button"
-							type="submit"
-							name="_action"
-							value="update status"
+					<div className="page-header__actions">
+						<Form method="post" className="inline-form">
+							<Dropdown
+								name="status"
+								options={[
+									{ label: 'New', value: 'NEW' },
+									{
+										label: 'Processing',
+										value: 'PROCESSING',
+									},
+									{ label: 'Complete', value: 'COMPLETE' },
+									{ label: 'Cancelled', value: 'CANCELLED' },
+									{ label: 'Error', value: 'ERROR' },
+								]}
+								defaultValue={data.fulfillment?.status}
+							/>
+							<button
+								className="button"
+								type="submit"
+								name="_action"
+								value="update status"
+							>
+								Save
+							</button>
+						</Form>
+
+						<Link
+							className="primary button"
+							to="labels"
+							target="_blank"
+							reloadDocument
 						>
-							Save
-						</button>
-					</Form>
+							Print Labels
+						</Link>
+					</div>
 				</div>
 
-				<Link
-					className="primary button"
-					to="labels"
-					target="_blank"
-					reloadDocument
-				>
-					Print Labels
-				</Link>
+				<div className="page-header__row">
+					{data?.fulfillment?.vendor?.name}
+				</div>
 			</header>
 
 			<div className="foobar">

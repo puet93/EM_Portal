@@ -112,6 +112,94 @@ export function BoxesDeliveryChangeMoveArrowIcon() {
 	);
 }
 
+export function BuildingIcon() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden
+			focusable="false"
+		>
+			<path
+				fill-rule="evenodd"
+				clip-rule="evenodd"
+				d="M3.997 3.99658H14.0012C14.5537 3.99658 15.0016 4.44448 15.0016 4.997V20.0032H3.997C3.44448 20.0032 2.99658 19.5553 2.99658 19.0028V4.997C2.99658 4.44448 3.44448 3.99658 3.997 3.99658Z"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				fill-rule="evenodd"
+				clip-rule="evenodd"
+				d="M15.0015 7.99854H20.0035C20.5561 7.99854 21.004 8.44644 21.004 8.99895V19.0031C21.004 19.5556 20.5561 20.0035 20.0035 20.0035H15.0015V7.99854Z"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M6.99826 7.8732C6.92919 7.8732 6.8732 7.92919 6.8732 7.99826C6.8732 8.06732 6.92919 8.12331 6.99826 8.12331C7.06732 8.12331 7.12331 8.06732 7.12331 7.99826C7.12331 7.92919 7.06732 7.8732 6.99826 7.8732"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M10.9997 7.8732C10.9307 7.8732 10.8747 7.92919 10.8747 7.99826C10.8747 8.06732 10.9307 8.12331 10.9997 8.12331C11.0688 8.12331 11.1248 8.06732 11.1248 7.99826C11.1248 7.92919 11.0688 7.8732 10.9997 7.8732"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M6.99826 11.8752C6.92919 11.8752 6.8732 11.9311 6.8732 12.0002C6.8732 12.0693 6.92919 12.1253 6.99826 12.1253C7.06732 12.1253 7.12331 12.0693 7.12331 12.0002C7.12331 11.9311 7.06732 11.8752 6.99826 11.8752"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M10.9997 11.8752C10.9307 11.8752 10.8747 11.9311 10.8747 12.0002C10.8747 12.0693 10.9307 12.1253 10.9997 12.1253C11.0688 12.1253 11.1248 12.0693 11.1248 12.0002C11.1248 11.9311 11.0688 11.8752 10.9997 11.8752"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M6.99826 15.8766C6.92919 15.8766 6.8732 15.9326 6.8732 16.0017C6.8732 16.0707 6.92919 16.1267 6.99826 16.1267C7.06732 16.1267 7.12331 16.0707 7.12331 16.0017C7.12331 15.9326 7.06732 15.8766 6.99826 15.8766"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M10.9997 15.8766C10.9307 15.8766 10.8747 15.9326 10.8747 16.0017C10.8747 16.0707 10.9307 16.1267 10.9997 16.1267C11.0688 16.1267 11.1248 16.0707 11.1248 16.0017C11.1248 15.9326 11.0688 15.8766 10.9997 15.8766"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M18.0026 11.8752C17.9336 11.8752 17.8776 11.9311 17.8776 12.0002C17.8776 12.0693 17.9336 12.1253 18.0026 12.1253C18.0717 12.1253 18.1277 12.0693 18.1277 12.0002C18.1277 11.9311 18.0717 11.8752 18.0026 11.8752"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path
+				d="M18.0026 15.8766C17.9336 15.8766 17.8776 15.9326 17.8776 16.0017C17.8776 16.0707 17.9336 16.1267 18.0026 16.1267C18.0717 16.1267 18.1277 16.0707 18.1277 16.0017C18.1277 15.9326 18.0717 15.8766 18.0026 15.8766"
+				stroke="#E6E8EC"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export function ChevronDownIcon() {
 	return (
 		<svg
