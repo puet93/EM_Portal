@@ -1,7 +1,7 @@
-import type { LoaderArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { prisma } from '~/db.server';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	// await requireUserId(request);
 
 	const fulfillment = await prisma.fulfillment.findUnique({

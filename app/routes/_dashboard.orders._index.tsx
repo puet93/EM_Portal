@@ -1,33 +1,44 @@
 import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
-import { OrderStatus } from '@prisma/client';
+import { FulfillmentStatus, OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { EditIcon, TrashIcon } from '~/components/Icons';
 import Input from '~/components/Input';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
-import type { FulfillmentStatus } from '@prisma/client';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
+import DropdownMultiSelect from '~/components/DropdownMultiSelect';
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const user = await requireUser(request);
 	const searchParams = new URL(request.url).searchParams;
+
+	// Old ordering system status
+	const statusFilters = Object.values(OrderStatus).map((status) => {
+		return { value: status, label: toCapitalCase(status) };
+	});
 	let filters = ['DRAFT', 'NEW'];
-	let fulfillmentStatusFilters = [
-		'NEW',
-		'PROCESSING',
-		'COMPLETE',
-		'CANCELLED',
-		'ERROR',
-	];
-	let newFilters = [];
+	let newFilters = searchParams.getAll('orderStatuses'); // This is where you want to add OrderStatus filters
+
+	// New fulfillment system status
+	const fulfillmentStatuses = Object.values(FulfillmentStatus).map(
+		(status) => {
+			return { value: status, label: toCapitalCase(status) };
+		}
+	);
+	let fulfillmentStatusFilters: FulfillmentStatus[] = ['NEW'];
+	let newFulfillmentStatusFilters: FulfillmentStatus[] = [];
+	let fulfillmentStatusQuery = 'NEW';
+
 	let name = '';
 
-	const statusFilters = Object.values(OrderStatus).map((orderStatus) => {
-		return { value: orderStatus, label: toCapitalCase(orderStatus) };
-	});
-
 	for (const [key, value] of searchParams) {
+		if (key === 'fulfillmentStatus') {
+			newFulfillmentStatusFilters.push(value as FulfillmentStatus);
+			fulfillmentStatusQuery = value;
+			continue;
+		}
+
 		if (key === 'status') {
 			newFilters.push(value);
 			continue;
@@ -41,6 +52,10 @@ export const loader = async ({ request }: LoaderArgs) => {
 
 	if (newFilters.length !== 0) {
 		filters = newFilters;
+	}
+
+	if (newFulfillmentStatusFilters.length !== 0) {
+		fulfillmentStatusFilters = newFulfillmentStatusFilters;
 	}
 
 	const addresses = await prisma.address.findMany({
@@ -77,6 +92,8 @@ export const loader = async ({ request }: LoaderArgs) => {
 		return json({
 			filters,
 			fulfillments,
+			fulfillmentStatuses,
+			fulfillmentStatusQuery,
 			name,
 			orders: null,
 			statusFilters,
@@ -108,6 +125,8 @@ export const loader = async ({ request }: LoaderArgs) => {
 	return json({
 		filters,
 		fulfillments,
+		fulfillmentStatuses,
+		fulfillmentStatusQuery,
 		name,
 		orders,
 		statusFilters,
@@ -187,6 +206,24 @@ export default function OrderIndex() {
 
 			{data.fulfillments ? (
 				<section className="page-section">
+					<Form method="get" replace className="segmented-controls">
+						{data.fulfillmentStatuses.map((status) => (
+							<button
+								key={status.value}
+								type="submit"
+								name="fulfillmentStatus"
+								value={status.value}
+								className={
+									data.fulfillmentStatusQuery === status.value
+										? 'segmented-control is-active'
+										: 'segmented-control'
+								}
+							>
+								{status.label}
+							</button>
+						))}
+					</Form>
+
 					<table>
 						<thead>
 							<tr>
@@ -309,23 +346,11 @@ export default function OrderIndex() {
 
 					<div className="table-toolbar">
 						<Form method="get" replace>
-							<fieldset style={{ display: 'flex' }}>
-								<legend>Status</legend>
-
-								{data.statusFilters.map(({ label, value }) => (
-									<label key={value}>
-										<input
-											type="checkbox"
-											name="status"
-											value={value}
-											defaultChecked={data.filters.includes(
-												value
-											)}
-										/>
-										{label}
-									</label>
-								))}
-							</fieldset>
+							{/* <DropdownMultiSelect
+								name="orderStatuses"
+								options={data.statusFilters}
+								defaultValue={data.filters}
+							/> */}
 
 							<Input
 								label="Search by name or order number"
@@ -334,7 +359,12 @@ export default function OrderIndex() {
 								defaultValue={data.name}
 							/>
 
-							<button className="primary button" type="submit">
+							<button
+								className="primary button"
+								type="submit"
+								name="_action"
+								value="test"
+							>
 								Search
 							</button>
 						</Form>

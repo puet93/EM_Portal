@@ -1,4 +1,4 @@
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { requireSuperAdmin, requireUserId } from '~/session.server';
@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 
 	const [user, vendors] = await prisma.$transaction([

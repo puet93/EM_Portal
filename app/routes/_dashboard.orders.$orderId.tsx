@@ -1,4 +1,4 @@
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
@@ -7,7 +7,7 @@ import { badRequest } from '~/utils/request.server';
 import type { OrderStatus } from '@prisma/client';
 import { requireUserId } from '~/session.server';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	const orderId = params.orderId;
 
 	if (typeof orderId !== 'string' || orderId.length === 0) {

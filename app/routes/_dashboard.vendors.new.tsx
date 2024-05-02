@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Link, Form, useActionData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
@@ -6,7 +6,7 @@ import { prisma } from '~/db.server';
 
 import Input from '~/components/Input';
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	if (request.method !== 'POST') {
@@ -25,7 +25,7 @@ export const action = async ({ request }: ActionArgs) => {
 	});
 };
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 	return json({});
 };

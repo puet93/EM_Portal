@@ -1,10 +1,10 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	const productId = params.productId;
@@ -25,7 +25,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 	return json({ product });
 };
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 
 	const product = await prisma.retailerProduct.findUnique({

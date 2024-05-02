@@ -1,10 +1,10 @@
-import type { ActionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { createSuperAdmin, getUserByEmail } from '~/models/user.server';
 import { createUserSession } from '~/session.server';
 import { safeRedirect, validateEmail } from '~/utils';
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
 	const formData = await request.formData();
 	const email = formData.get('email');
 	const password = formData.get('password');

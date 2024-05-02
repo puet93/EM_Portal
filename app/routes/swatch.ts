@@ -1,8 +1,8 @@
-import type { LoaderArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { prisma } from '~/db.server';
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const { searchParams } = new URL(request.url);
 	const searchQuery = searchParams.get('query');
 	let results;

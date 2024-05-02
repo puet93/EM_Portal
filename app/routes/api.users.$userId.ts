@@ -1,9 +1,9 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	const userId = params.userId;

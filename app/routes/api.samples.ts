@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,
@@ -10,7 +10,7 @@ import { parseCSV } from '~/utils/csv';
 import { splitMeasurement } from '~/utils/measure';
 import { badRequest } from '~/utils/request.server';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	switch (request.method) {
@@ -45,7 +45,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 	}
 };
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 	const samples = await prisma.sample.findMany();
 	return json({ samples });

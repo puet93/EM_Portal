@@ -33,10 +33,10 @@
 	"dependencies": {
 		"@isaacs/express-prometheus-middleware": "^1.2.1",
 		"@prisma/client": "^5.2.0",
-		"@remix-run/css-bundle": "^1.19.3",
-		"@remix-run/express": "^1.19.3",
-		"@remix-run/node": "^1.19.3",
-		"@remix-run/react": "^1.19.3",
+		"@remix-run/css-bundle": "2.9.1",
+		"@remix-run/express": "2.9.1",
+		"@remix-run/node": "2.9.1",
+		"@remix-run/react": "2.9.1",
 		"@shopify/shopify-api": "^9.5.1",
 		"@shopify/shopify-app-remix": "^2.7.0",
 		"bcryptjs": "^2.4.3",
@@ -55,8 +55,8 @@
 	},
 	"devDependencies": {
 		"@faker-js/faker": "^8.0.2",
-		"@remix-run/dev": "^1.19.3",
-		"@remix-run/eslint-config": "^1.19.3",
+		"@remix-run/dev": "2.9.1",
+		"@remix-run/eslint-config": "2.9.1",
 		"@testing-library/cypress": "^9.0.0",
 		"@testing-library/jest-dom": "^5.16.5",
 		"@types/bcryptjs": "^2.4.2",
@@ -95,7 +95,7 @@
 		"vitest": "^0.32.2"
 	},
 	"engines": {
-		"node": ">=14"
+		"node": "18.x"
 	},
 	"prisma": {
 		"seed": "ts-node --require tsconfig-paths/register prisma/seed.ts"

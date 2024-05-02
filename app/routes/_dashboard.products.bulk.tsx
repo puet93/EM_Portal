@@ -1,4 +1,4 @@
-import type { ActionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs } from '@remix-run/node';
 import {
 	json,
 	unstable_createMemoryUploadHandler,
@@ -12,7 +12,7 @@ import { parseCSV, getDataFromFileUpload } from '~/utils/csv';
 
 import FileDropInput from '~/components/FileDropInput';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	const handler = unstable_createMemoryUploadHandler();

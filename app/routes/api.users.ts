@@ -1,11 +1,11 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { createUser, getUserByEmail } from '~/models/user.server';
 import { validateEmail } from '~/utils';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	if (request.method !== 'POST') {
@@ -66,7 +66,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 	return json({ user: await createUser(email, password) });
 };
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 	return json({ users: await prisma.user.findMany() });
 };

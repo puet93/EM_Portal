@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,
@@ -9,7 +9,7 @@ import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	const handler = unstable_createMemoryUploadHandler();
@@ -70,7 +70,7 @@ export const action = async ({ params, request }: ActionArgs) => {
 	}
 };
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 	const products = await prisma.retailerProduct.findMany({
 		include: {

@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderFunction } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunction } from '@remix-run/node';
 import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,

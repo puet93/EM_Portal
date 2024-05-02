@@ -1,4 +1,4 @@
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import { Form, useActionData, useNavigation } from '@remix-run/react';
 import { requireUserId, requireSuperAdmin } from '~/session.server';
@@ -15,7 +15,7 @@ import { badRequest } from '~/utils/request.server';
 import { prisma } from '~/db.server';
 import bcrypt from 'bcryptjs';
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await requireSuperAdmin(request);
 	return json({});
 };

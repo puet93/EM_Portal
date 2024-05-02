@@ -1,8 +1,8 @@
-import type { LoaderArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { requireUserId } from '~/session.server';
 import { getOrder } from '~/orders.server';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 
 	const orders = await getOrder(params.orderId);

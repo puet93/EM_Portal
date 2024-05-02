@@ -1,11 +1,11 @@
-import type { LoaderArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { BuildingIcon } from '~/components/Icons';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
 	const vendors = await prisma.vendor.findMany({
 		orderBy: {
@@ -69,8 +69,8 @@ export default function VendorsPage() {
 										fill="none"
 									>
 										<path
-											fill-rule="evenodd"
-											clip-rule="evenodd"
+											fillRule="evenodd"
+											clipRule="evenodd"
 											d="M15.75 6.06675V14.25C15.75 15.0788 15.0788 15.75 14.25 15.75H3.75C2.92125 15.75 2.25 15.0788 2.25 14.25V6.06675C2.25 5.86425 2.29125 5.66325 2.37075 5.47725L3.36075 3.1605C3.597 2.6085 4.13925 2.25 4.74 2.25H13.26C13.8608 2.25 14.403 2.6085 14.6393 3.1605L15.6293 5.47725C15.7088 5.664 15.75 5.86425 15.75 6.06675Z"
 											stroke="#777E90"
 											strokeWidth="1.125"

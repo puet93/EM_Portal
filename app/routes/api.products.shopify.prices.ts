@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderFunction } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunction } from '@remix-run/node';
 import {
 	unstable_createMemoryUploadHandler,
 	unstable_parseMultipartFormData,
@@ -15,7 +15,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	return json({ products: await prisma.retailerProduct.findMany() });
 };
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
 	await requireUserId(request);
 
 	switch (request.method) {

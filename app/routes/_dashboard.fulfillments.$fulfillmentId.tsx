@@ -1,4 +1,4 @@
-import type { ActionFunction, LoaderArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import {
 	Form,
@@ -14,7 +14,7 @@ import { badRequest } from '~/utils/request.server';
 import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUser(request);
 	const fulfillmentId = params.fulfillmentId;
 
