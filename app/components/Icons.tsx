@@ -123,8 +123,8 @@ export function BuildingIcon() {
 			focusable="false"
 		>
 			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
+				fillRule="evenodd"
+				clipRule="evenodd"
 				d="M3.997 3.99658H14.0012C14.5537 3.99658 15.0016 4.44448 15.0016 4.997V20.0032H3.997C3.44448 20.0032 2.99658 19.5553 2.99658 19.0028V4.997C2.99658 4.44448 3.44448 3.99658 3.997 3.99658Z"
 				stroke="#E6E8EC"
 				strokeWidth="1.5"
@@ -132,8 +132,8 @@ export function BuildingIcon() {
 				strokeLinejoin="round"
 			/>
 			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
+				fillRule="evenodd"
+				clipRule="evenodd"
 				d="M15.0015 7.99854H20.0035C20.5561 7.99854 21.004 8.44644 21.004 8.99895V19.0031C21.004 19.5556 20.5561 20.0035 20.0035 20.0035H15.0015V7.99854Z"
 				stroke="#E6E8EC"
 				strokeWidth="1.5"
