@@ -12,13 +12,23 @@ import DropdownMultiSelect from '~/components/DropdownMultiSelect';
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const user = await requireUser(request);
 	const searchParams = new URL(request.url).searchParams;
+	const _action = searchParams.get('_action');
 
-	// Old ordering system status
-	const statusFilters = Object.values(OrderStatus).map((status) => {
-		return { value: status, label: toCapitalCase(status) };
-	});
-	let filters = ['DRAFT', 'NEW'];
-	let newFilters = searchParams.getAll('orderStatuses'); // This is where you want to add OrderStatus filters
+	// Order status dropdown
+	const orderStatusDefaults: string[] = ['DRAFT', 'NEW'];
+	const orderStatusDropdownName: string = 'selectedStatuses';
+	const orderStatusOptions: { value: OrderStatus; label: string }[] =
+		Object.values(OrderStatus).map((status) => {
+			return { value: status, label: toCapitalCase(status) };
+		});
+
+	let selectedOrderStatuses;
+	if (_action === 'search-orders') {
+		// This is where you want to add OrderStatus filters
+		selectedOrderStatuses = searchParams.getAll(orderStatusDropdownName);
+	} else {
+		selectedOrderStatuses = orderStatusDefaults;
+	}
 
 	// New fulfillment system status
 	const fulfillmentStatuses = Object.values(FulfillmentStatus).map(
@@ -39,19 +49,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			continue;
 		}
 
-		if (key === 'status') {
-			newFilters.push(value);
-			continue;
-		}
-
 		if (key === 'name') {
 			name = value;
 			continue;
 		}
-	}
-
-	if (newFilters.length !== 0) {
-		filters = newFilters;
 	}
 
 	if (newFulfillmentStatusFilters.length !== 0) {
@@ -90,20 +91,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 	if (user.role !== 'SUPERADMIN')
 		return json({
-			filters,
 			fulfillments,
 			fulfillmentStatuses,
 			fulfillmentStatusQuery,
 			name,
 			orders: null,
-			statusFilters,
+			orderStatusDropdownName,
+			orderStatusOptions,
+			orderStatusDefaults,
 			userRole: user.role,
 		});
 
 	const orders = await prisma.order.findMany({
 		where: {
 			status: {
-				in: filters as OrderStatus[],
+				in:
+					selectedOrderStatuses.length !== 0
+						? (selectedOrderStatuses as OrderStatus[])
+						: undefined,
 			},
 			OR: [
 				{ id: { contains: name } },
@@ -123,13 +128,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	});
 
 	return json({
-		filters,
 		fulfillments,
 		fulfillmentStatuses,
 		fulfillmentStatusQuery,
 		name,
 		orders,
-		statusFilters,
+		orderStatusDropdownName,
+		orderStatusOptions,
+		orderStatusDefaults,
 		userRole: user.role,
 	});
 };
@@ -345,12 +351,15 @@ export default function OrderIndex() {
 					</div>
 
 					<div className="table-toolbar">
-						<Form method="get" replace>
-							{/* <DropdownMultiSelect
-								name="orderStatuses"
-								options={data.statusFilters}
-								defaultValue={data.filters}
-							/> */}
+						<Form method="get" replace preventScrollReset={true}>
+							<div className="input">
+								<label>Order Status</label>
+								<DropdownMultiSelect
+									name={data.orderStatusDropdownName}
+									options={data.orderStatusOptions}
+									defaultValue={data.orderStatusDefaults}
+								/>
+							</div>
 
 							<Input
 								label="Search by name or order number"
@@ -363,7 +372,7 @@ export default function OrderIndex() {
 								className="primary button"
 								type="submit"
 								name="_action"
-								value="test"
+								value="search-orders"
 							>
 								Search
 							</button>

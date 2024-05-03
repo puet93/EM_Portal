@@ -181,7 +181,7 @@ export default function NewOrderDetailsPage() {
 			<div className="foobar">
 				<section className="foobar-main-content">
 					<h2 className="headline-h6">Search for items</h2>
-					<search.Form method="post" action="/search" replace>
+					<search.Form method="post" action="/search">
 						<div className="search-bar">
 							<SearchIcon
 								className="search-icon"

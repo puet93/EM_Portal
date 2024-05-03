@@ -210,12 +210,6 @@ export default function NewOrderPage() {
 							</div>
 						))}
 
-					{/* {data.searchResults ? (
-						<code>
-							{JSON.stringify(data.searchResults, null, 4)}
-						</code>
-					) : null} */}
-
 					{search?.data?.results ? (
 						<table className="new-order-search-results">
 							<tbody>
