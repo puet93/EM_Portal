@@ -15,19 +15,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	const _action = searchParams.get('_action');
 
 	// Order status dropdown
-	const orderStatusDefaults: string[] = ['DRAFT', 'NEW'];
+	const orderStatusDefaults: OrderStatus[] = ['DRAFT', 'NEW'];
 	const orderStatusDropdownName: string = 'selectedStatuses';
 	const orderStatusOptions: { value: OrderStatus; label: string }[] =
 		Object.values(OrderStatus).map((status) => {
 			return { value: status, label: toCapitalCase(status) };
 		});
 
-	let selectedOrderStatuses;
+	let selectedOrderStatuses = orderStatusDefaults;
 	if (_action === 'search-orders') {
-		// This is where you want to add OrderStatus filters
-		selectedOrderStatuses = searchParams.getAll(orderStatusDropdownName);
-	} else {
-		selectedOrderStatuses = orderStatusDefaults;
+		selectedOrderStatuses = searchParams.getAll(
+			orderStatusDropdownName
+		) as OrderStatus[];
 	}
 
 	// New fulfillment system status
@@ -59,15 +58,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		fulfillmentStatusFilters = newFulfillmentStatusFilters;
 	}
 
-	const addresses = await prisma.address.findMany({
-		where: {
-			line1: {
-				contains: name,
-				mode: 'insensitive',
-			},
-		},
-	});
-
 	const fulfillments = await prisma.fulfillment.findMany({
 		where: {
 			status: {
@@ -89,50 +79,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	if (user.role !== 'SUPERADMIN')
-		return json({
-			fulfillments,
-			fulfillmentStatuses,
-			fulfillmentStatusQuery,
-			name,
-			orders: null,
-			orderStatusDropdownName,
-			orderStatusOptions,
-			orderStatusDefaults,
-			userRole: user.role,
-		});
-
-	const orders = await prisma.order.findMany({
-		where: {
-			status: {
-				in:
-					selectedOrderStatuses.length !== 0
-						? (selectedOrderStatuses as OrderStatus[])
-						: undefined,
-			},
-			OR: [
-				{ id: { contains: name } },
-				{
-					address: {
-						id: { in: addresses?.map((address) => address.id) },
-					},
-				},
-			],
-		},
-		include: {
-			address: true,
-		},
-		orderBy: {
-			createdAt: 'desc',
-		},
-	});
-
 	return json({
 		fulfillments,
 		fulfillmentStatuses,
 		fulfillmentStatusQuery,
 		name,
-		orders,
+		orders:
+			user.role !== 'SUPERADMIN'
+				? null
+				: await getOrders(name, selectedOrderStatuses),
 		orderStatusDropdownName,
 		orderStatusOptions,
 		orderStatusDefaults,
@@ -465,4 +420,37 @@ export default function OrderIndex() {
 			) : null}
 		</>
 	);
+}
+
+async function getOrders(name: string, orderStatuses: OrderStatus[]) {
+	const addresses = await prisma.address.findMany({
+		where: {
+			line1: {
+				contains: name,
+				mode: 'insensitive',
+			},
+		},
+	});
+
+	return await prisma.order.findMany({
+		where: {
+			status: {
+				in: orderStatuses.length !== 0 ? orderStatuses : undefined,
+			},
+			OR: [
+				{ id: { contains: name } },
+				{
+					address: {
+						id: { in: addresses?.map((address) => address.id) },
+					},
+				},
+			],
+		},
+		include: {
+			address: true,
+		},
+		orderBy: {
+			createdAt: 'desc',
+		},
+	});
 }

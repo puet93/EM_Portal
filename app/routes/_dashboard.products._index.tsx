@@ -44,7 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 	}
 
 	return json({
-		query: null,
 		results,
 		vendorDropdownName,
 		vendorOptions,
@@ -173,8 +172,6 @@ export default function ProductsPage() {
 					<div className="message">
 						{data.results.length} products found
 					</div>
-
-					<div className="message">QUERY: {data.query}</div>
 
 					<table style={{ marginTop: '36px' }}>
 						<thead>

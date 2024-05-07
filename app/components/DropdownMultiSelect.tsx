@@ -106,13 +106,13 @@ export default function DropdownMultiSelect({
 
 			{selectedOptions.length > 0 ? (
 				<div>
-					Selected:{' '}
 					{selectedOptions.map((value) => {
 						const matchingOption = options.find(
 							(option) => option.value === value
 						);
 						return (
 							<span
+								className="option-tag"
 								key={value}
 								onClick={handleDeselect}
 								data-value={value}
@@ -120,6 +120,29 @@ export default function DropdownMultiSelect({
 								{matchingOption
 									? matchingOption.label + ' '
 									: 'Missing label'}
+
+								<svg
+									className="option-tag__svg"
+									width="18"
+									height="18"
+									viewBox="0 0 18 18"
+									fill="none"
+								>
+									<path
+										d="M6 6L12 12"
+										stroke=""
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+									<path
+										d="M12 6L6 12"
+										stroke=""
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
 							</span>
 						);
 					})}

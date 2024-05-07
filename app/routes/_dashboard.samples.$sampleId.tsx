@@ -8,19 +8,20 @@ import {
 	useLoaderData,
 } from '@remix-run/react';
 import { prisma } from '~/db.server';
-import { requireUserId } from '~/session.server';
+import { requireSuperAdmin } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
+import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
 import { graphqlClient } from '~/utils/shopify.server';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
-	await requireUserId(request);
+	await requireSuperAdmin(request);
 
 	const searchParams = new URL(request.url).searchParams;
 	const entries = Object.fromEntries(searchParams);
 	const query = entries.query;
 
-	const sample = await prisma.sample.findFirst({
+	const sample = await prisma.sample.findUnique({
 		where: { id: params.sampleId },
 		include: {
 			vendor: true,
@@ -110,7 +111,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 			if (!sample) {
 				return badRequest({
-					errors: ['Unable to locate sample in database.'],
+					error: { message: 'Unable to locate sample in database.' },
 				});
 			}
 
@@ -134,27 +135,43 @@ export const action: ActionFunction = async ({ params, request }) => {
 				});
 			} catch (e) {
 				return badRequest({
-					errors: ['Unable to query Shopify for sample product.'],
+					error: {
+						message: 'Unable to query Shopify for sample product.',
+					},
 				});
 			}
 
 			const responseBody = shopifyResponse.body;
 			if (!responseBody) {
 				return badRequest({
-					message: 'Unable to get product on Shopify',
+					error: {
+						message: 'Unable to get product on Shopify',
+					},
 				});
 			}
 
-			const existingSamples = responseBody.data?.productVariants?.edges;
+			const existingSamples = responseBody?.data?.productVariants?.edges;
 			const productExists = existingSamples.length !== 0;
 
 			// If sample does not exist on Shopify as a product
 			if (!productExists) {
 				// Create Shopify product from sample
-				const newShopifyProduct = await createShopifyProductFromSample(
-					String(fields.title),
-					sample.materialNo
-				);
+
+				let newShopifyProduct;
+				try {
+					newShopifyProduct = await createShopifyProductFromSample(
+						String(fields.title),
+						sample.materialNo
+					);
+				} catch (e) {
+					return badRequest({
+						error: {
+							message:
+								'Unable to create product on Shopify from sample',
+							response: e,
+						},
+					});
+				}
 
 				// Update sample on database with Shopify product's GID
 				await prisma.sample.update({
@@ -164,7 +181,12 @@ export const action: ActionFunction = async ({ params, request }) => {
 					},
 				});
 
-				return json({ message: 'Sample created on Shopify.' });
+				return json({
+					success: {
+						message: 'Sample created on Shopify.',
+						responseBody: newShopifyProduct,
+					},
+				});
 			}
 
 			if (productExists && existingSamples.length === 1) {
@@ -223,7 +245,12 @@ export const action: ActionFunction = async ({ params, request }) => {
 					},
 				});
 			}
-			return json({ message: 'Connected' });
+			return json({
+				success: {
+					connect:
+						'Sample(s) added to related product Sample metafield',
+				},
+			});
 		}
 		case 'metafield': {
 			const skus = formData.getAll('connected');
@@ -278,322 +305,224 @@ export default function SampleDetailPage() {
 	}
 
 	return (
-		<div className="foobar">
-			<div className="foobar-main-content">
-				<h1>Sample Swatch</h1>
-				{data.sample.vendor ? <p>{data.sample.vendor.name}</p> : null}
+		<>
+			<header className="page-header">
+				<div className="page-header__row">
+					<h1 className="headline-h5">Sample Swatch</h1>
 
-				<div style={{ marginTop: 24, marginBottom: 24 }}>
-					<p className="title">
-						<Link to="edit">
-							{data.sample.seriesName} {data.sample.color}{' '}
-							{data.sample.finish}
-						</Link>
-					</p>
-					<p className="caption">{data.sample.materialNo}</p>
-
-					<div>
-						<p>Series Alias: {data.sample.seriesAlias}</p>
-						<p>Color Alias: {data.sample.colorAlias}</p>
-						<p>Shopify ID: {data.sample.gid}</p>
-
+					<div className="page-header__actions">
 						<Link to="edit" className="button">
 							Edit
 						</Link>
 					</div>
 				</div>
+				<div className="page-header__row">{data.sample.materialNo}</div>
+			</header>
 
-				<div style={{ marginTop: 24, marginBottom: 24 }}>
-					<h2 className="headline-h5">Sync with Shopify</h2>
-					<p style={{ maxWidth: 768 }}>
-						Looks for a product on Shopify matching the sample's
-						material number. If the product exists, it will be
-						updated. If the product does not exist, a new product
-						will be created with the sample's information.
-					</p>
-					<Form method="post" className="inline-form" replace>
-						<Input
-							id="title"
-							name="title"
-							label="Suggested title"
-							defaultValue={suggestedTitle}
-						/>
-						<button
-							className="button"
-							type="submit"
-							name="_action"
-							value="sync"
-						>
-							Sync
-						</button>
-					</Form>
-
-					{actionData && !actionData.errors ? (
-						<div className="success message">
-							{actionData.message}
+			<div className="foobar">
+				<div className="foobar-main-content">
+					<div
+						style={{
+							display: 'flex',
+							marginBottom: 32,
+						}}
+					>
+						<div style={{ marginRight: 32 }}>
+							<p
+								className="caption"
+								style={{ marginTop: 0, marginBottom: 8 }}
+							>
+								{data.sample.vendor.name}
+							</p>
+							<p className="title" style={{ marginTop: 0 }}>
+								{data.sample.seriesName} in {data.sample.finish}{' '}
+								{data.sample.color}
+							</p>
 						</div>
-					) : null}
 
-					{actionData?.errors &&
-						actionData.errors.map((error) => (
-							<div key={error} className="error message">
-								{error}
-							</div>
-						))}
-				</div>
+						<div>
+							<p
+								className="caption"
+								style={{ marginTop: 0, marginBottom: 8 }}
+							>
+								Edward Martin
+							</p>
+							<p className="title" style={{ marginTop: 0 }}>
+								{data.sample.seriesAlias} in{' '}
+								{data.sample.finish} {data.sample.colorAlias}
+							</p>
+						</div>
+					</div>
 
-				{data.inventoryLocations && (
 					<div style={{ marginTop: 24, marginBottom: 24 }}>
-						<h2 className="headline-h5"></h2>
-						<Form method="post" className="inline-form" replace>
-							<select name="locationId">
-								{data.inventoryLocations.map((location) => (
-									<option
-										key={location.node.id}
-										value={location.node.id}
-									>
-										{location.node.name}
-									</option>
-								))}
-							</select>
+						<h2 className="headline-h5">Sync with Shopify</h2>
+						<p style={{ maxWidth: 768 }}>
+							Looks for a product on Shopify matching the sample's
+							material number. If the product exists, it will be
+							updated. If the product does not exist, a new
+							product will be created with the sample's
+							information.
+						</p>
 
+						{data.sample.gid ? (
+							<code>{data.sample.gid}</code>
+						) : null}
+
+						<Form method="post" className="inline-form" replace>
+							<Input
+								id="title"
+								name="title"
+								label="Suggested title"
+								defaultValue={suggestedTitle}
+							/>
 							<button
 								className="button"
 								type="submit"
 								name="_action"
-								value="location"
+								value="sync"
 							>
-								Update Inventory Location
+								Sync
 							</button>
 						</Form>
 
-						{actionData && !actionData.errors ? (
-							<div className="success message">
-								{actionData.message}
+						{actionData?.success?.message ? (
+							<div
+								className="success message"
+								style={{ marginTop: 12 }}
+							>
+								{actionData.success.message}
 							</div>
 						) : null}
 
-						{actionData?.errors &&
-							actionData.errors.map((error) => (
-								<div key={error} className="error message">
-									{error}
-								</div>
-							))}
-					</div>
-				)}
-
-				{data.connected && data.connected.length !== 0 ? (
-					<div style={{ marginTop: 48, marginBottom: 48 }}>
-						<Form method="post">
-							<input
-								type="hidden"
-								name="sampleGID"
-								value={data.sample.gid}
-							/>
+						{actionData?.error?.message ? (
 							<div
-								style={{
-									display: 'flex',
-									justifyContent: 'space-between',
-									alignItems: 'center',
-								}}
+								className="error message"
+								style={{ marginTop: 12 }}
 							>
-								<h2 className="headline-h5">HERRO?S!</h2>
+								{actionData.error.message}
+							</div>
+						) : null}
+
+						{actionData?.error?.response ? (
+							<code style={{ marginTop: 12 }}>
+								{JSON.stringify(
+									actionData.error.response,
+									null,
+									4
+								)}
+							</code>
+						) : null}
+
+						{actionData?.success?.responseBody ? (
+							<code>
+								{JSON.stringify(
+									actionData.success.responseBody,
+									null,
+									4
+								)}
+							</code>
+						) : null}
+					</div>
+
+					{data.inventoryLocations && (
+						<div style={{ marginTop: 24, marginBottom: 24 }}>
+							<h2 className="headline-h5"></h2>
+							<Form method="post" className="inline-form" replace>
+								<Dropdown
+									name="locationId"
+									options={data.inventoryLocations.map(
+										(location: any) => ({
+											value: location.node.id,
+											label: location.node.name,
+										})
+									)}
+								/>
 
 								<button
-									className="primary button"
+									className="button"
+									type="submit"
 									name="_action"
-									value="metafield"
+									value="location"
 								>
-									Metafield
+									Update Inventory Location
 								</button>
-							</div>
+							</Form>
 
-							{actionData?.metafields &&
-								actionData.metafields.map((metafield) => (
-									<div
-										className="success message"
-										key={metafield.id}
-									>
-										{metafield.id}
-									</div>
-								))}
-
-							<ul className="foobar-card-list">
-								{data.connected.map((product) => (
-									<li key={product.id}>
-										<div>
-											<input
-												type="hidden"
-												name="connected"
-												value={
-													product.retailerProduct.sku
-												}
-											/>
-											<code>
-												{JSON.stringify(
-													product,
-													null,
-													4
-												)}
-											</code>
-										</div>
-									</li>
-								))}
-							</ul>
-						</Form>
-					</div>
-				) : (
-					<div className="error message">
-						No product connected to sample swatch.
-					</div>
-				)}
-
-				{data.vendorProducts && data.vendorProducts.length !== 0 ? (
-					<Form method="post" replace>
-						<div
-							style={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'space-between',
-								marginTop: 48,
-								marginBottom: 24,
-							}}
-						>
-							<h2>Possible Matching Products</h2>
-							<button
-								type="submit"
-								className="primary button"
-								name="_action"
-								value="connect"
-							>
-								Connect
-							</button>
+							{actionData?.success?.updateInventoryLocation ? (
+								<div className="success message">
+									{actionData.success.updateInventoryLocation}
+								</div>
+							) : null}
 						</div>
-						<table>
-							<thead>
-								<tr>
-									<th>
-										<input
-											type="checkbox"
-											defaultChecked={false}
-										/>
-									</th>
-									<th></th>
-									<th></th>
-									<th></th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody>
-								{data.vendorProducts.map((product) => (
-									<tr key={product.id}>
-										<td>
-											<input
-												type="checkbox"
-												name="productId"
-												value={product.id}
-												defaultChecked={
-													!product.sampleMaterialNo &&
-													product.finish ===
-														data.sample.finish
-												}
-											/>
-										</td>
-										<td>
-											{!product.sampleMaterialNo ? (
-												<div>
-													<span
-														className="indicator"
-														style={{
-															marginRight: '8px',
-														}}
-													></span>
-													EMPTY
-												</div>
-											) : null}
+					)}
 
-											{product.sampleMaterialNo !==
-												null &&
-											product.sampleMaterialNo !==
-												data.sample.materialNo ? (
-												<div>
-													<span
-														className="error indicator"
-														style={{
-															marginRight: '8px',
-														}}
-													></span>{' '}
-													DOES NOT MATCH
-												</div>
-											) : null}
+					{data.connected && data.connected.length !== 0 ? (
+						<div style={{ marginTop: 48, marginBottom: 48 }}>
+							<Form method="post">
+								<input
+									type="hidden"
+									name="sampleGID"
+									value={data.sample.gid}
+								/>
+								<div
+									style={{
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'center',
+									}}
+								>
+									<h2 className="headline-h5">
+										Products using this swatch
+									</h2>
 
-											{product.sampleMaterialNo !==
-												null &&
-											product.sampleMaterialNo ===
-												data.sample.materialNo ? (
-												<div>
-													<span
-														className="success indicator"
-														style={{
-															marginRight: '8px',
-														}}
-													></span>{' '}
-													MATCH
-												</div>
-											) : null}
-										</td>
-										<td>
-											<Link
-												to={`/vendors/${product.vendor.id}/products/${product.id}`}
-											>
-												{product.seriesName}
-											</Link>
+									<button
+										className="primary button"
+										name="_action"
+										value="metafield"
+									>
+										Metafield
+									</button>
+								</div>
+
+								{actionData?.success?.connect ? (
+									<div className="success message">
+										{actionData.success.connect}
+									</div>
+								) : null}
+
+								<ul className="foobar-card-list">
+									{data.connected.map((product) => (
+										<li key={product.id}>
 											<div>
-												<span
-													className={
-														product.color !==
-														data.sample.color
-															? 'indicator error'
-															: 'indicator success'
+												<input
+													type="hidden"
+													name="connected"
+													value={
+														product.retailerProduct
+															.sku
 													}
-												></span>{' '}
-												{product.color}
+												/>
+												<code>
+													{JSON.stringify(
+														product,
+														null,
+														4
+													)}
+												</code>
 											</div>
-											<div>
-												<span
-													className={
-														product.finish !==
-														data.sample.finish
-															? 'indicator error'
-															: 'indicator success'
-													}
-												></span>{' '}
-												{product.finish}
-											</div>
-										</td>
-										<td>{product.thickness}</td>
-										<td>{product.itemNo}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</Form>
-				) : (
-					<Form method="get" className="inline-form">
-						<Input
-							label="Search for vendor products"
-							name="query"
-							id="query"
-						/>
-						<button type="submit" className="primary button">
-							Search
-						</button>
-					</Form>
-				)}
+										</li>
+									))}
+								</ul>
+							</Form>
+						</div>
+					) : null}
+				</div>
+
+				<div className="foobar-sidebar">
+					<Outlet />
+				</div>
 			</div>
-
-			<Outlet />
-		</div>
+		</>
 	);
 }
 
@@ -681,6 +610,7 @@ async function upsertSampleToProductMetafield(sku, sampleGID) {
 	return response.body.data;
 }
 
+// TODO: Actually fetch inventory locations
 async function fetchInventoryLocations() {
 	const locations = [
 		{
@@ -788,6 +718,13 @@ async function createShopifyProductFromSample(
 	title: String,
 	materialNo: String
 ) {
+	// variants: [{
+	// 	sku: "${materialNo}",
+	// 	price: "1.00",
+	// 	weight: 0.5,
+	// 	weightUnit: POUNDS,
+	// }]
+
 	const response = await graphqlClient.query({
 		data: `
 			mutation productCreate {
@@ -796,12 +733,6 @@ async function createShopifyProductFromSample(
 					status: DRAFT,
 					tags: ["sample"],
 					templateSuffix: "sample",
-					variants: [{ 
-						sku: "${materialNo}", 
-						price: "1.00", 
-						weight: 0.5,
-						weightUnit: POUNDS,
-					}]
 				}) {
 					product {
 						id
@@ -828,7 +759,7 @@ async function createShopifyProductFromSample(
 		`,
 	});
 
-	return response.body.data.productCreate.product;
+	return response?.body?.data?.productCreate.product;
 }
 
 async function syncWithShopify(sku: String) {

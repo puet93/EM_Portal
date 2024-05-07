@@ -1092,14 +1092,8 @@ input::file-selector-button {
 	background-color: var(--input-bg-color);
 	cursor: pointer;
 	min-width: 170px;
-}
-
-/* [popover] {
 	position: relative;
-	top: -110%;
-	left: 0;
-	right: 0;
-} */
+}
 
 .dropdown__marker {
 	background: transparent;
@@ -1113,6 +1107,22 @@ input::file-selector-button {
 .dropdown svg {
 	stroke: var(--text-color);
 	display: block;
+}
+
+.option-tag {
+	display: inline-flex;
+	align-items: center;
+	background-color: var(--neutral-6);
+	color: var(--neutral-2);
+	padding: 2px 2px 2px 8px;
+	margin-right: 8px;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.dropdown .option-tag__svg {
+	margin-left: 2px;
+	stroke: var(--neutral-4);
 }
 
 .dropdown-text {

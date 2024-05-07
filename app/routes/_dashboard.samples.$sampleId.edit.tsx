@@ -56,8 +56,8 @@ export default function SampleDetailPage() {
 	const data = useLoaderData<typeof loader>();
 
 	return (
-		<div className="foobar-sidebar">
-			<h1>Edit Sample Swatch</h1>
+		<>
+			<h2 className="headline-h5">Edit Sample Swatch</h2>
 
 			<Form method="post">
 				<Dropdown name="vendorId" options={data.vendorOptions} />
@@ -122,6 +122,6 @@ export default function SampleDetailPage() {
 					Delete
 				</button>
 			</Form>
-		</div>
+		</>
 	);
 }
