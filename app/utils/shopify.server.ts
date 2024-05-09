@@ -1,6 +1,6 @@
 import '@shopify/shopify-api/adapters/node';
 import { shopifyApi, LATEST_API_VERSION, Session } from '@shopify/shopify-api';
-import { restResources } from '@shopify/shopify-api/rest/admin/2024-01';
+import { restResources } from '@shopify/shopify-api/rest/admin/2024-04';
 
 const {
 	SHOPIFY_ACCESS_TOKEN,
