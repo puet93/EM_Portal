@@ -58,26 +58,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		fulfillmentStatusFilters = newFulfillmentStatusFilters;
 	}
 
-	const fulfillments = await prisma.fulfillment.findMany({
-		where: {
-			status: {
-				in: fulfillmentStatusFilters as FulfillmentStatus[],
-			},
-			order: {
-				status: { not: 'DRAFT' },
-			},
-			vendorId: user.role === 'SUPERADMIN' ? {} : user.vendorId,
-		},
-		include: {
-			trackingInfo: true,
-			vendor: true,
-			order: {
-				include: {
-					address: true,
-				},
-			},
-		},
-	});
+	let fulfillments;
+	if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
+		fulfillments = await getFulfillmentsByVendor({
+			vendorId: user.vendorId,
+			fulfillmentStatuses: fulfillmentStatusFilters,
+		});
+	}
+
+	if (user.role === 'SUPERADMIN') {
+		fulfillments = await getFulfillments(fulfillmentStatusFilters);
+	}
 
 	return json({
 		fulfillments,
@@ -203,7 +194,12 @@ export default function OrderIndex() {
 										<Link
 											to={`/fulfillments/${fulfillment.id}`}
 										>
-											{fulfillment.name}
+											<div>{fulfillment.name}</div>
+											<div className="caption">
+												{new Date(
+													fulfillment.order.createdAt
+												).toLocaleString('en-US')}
+											</div>
 										</Link>
 									</td>
 									<td>
@@ -420,6 +416,67 @@ export default function OrderIndex() {
 			) : null}
 		</>
 	);
+}
+
+async function getFulfillments(fulfillmentStatuses: FulfillmentStatus[]) {
+	return await prisma.fulfillment.findMany({
+		where: {
+			status: {
+				in: fulfillmentStatuses,
+			},
+			order: {
+				status: { not: 'DRAFT' },
+			},
+		},
+		orderBy: {
+			order: {
+				createdAt: 'desc',
+			},
+		},
+		include: {
+			trackingInfo: true,
+			vendor: true,
+			order: {
+				include: {
+					address: true,
+				},
+			},
+		},
+	});
+}
+
+async function getFulfillmentsByVendor({
+	fulfillmentStatuses,
+	vendorId = undefined,
+}: {
+	fulfillmentStatuses: FulfillmentStatus[];
+	vendorId?: string;
+}) {
+	return await prisma.fulfillment.findMany({
+		where: {
+			status: {
+				in: fulfillmentStatuses,
+			},
+			order: {
+				status: { not: 'DRAFT' },
+			},
+			vendorId,
+		},
+		orderBy: {
+			order: {
+				createdAt: 'desc',
+			},
+		},
+		include: {
+			trackingInfo: true,
+			vendor: true,
+			order: {
+				include: {
+					address: true,
+				},
+			},
+		},
+	});
 }
 
 async function getOrders(name: string, orderStatuses: OrderStatus[]) {
