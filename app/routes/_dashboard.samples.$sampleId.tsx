@@ -8,7 +8,7 @@ import {
 	useLoaderData,
 } from '@remix-run/react';
 import { prisma } from '~/db.server';
-import { requireSuperAdmin } from '~/session.server';
+import { requireSuperAdmin, requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
@@ -79,8 +79,12 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	}
 
 	const inventoryLocations = await fetchInventoryLocations();
+	const locationOptions = inventoryLocations.map((location) => ({
+		label: location.name,
+		value: location.id,
+	}));
 
-	return json({ connected, vendorProducts, sample, inventoryLocations });
+	return json({ connected, vendorProducts, sample, locationOptions });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -424,18 +428,13 @@ export default function SampleDetailPage() {
 						) : null}
 					</div>
 
-					{data.inventoryLocations && (
+					{data.locationOptions && (
 						<div style={{ marginTop: 24, marginBottom: 24 }}>
 							<h2 className="headline-h5"></h2>
 							<Form method="post" className="inline-form" replace>
 								<Dropdown
 									name="locationId"
-									options={data.inventoryLocations.map(
-										(location: any) => ({
-											value: location.node.id,
-											label: location.node.name,
-										})
-									)}
+									options={data.locationOptions}
 								/>
 
 								<button
@@ -610,34 +609,22 @@ async function upsertSampleToProductMetafield(sku, sampleGID) {
 	return response.body.data;
 }
 
-// TODO: Actually fetch inventory locations
 async function fetchInventoryLocations() {
-	const locations = [
-		{
-			node: {
-				id: 'gid://shopify/Location/72879243482',
-				name: 'Decor Tile FOB Texas',
-			},
-		},
-		{
-			node: {
-				id: 'gid://shopify/Location/75041603802',
-				name: 'European Porcelain Ceramics',
-			},
-		},
-		{
-			node: {
-				id: 'gid://shopify/Location/71944863962',
-				name: 'Florim',
-			},
-		},
-		{
-			node: {
-				id: 'gid://shopify/Location/74360193242',
-				name: 'Roca - Anaheim',
-			},
-		},
-	];
+	const queryString = `{
+		locations(first: 20) {
+			edges {
+				node {
+					id
+					name
+				}
+			}
+		}
+	}`;
+
+	const shopifyResponse = await graphqlClient.query({ data: queryString });
+	const locations = shopifyResponse.body?.data?.locations.edges.map(
+		(edge) => edge.node
+	);
 
 	return locations;
 }
@@ -718,13 +705,6 @@ async function createShopifyProductFromSample(
 	title: String,
 	materialNo: String
 ) {
-	// variants: [{
-	// 	sku: "${materialNo}",
-	// 	price: "1.00",
-	// 	weight: 0.5,
-	// 	weightUnit: POUNDS,
-	// }]
-
 	const response = await graphqlClient.query({
 		data: `
 			mutation productCreate {
@@ -733,6 +713,54 @@ async function createShopifyProductFromSample(
 					status: DRAFT,
 					tags: ["sample"],
 					templateSuffix: "sample",
+				}) {
+					product {
+						id
+						title
+						tags
+						status
+						vendor
+						templateSuffix
+						variants(first: 1) {
+							edges {
+								node {
+									id
+									title
+								}
+							}
+						}
+					}
+					userErrors {
+						field
+						message
+					}
+				}
+			}
+		`,
+	});
+
+	return response?.body?.data?.productCreate.product;
+}
+
+async function createShopifyProductVariantFromSample(
+	sku: string,
+	productId: string
+) {
+	const response = await graphqlClient.query({
+		data: `
+			mutation productVariantCreate {
+				productVariantCreate(input: {
+					sku: "${sku}",
+					price: 1.00,
+					productId: "${productId}",
+					inventoryItem: {
+						measurement: {
+							weight: {
+								value: 0.5,
+								unit: POUNDS,
+							}
+						}
+					}
 				}) {
 					product {
 						id
