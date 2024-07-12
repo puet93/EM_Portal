@@ -7,6 +7,12 @@ import { requireUser } from '~/session.server';
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
 
+	try {
+		await throwError();
+	} catch (e) {
+		console.log(e);
+	}
+
 	return json({ user });
 };
 
@@ -91,4 +97,9 @@ export default function SettingsPage() {
 			</div>
 		</main>
 	);
+}
+
+async function throwError(optionalMessage?: string) {
+	let message = optionalMessage ? optionalMessage : 'Uh oh...';
+	throw new Error(message);
 }

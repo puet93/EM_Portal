@@ -1,5 +1,5 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
-import { json, redirect } from '@remix-run/node';
+import { json } from '@remix-run/node';
 import {
 	Form,
 	Link,
@@ -262,8 +262,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 			const metafields = [];
 			for (const sku of skus) {
-				console.log(`METAFIELD: ${sku}`);
-
 				const metafield = await upsertSampleToProductMetafield(
 					sku,
 					sampleGID
@@ -271,7 +269,12 @@ export const action: ActionFunction = async ({ params, request }) => {
 				metafields.push(metafield);
 			}
 
-			return json({ metafields });
+			return json({
+				success: {
+					metafields: 'Sample added to product sample metafield(s).',
+				},
+				metafields,
+			});
 		}
 		default:
 			console.log('INVALID ACTION');
@@ -489,6 +492,12 @@ export default function SampleDetailPage() {
 									</div>
 								) : null}
 
+								{actionData?.success?.metafields ? (
+									<div className="success message">
+										{actionData.success.metafields}
+									</div>
+								) : null}
+
 								<ul className="foobar-card-list">
 									{data.connected.map((product) => (
 										<li key={product.id}>
@@ -528,7 +537,7 @@ export default function SampleDetailPage() {
 // FUNCTIONS
 // Functions should filter response.body.data
 
-async function getProductFromSKU(sku: String) {
+async function getProductFromSKU(sku: string) {
 	const queryString = `{
 		productVariants(first: 1, query: "sku:${sku}") {
 			edges {
@@ -629,7 +638,7 @@ async function fetchInventoryLocations() {
 	return locations;
 }
 
-async function fetchInventoryItemId(sku: String) {
+async function fetchInventoryItemId(sku: string) {
 	const queryString = `query {
 		inventoryItems(first: 1, query: "sku:${sku}") {
 		  	edges {
@@ -653,30 +662,22 @@ async function fetchInventoryItemId(sku: String) {
 	return inventoryItem.id;
 }
 
-async function updateInventoryLocation(sku, locationId) {
-	let inventoryItemId = await fetchInventoryItemId(sku);
+async function updateInventoryLocation(sku: string, locationId: string) {
+	const inventoryItemId = await fetchInventoryItemId(sku);
+	const inventoryLocations = await fetchInventoryLocations();
+	const inventoryItemUpdates = inventoryLocations
+		.map(
+			(location) =>
+				`{ activate: ${location.id === locationId}, locationId: "${
+					location.id
+				}" }`
+		)
+		.join(', ');
 
 	let query = `mutation inventoryBulkToggleActivation {
 		inventoryBulkToggleActivation(
 		  	inventoryItemId: "${inventoryItemId}",
-		  	inventoryItemUpdates: [
-				{
-					activate: ${locationId === 'gid://shopify/Location/72879243482' ? true : false},
-					locationId: "gid://shopify/Location/72879243482",
-				},
-				{
-					activate: ${locationId === 'gid://shopify/Location/75041603802' ? true : false},
-					locationId: "gid://shopify/Location/75041603802",
-				},
-				{
-					activate: ${locationId === 'gid://shopify/Location/71944863962' ? true : false},
-					locationId: "gid://shopify/Location/71944863962",
-				},
-				{
-					activate: ${locationId === 'gid://shopify/Location/74360193242' ? true : false},
-					locationId: "gid://shopify/Location/74360193242",
-				}
-			]
+		  	inventoryItemUpdates: [${inventoryItemUpdates}],
 		) {
 		  	inventoryItem {
 				id
@@ -697,14 +698,36 @@ async function updateInventoryLocation(sku, locationId) {
 		}
 	}`;
 
-	let response = await graphqlClient.query({ data: query });
-	return response.body.data;
+	let response;
+	try {
+		response = await graphqlClient.query({ data: query });
+	} catch (e) {
+		e.body.errors.graphQLErrors.map((error) => {
+			console.log(error.message);
+			console.log(error.locations);
+		});
+		return;
+	}
+
+	return response?.body?.data;
 }
 
+// TODO: Refactor function names
+
 async function createShopifyProductFromSample(
-	title: String,
-	materialNo: String
+	title: string,
+	materialNo: string
 ) {
+	const product = await createShopifyProduct(title);
+	const res = await updateShopifyProductVariant({
+		id: product.variants.edges[0].node.id,
+		sku: materialNo,
+	});
+
+	return res.product;
+}
+
+async function createShopifyProduct(title: string) {
 	const response = await graphqlClient.query({
 		data: `
 			mutation productCreate {
@@ -742,17 +765,22 @@ async function createShopifyProductFromSample(
 	return response?.body?.data?.productCreate.product;
 }
 
-async function createShopifyProductVariantFromSample(
-	sku: string,
-	productId: string
-) {
+async function updateShopifyProductVariant({
+	id,
+	sku,
+	price = 1.0,
+}: {
+	id: string;
+	sku: string;
+	price?: number;
+}) {
 	const response = await graphqlClient.query({
 		data: `
-			mutation productVariantCreate {
-				productVariantCreate(input: {
+			mutation productVariantUpdate {
+				productVariantUpdate(input: {
+					id: "${id}",
 					sku: "${sku}",
-					price: 1.00,
-					productId: "${productId}",
+					price: ${price},
 					inventoryItem: {
 						measurement: {
 							weight: {
@@ -765,18 +793,11 @@ async function createShopifyProductVariantFromSample(
 					product {
 						id
 						title
-						tags
-						status
-						vendor
-						templateSuffix
-						variants(first: 1) {
-							edges {
-								node {
-									id
-									title
-								}
-							}
-						}
+					}
+					productVariant {
+						id
+						price
+						sku
 					}
 					userErrors {
 						field
@@ -787,10 +808,13 @@ async function createShopifyProductVariantFromSample(
 		`,
 	});
 
-	return response?.body?.data?.productCreate.product;
+	console.log('RESPONSE', response?.body?.data?.productVariantUpdate);
+
+	return response?.body?.data?.productVariantUpdate;
 }
 
-async function syncWithShopify(sku: String) {
+// TODO: Complete function
+async function syncWithShopify(sku: string) {
 	// Create or update sample on Shopify
 
 	// Then update inventory location

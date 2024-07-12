@@ -20,6 +20,7 @@ model User {
     password  Password?
     vendor    Vendor?   @relation(fields: [vendorId], references: [id])
     vendorId  String?
+    comments  Comment[]
 }
 
 model Password {
@@ -52,9 +53,21 @@ model Address {
     orders     Order[]
 }
 
+model Comment {
+    id            Int          @id @default(autoincrement())
+    content       String
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+    fulfillment   Fulfillment? @relation(fields: [fulfillmentId], references: [id], onDelete: Cascade)
+    fulfillmentId String?
+    user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId        String
+}
+
 model Fulfillment {
     id           String                @id @default(cuid())
     name         String                @unique
+    comments     Comment[]
     lineItems    FulfillmentLineItem[]
     order        Order                 @relation(fields: [orderId], references: [id])
     orderId      String

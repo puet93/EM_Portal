@@ -243,3 +243,70 @@ export async function fetchProductBySku(
 		message: 'Something happened. End of line.',
 	};
 }
+
+export async function fetchSalesChannels(): Promise<
+	{ id: string; name: string }[]
+> {
+	const queryString = `query fetchSalesChannels {
+		publications(first: 40) {
+			edges {
+				node {
+					id
+					app {
+						id
+					}
+					name
+				}
+			}
+		}
+	}`;
+
+	const shopifyResponse = await graphqlClient.query({ data: queryString });
+
+	let errors = shopifyResponse.body?.errors;
+	if (errors) {
+		console.log(errors);
+		throw new Error('Unable to fetch sales channels');
+	}
+
+	return shopifyResponse.body?.data.publications.edges.map(
+		(publication: { node: { id: string; name: string } }) =>
+			publication.node
+	);
+}
+
+export async function publishProduct(gid: string) {
+	const queryString = `
+		mutation productPublish {
+			publishablePublish(
+				id: "${gid}"
+				input: [
+					{publicationId: "gid://shopify/Publication/93291249882"},
+					{publicationId: "gid://shopify/Publication/93291282650"},
+					{publicationId: "gid://shopify/Publication/93291413722"},
+					{publicationId: "gid://shopify/Publication/93744824538"},
+					{publicationId: "gid://shopify/Publication/93751541978"},
+					{publicationId: "gid://shopify/Publication/93752164570"},
+					{publicationId: "gid://shopify/Publication/95161123034"},
+					{publicationId: "gid://shopify/Publication/95191072986"},
+					{publicationId: "gid://shopify/Publication/95191105754"},
+					{publicationId: "gid://shopify/Publication/95204573402"},
+					{publicationId: "gid://shopify/Publication/107688460506"},
+					{publicationId: "gid://shopify/Publication/107838996698"},
+					{publicationId: "gid://shopify/Publication/122659143898"}
+				]
+			) {
+			publishable {
+				availablePublicationsCount {
+					count
+				}
+				resourcePublicationsCount {
+					count
+				}
+			}
+		}
+	}`;
+
+	const shopifyResponse = await graphqlClient.query({ data: queryString });
+	return shopifyResponse;
+}

@@ -15,12 +15,9 @@ import {
 } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
-import { badRequest } from '~/utils/request.server';
-import { graphqlClient } from '~/utils/shopify.server';
-import FileDropInput from '~/components/FileDropInput';
+import { graphqlClient, publishProduct } from '~/utils/shopify.server';
 import Dropdown from '~/components/Dropdown';
 import Input from '~/components/Input';
-import { parseCSV } from '~/utils/csv';
 
 const FILE = 'file';
 
@@ -130,15 +127,33 @@ export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
 
 	const formData = await request.formData();
-	const { _action, ...entries } = Object.fromEntries(formData);
+	const _action = formData.get('_action');
+	const sampleIds = formData.getAll('sampleId');
 
-	const sampleId = String(entries.sampleId);
-	const vendorId = String(entries.vendorId);
+	if (_action === 'publish') {
+		const gids = await prisma.sample.findMany({
+			where: { id: { in: sampleIds } },
+			select: {
+				gid: true,
+			},
+		});
 
-	await prisma.sample.update({
-		where: { id: sampleId },
-		data: { vendorId: vendorId },
-	});
+		gids.map((sample) => {
+			if (sample.gid) {
+				publishProduct(sample.gid);
+			}
+		});
+	}
+
+	if (_action === 'vendor') {
+		const sampleId = String(formData.get('sampleId'));
+		const vendorId = String(formData.get('vendorId'));
+
+		await prisma.sample.update({
+			where: { id: sampleId },
+			data: { vendorId: vendorId },
+		});
+	}
 
 	return json({});
 
@@ -438,11 +453,22 @@ export default function SamplesPage() {
 					<button className="primary button" type="submit">
 						Search
 					</button>
-
-					<Link className="button" to="new">
-						Create New Sample
-					</Link>
 				</Form>
+
+				<Form method="post" id="publish">
+					<button
+						className="button"
+						type="submit"
+						name="_action"
+						value="publish"
+					>
+						Publish
+					</button>
+				</Form>
+
+				<Link className="button" to="new">
+					Create New Sample
+				</Link>
 			</div>
 
 			<div>Displaying {data.samples.length} samples</div>
@@ -473,6 +499,7 @@ export default function SamplesPage() {
 										name="sampleId"
 										value={sample.id}
 										onChange={handleChange}
+										form="publish"
 									/>
 								</td>
 								<td>
