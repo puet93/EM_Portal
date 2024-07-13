@@ -663,9 +663,18 @@ th,
 	height: 48px;
 	flex: 0 0 auto;
 	border: none;
-	border-radius: 999em;
+	border-radius: var(--input-border-radius);
 	background-color: transparent;
+	transition: background-color 150ms;
 	cursor: pointer;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sample-cart-delete-button:hover {
+	background-color: var(--secondary-bg-color);
 }
 
 .sample-cart-img svg,
@@ -675,7 +684,7 @@ th,
 }
 
 .sample-cart-delete-button:hover svg {
-	stroke: var(--error-color);
+	stroke: var(--text-color);
 }
 
 .sidebar-section,
@@ -1493,4 +1502,69 @@ input::file-selector-button {
 
 .segmented-control:not(:last-child) {
 	margin-right: 8px;
+}
+
+.comment-form {
+	margin-top: 32px;
+	margin-bottom: 32px;
+
+	display: flex;
+	flex-direction: column;
+}
+
+.comment-form textarea {
+	display: block;
+	width: 100%;
+	border: none;
+	background-color: var(--input-bg-color);
+	border-radius: var(--input-border-radius);
+	box-sizing: border-box;
+	color: var(--input-text-color);
+	outline: none;
+	padding: 16px;
+	margin: 20px 0 12px;
+	resize: none;
+	overflow: auto;
+}
+
+.comment-form textarea::placeholder {
+	color: var(--secondary-text-color);
+}
+
+.comment-form button[type='submit'] {
+	margin-left: auto;
+}
+
+.comment {
+	display: flex;
+	border: none;
+	background-color: var(--input-bg-color);
+	border-radius: var(--input-border-radius);
+	box-sizing: border-box;
+	color: var(--input-text-color);
+	outline: none;
+	padding: 20px;
+	margin: 12px 0;
+}
+
+.comment button {
+	margin-left: auto;
+	margin-top: -12px;
+	margin-right: -12px;
+}
+
+.comment__name {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.comment__time {
+	font-size: 12px;
+	color: var(--secondary-text-color);
+	margin-left: 12px;
+}
+
+.comment__content {
+	font-size: 14px;
+	margin: 20px 0 4px;
 }

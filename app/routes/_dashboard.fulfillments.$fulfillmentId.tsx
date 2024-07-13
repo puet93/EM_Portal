@@ -4,6 +4,7 @@ import {
 	Form,
 	Link,
 	useActionData,
+	useFetcher,
 	useLoaderData,
 	useNavigation,
 } from '@remix-run/react';
@@ -13,6 +14,7 @@ import Dropdown from '~/components/Dropdown';
 import { badRequest } from '~/utils/request.server';
 import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
+import { TrashIcon } from '~/components/Icons';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUser(request);
@@ -30,6 +32,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			},
 		},
 		include: {
+			comments: {
+				include: { user: true },
+				orderBy: {
+					createdAt: 'desc',
+				},
+			},
 			order: {
 				select: {
 					address: true,
@@ -49,20 +57,52 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return json({ fulfillment });
+	const comments =
+		fulfillment?.comments && fulfillment.comments.length > 0
+			? fulfillment.comments
+			: null;
+
+	return json({ fulfillment, comments });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
-	await requireUser(request);
+	const user = await requireUser(request);
 
 	const formData = await request.formData();
 	const _action = formData.get('_action');
-	const trackingNumber = formData.get('trackingNumber');
-	const shippingCarrier = formData.get('shippingCarrier');
-	const status = formData.get('status');
 
 	switch (_action) {
+		case 'comment': {
+			const comment = formData.get('comment');
+			if (typeof comment !== 'string' || comment.length === 0) {
+				return badRequest({ message: 'Invalid request' });
+			}
+
+			await prisma.comment.create({
+				data: {
+					content: comment,
+					fulfillmentId: params.fulfillmentId,
+					userId: user.id,
+				},
+			});
+
+			return json({ success: 'Comment' });
+		}
+		case 'comment delete': {
+			const commentId = formData.get('commentId');
+
+			if (typeof commentId !== 'string' || commentId.length === 0) {
+				return badRequest({ message: 'Invalid request' });
+			}
+
+			await prisma.comment.delete({
+				where: { id: Number(commentId) },
+			});
+
+			return json({ success: 'Comment' });
+		}
 		case 'update status': {
+			const status = formData.get('status');
 			if (typeof status !== 'string' || status.length === 0) {
 				return badRequest({ message: 'Invalid request' });
 			}
@@ -80,10 +120,11 @@ export const action: ActionFunction = async ({ params, request }) => {
 					trackingInfo: true,
 				},
 			});
-
 			if (!fulfillment)
 				return badRequest({ errors: { form: 'Invalid request' } });
 
+			const trackingNumber = formData.get('trackingNumber');
+			const shippingCarrier = formData.get('shippingCarrier');
 			if (
 				typeof trackingNumber !== 'string' ||
 				trackingNumber.length == 0
@@ -123,7 +164,6 @@ export const action: ActionFunction = async ({ params, request }) => {
 			return json({ success: 'Saved!' });
 		}
 		case 'complete': {
-			console.log('SAVED AND COMPLETED');
 			return json({ success: 'Saved and completed!' });
 		}
 		default:
@@ -135,9 +175,7 @@ export default function OrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
-
 	const isSaving = navigation.state === 'submitting';
-
 	const [isEditing, setIsEditing] = useState(false);
 	const trackingNumberRef = useRef(null);
 
@@ -249,6 +287,16 @@ export default function OrderPage() {
 							))}
 						</tbody>
 					</table>
+
+					<CommentForm />
+
+					{data.comments ? (
+						<div className="comments">
+							{data.comments.map((comment) => (
+								<Comment key={comment.id} comment={comment} />
+							))}
+						</div>
+					) : null}
 				</div>
 
 				<div className="foobar-sidebar">
@@ -376,5 +424,67 @@ export default function OrderPage() {
 				<code>{JSON.stringify(data.fulfillment, null, 4)}</code>
 			) : null} */}
 		</>
+	);
+}
+
+function Comment({ comment }) {
+	let fetcher = useFetcher();
+	let isDeleting = fetcher.state === 'submitting';
+
+	// TODO: Style "isDeleting" state
+
+	return (
+		<fetcher.Form method="post" className="comment">
+			<div>
+				<input name="commentId" value={comment.id} type="hidden" />
+
+				<div>
+					<span className="comment__name">
+						{comment.user.firstName} {comment.user.lastName}
+					</span>
+					<span className="comment__time">{comment.createdAt}</span>
+				</div>
+
+				<div className="comment__content">{comment.content}</div>
+			</div>
+
+			<button
+				type="submit"
+				name="_action"
+				value="comment delete"
+				className="sample-cart-delete-button"
+				disabled={isDeleting}
+			>
+				<TrashIcon />
+			</button>
+		</fetcher.Form>
+	);
+}
+
+function CommentForm() {
+	const fetcher = useFetcher();
+	const formRef = useRef(null);
+	const isPosting = fetcher.state === 'submitting';
+
+	useEffect(() => {
+		if (!isPosting) {
+			formRef.current?.reset();
+		}
+	});
+
+	return (
+		<fetcher.Form className="comment-form" method="post" ref={formRef}>
+			<label htmlFor="comment">Comment</label>
+			<textarea
+				id="comment"
+				name="comment"
+				rows={6}
+				placeholder="Leave a comment..."
+			></textarea>
+
+			<button type="submit" className="" name="_action" value="comment">
+				{isPosting ? 'Posting...' : 'Post'}
+			</button>
+		</fetcher.Form>
 	);
 }
