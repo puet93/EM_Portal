@@ -2,18 +2,20 @@ import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { FulfillmentStatus, OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
-import { EditIcon, TrashIcon } from '~/components/Icons';
+import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
 import Input from '~/components/Input';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
-import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import DropdownMultiSelect from '~/components/DropdownMultiSelect';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
 	const searchParams = new URL(request.url).searchParams;
 	const _action = searchParams.get('_action');
+	const query = searchParams.get('query');
 
+	// TODO: DELETE
 	// Order status dropdown
 	const orderStatusDefaults: OrderStatus[] = ['DRAFT', 'NEW'];
 	const orderStatusDropdownName: string = 'selectedStatuses';
@@ -28,52 +30,107 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 			orderStatusDropdownName
 		) as OrderStatus[];
 	}
-
-	// New fulfillment system status
-	const fulfillmentStatuses = Object.values(FulfillmentStatus).map(
-		(status) => {
-			return { value: status, label: toCapitalCase(status) };
-		}
-	);
-	let fulfillmentStatusFilters: FulfillmentStatus[] = ['NEW'];
-	let newFulfillmentStatusFilters: FulfillmentStatus[] = [];
-	let fulfillmentStatusQuery = 'NEW';
-
 	let name = '';
 
 	for (const [key, value] of searchParams) {
-		if (key === 'fulfillmentStatus') {
-			newFulfillmentStatusFilters.push(value as FulfillmentStatus);
-			fulfillmentStatusQuery = value;
-			continue;
-		}
-
 		if (key === 'name') {
 			name = value;
 			continue;
 		}
 	}
+	// END TODO
 
-	if (newFulfillmentStatusFilters.length !== 0) {
-		fulfillmentStatusFilters = newFulfillmentStatusFilters;
-	}
+	// Create dropdown options from FulfillmentStatus object
+	const fulfillmentStatuses = Object.values(FulfillmentStatus).map(
+		(status) => {
+			return { value: status, label: toCapitalCase(status) };
+		}
+	);
+
+	// Set default values
+	let selectedFulfillmentStatuses: FulfillmentStatus[] = [
+		'NEW',
+		'PROCESSING',
+	];
 
 	let fulfillments;
-	if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
-		fulfillments = await getFulfillmentsByVendor({
-			vendorId: user.vendorId,
-			fulfillmentStatuses: fulfillmentStatusFilters,
-		});
+
+	// Loads initial data
+	if (_action !== 'search') {
+		console.log('LOADING INITIAL DATA');
+
+		// Loads initial data for external user / vendor employees
+		if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
+			fulfillments = await getFulfillmentsByVendor({
+				query: undefined,
+				vendorId: user.vendorId,
+				fulfillmentStatuses: selectedFulfillmentStatuses,
+			});
+		}
+
+		// Loads initial data for superadmins / Edward Martin employees
+		if (user.role === 'SUPERADMIN' && _action !== 'search') {
+			fulfillments = await getFulfillments(
+				undefined,
+				selectedFulfillmentStatuses,
+				undefined
+			);
+		}
 	}
 
-	if (user.role === 'SUPERADMIN') {
-		fulfillments = await getFulfillments(fulfillmentStatusFilters);
+	// Search fulfillments
+	if (_action === 'search' && typeof query === 'string') {
+		console.log('SEARCH');
+
+		selectedFulfillmentStatuses = searchParams.getAll(
+			'selectedFulfillmentStatuses'
+		) as FulfillmentStatus[];
+
+		const searchTerm: string | undefined =
+			query.length === 0 ? undefined : query;
+
+		// Loads initial data for external user / vendor employees
+		if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
+			fulfillments = await getFulfillmentsByVendor({
+				query: searchTerm,
+				vendorId: user.vendorId,
+				fulfillmentStatuses:
+					selectedFulfillmentStatuses.length === 0
+						? undefined
+						: selectedFulfillmentStatuses,
+			});
+		}
+
+		const selectedVendorParam = searchParams.get('selectedVendor');
+		const vendorId = selectedVendorParam ? selectedVendorParam : undefined;
+
+		// Search fulfillments as superadmins / Edward Martin employees
+		if (user.role === 'SUPERADMIN') {
+			fulfillments = await getFulfillments(
+				searchTerm,
+				selectedFulfillmentStatuses.length === 0
+					? undefined
+					: selectedFulfillmentStatuses,
+				vendorId
+			);
+		}
+	}
+
+	const vendors = user.role !== 'SUPERADMIN' ? null : await getVendors();
+
+	let vendorOptions;
+	if (vendors) {
+		vendorOptions = createDropdownOptions({
+			array: vendors,
+			labelKey: 'name',
+			valueKey: 'id',
+		});
 	}
 
 	return json({
 		fulfillments,
 		fulfillmentStatuses,
-		fulfillmentStatusQuery,
+		selectedFulfillmentStatuses,
 		name,
 		orders:
 			user.role !== 'SUPERADMIN'
@@ -82,7 +139,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 		orderStatusDropdownName,
 		orderStatusOptions,
 		orderStatusDefaults,
+		query,
 		userRole: user.role,
+		vendorOptions,
 	});
 };
 
@@ -156,9 +215,10 @@ export default function OrderIndex() {
 				</div>
 			</header>
 
-			{data.fulfillments ? (
-				<section className="page-section">
-					<Form method="get" replace className="segmented-controls">
+			<section className="page-section">
+				<div className="table-toolbar">
+					<Form method="get" replace>
+						{/* <div className="segmented-controls">
 						{data.fulfillmentStatuses.map((status) => (
 							<button
 								key={status.value}
@@ -174,259 +234,312 @@ export default function OrderIndex() {
 								{status.label}
 							</button>
 						))}
-					</Form>
+					</div> */}
 
-					<table>
-						<thead>
-							<tr>
-								<th>Order No.</th>
-								<th>Name</th>
-								<th>Shipping Address</th>
-								<th>Tracking Info</th>
-								<th>Status</th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody>
-							{data.fulfillments.map((fulfillment) => (
-								<tr key={fulfillment.id}>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											<div>{fulfillment.name}</div>
-											<div className="caption">
-												{new Date(
-													fulfillment.order.createdAt
-												).toLocaleString('en-US')}
-											</div>
-										</Link>
-									</td>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											{fulfillment.order.address.line1}
-										</Link>
-									</td>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											<address className="text">
-												{fulfillment.order.address
-													.line2 &&
-													`${fulfillment.order.address.line2}\n`}
-												{fulfillment.order.address
-													.line3 &&
-													`${fulfillment.order.address.line3}\n`}
-												{fulfillment.order.address
-													.line4 &&
-													`${fulfillment.order.address.line4}\n`}
-												{fulfillment.order.address.city}
-												,{' '}
-												{
-													fulfillment.order.address
-														.state
-												}{' '}
-												{
-													fulfillment.order.address
-														.postalCode
-												}
-											</address>
-										</Link>
-									</td>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											{fulfillment.trackingInfo
-												?.number ? (
-												<>
-													<div>
-														{
-															fulfillment
-																.trackingInfo
-																.number
-														}
-													</div>
-													<div className="caption">
-														{
-															fulfillment
-																.trackingInfo
-																.company
-														}
-													</div>
-												</>
-											) : (
-												<span className="caption">
-													Needs tracking info
-												</span>
-											)}
-										</Link>
-									</td>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											<span
-												className={`${fulfillment.status.toLowerCase()} badge`}
-											>
-												{fulfillment.status}
-											</span>
-										</Link>
-									</td>
-									<td>
-										<Link
-											to={`/fulfillments/${fulfillment.id}`}
-										>
-											{fulfillment.vendor?.name}
-										</Link>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</section>
-			) : null}
-
-			{data.orders ? (
-				<section className="page-section">
-					<div className="page-section-header">
-						<h2 className="headline-h5">Old System</h2>
-						<p>
-							The section below only appears to Edward Martin and
-							will be phased out entirely. Vendors cannot interact
-							with this.
-						</p>
-					</div>
-
-					<div className="table-toolbar">
-						<Form method="get" replace preventScrollReset={true}>
-							<div className="input">
-								<label>Order Status</label>
-								<DropdownMultiSelect
-									name={data.orderStatusDropdownName}
-									options={data.orderStatusOptions}
-									defaultValue={data.orderStatusDefaults}
-								/>
-							</div>
-
-							<Input
-								label="Search by name or order number"
-								name="name"
-								id="name"
-								defaultValue={data.name}
+						<div className="input">
+							<label>Status</label>
+							<DropdownMultiSelect
+								name="selectedFulfillmentStatuses"
+								options={data.fulfillmentStatuses}
+								defaultValue={data.selectedFulfillmentStatuses}
 							/>
+						</div>
 
-							<button
-								className="primary button"
-								type="submit"
-								name="_action"
-								value="search-orders"
-							>
-								Search
-							</button>
-						</Form>
-					</div>
+						{data.vendorOptions ? (
+							<div className="input">
+								<label>Vendors</label>
 
-					<table>
-						<thead>
-							<tr>
-								<th>Name</th>
-								<th>Created</th>
-								<th>Order No.</th>
-								<th>Status</th>
-								<th>
-									<span className="visually-hidden">
-										Actions
-									</span>
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{data.orders.map((order) => {
-								const address = order.address;
-								const { city, state, postalCode } = address;
-								const date = new Date(
-									order.createdAt
-								).toLocaleString('en-US');
+								<select name="selectedVendor">
+									{data.vendorOptions.map((option) => (
+										<option
+											key={option.value}
+											value={option.value}
+										>
+											{option.label}
+										</option>
+									))}
+								</select>
+								{/* <DropdownMultiSelect
+									name="selectedVendors"
+									options={data.vendorOptions}
+								/> */}
+							</div>
+						) : null}
 
-								return (
-									<tr key={order.id}>
-										<td>
-											<Link to={order.id}>
-												<div className="title">
-													{order.address.line1}
-												</div>
-												{city && state && postalCode ? (
-													<div className="caption">{`${city}, ${state} ${postalCode}`}</div>
-												) : null}
-											</Link>
-										</td>
-										<td>{date}</td>
-										<td className="caption">
-											{order.name ? order.name : order.id}
-										</td>
-										<td>
-											<span
-												className={`${order.status.toLowerCase()} badge`}
-											>
-												{order.status}
-											</span>
-										</td>
+						<Input
+							label="Search by name or order number"
+							name="query"
+							id="query"
+						/>
 
-										<td>
-											<div className="table-row-actions">
-												<Link
-													className="circle-button"
-													to={`drafts/${order.id}`}
-												>
-													<span className="visually-hidden">
-														Edit
-													</span>
-													<EditIcon />
-												</Link>
-												<Form method="post">
-													<input
-														type="hidden"
-														name="orderId"
-														value={order.id}
-													/>
-													<button
-														className="destructive circle-button"
-														type="submit"
-														name="_action"
-														value="delete"
-													>
-														<span className="visually-hidden">
-															Delete
-														</span>
-														<TrashIcon />
-													</button>
-												</Form>
-											</div>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</section>
-			) : null}
+						<button
+							className="button"
+							type="submit"
+							name="_action"
+							value="search"
+						>
+							Search
+						</button>
+
+						<Link className="button" to="/orders" replace>
+							Reset
+						</Link>
+					</Form>
+				</div>
+
+				{data.fulfillments ? (
+					<FulFillments data={data} />
+				) : (
+					<div>No results</div>
+				)}
+			</section>
+
+			{data.orders ? <Orders data={data} /> : null}
 		</>
 	);
 }
 
-async function getFulfillments(fulfillmentStatuses: FulfillmentStatus[]) {
+function FulFillments({ data }) {
+	return (
+		<table>
+			<thead>
+				<tr>
+					<th>Order No.</th>
+					<th>Name</th>
+					<th>Shipping Address</th>
+					<th>Tracking Info</th>
+					<th>Status</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				{data.fulfillments.map((fulfillment) => (
+					<tr key={fulfillment.id}>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<div>{fulfillment.name}</div>
+								<div className="caption">
+									{new Date(
+										fulfillment.order.createdAt
+									).toLocaleString('en-US')}
+								</div>
+							</Link>
+						</td>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								{fulfillment.order.address.line1}
+							</Link>
+						</td>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<address className="text">
+									{fulfillment.order.address.line2 &&
+										`${fulfillment.order.address.line2}\n`}
+									{fulfillment.order.address.line3 &&
+										`${fulfillment.order.address.line3}\n`}
+									{fulfillment.order.address.line4 &&
+										`${fulfillment.order.address.line4}\n`}
+									{fulfillment.order.address.city},{' '}
+									{fulfillment.order.address.state}{' '}
+									{fulfillment.order.address.postalCode}
+								</address>
+							</Link>
+						</td>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								{fulfillment.trackingInfo?.number ? (
+									<>
+										<div>
+											{fulfillment.trackingInfo.number}
+										</div>
+										<div className="caption">
+											{fulfillment.trackingInfo.company}
+										</div>
+									</>
+								) : (
+									<span className="caption">
+										Needs tracking info
+									</span>
+								)}
+							</Link>
+						</td>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<span
+									className={`${fulfillment.status.toLowerCase()} badge`}
+								>
+									{fulfillment.status}
+								</span>
+							</Link>
+						</td>
+						<td>
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								{fulfillment.vendor?.name}
+							</Link>
+						</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	);
+}
+
+function Orders({ data }) {
+	return (
+		<section className="page-section">
+			<div className="page-section-header">
+				<h2 className="headline-h5">Old System</h2>
+				<p>
+					The section below only appears to Edward Martin and will be
+					phased out entirely. Vendors cannot interact with this.
+				</p>
+			</div>
+
+			<div className="table-toolbar">
+				<Form method="get" replace preventScrollReset={true}>
+					<div className="input">
+						<label>Order Status</label>
+						<DropdownMultiSelect
+							name={data.orderStatusDropdownName}
+							options={data.orderStatusOptions}
+							defaultValue={data.orderStatusDefaults}
+						/>
+					</div>
+
+					<Input
+						label="Search by name or order number"
+						name="name"
+						id="name"
+						defaultValue={data.name}
+					/>
+
+					<button
+						className="primary button"
+						type="submit"
+						name="_action"
+						value="search-orders"
+					>
+						Search
+					</button>
+				</Form>
+			</div>
+
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Created</th>
+						<th>Order No.</th>
+						<th>Status</th>
+						<th>
+							<span className="visually-hidden">Actions</span>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{data.orders.map((order) => {
+						const address = order.address;
+						const { city, state, postalCode } = address;
+						const date = new Date(order.createdAt).toLocaleString(
+							'en-US'
+						);
+
+						return (
+							<tr key={order.id}>
+								<td>
+									<Link to={order.id}>
+										<div className="title">
+											{order.address.line1}
+										</div>
+										{city && state && postalCode ? (
+											<div className="caption">{`${city}, ${state} ${postalCode}`}</div>
+										) : null}
+									</Link>
+								</td>
+								<td>{date}</td>
+								<td className="caption">
+									{order.name ? order.name : order.id}
+								</td>
+								<td>
+									<span
+										className={`${order.status.toLowerCase()} badge`}
+									>
+										{order.status}
+									</span>
+								</td>
+
+								<td>
+									<div className="table-row-actions">
+										<Link
+											className="circle-button"
+											to={`drafts/${order.id}`}
+										>
+											<span className="visually-hidden">
+												Edit
+											</span>
+											<EditIcon />
+										</Link>
+										<Form method="post">
+											<input
+												type="hidden"
+												name="orderId"
+												value={order.id}
+											/>
+											<button
+												className="destructive circle-button"
+												type="submit"
+												name="_action"
+												value="delete"
+											>
+												<span className="visually-hidden">
+													Delete
+												</span>
+												<TrashIcon />
+											</button>
+										</Form>
+									</div>
+								</td>
+							</tr>
+						);
+					})}
+				</tbody>
+			</table>
+		</section>
+	);
+}
+
+async function getFulfillments(
+	query: string | undefined,
+	fulfillmentStatuses: FulfillmentStatus[] | undefined,
+	vendorId: string | undefined
+) {
 	return await prisma.fulfillment.findMany({
 		where: {
+			OR: [
+				{
+					name: {
+						search: query,
+					},
+				},
+				{
+					order: {
+						address: {
+							line1: { search: query },
+						},
+					},
+				},
+				{
+					order: {
+						address: {
+							line2: { search: query },
+						},
+					},
+				},
+			],
 			status: {
 				in: fulfillmentStatuses,
 			},
-			order: {
-				status: { not: 'DRAFT' },
-			},
+			vendorId,
 		},
 		orderBy: {
 			order: {
@@ -447,13 +560,36 @@ async function getFulfillments(fulfillmentStatuses: FulfillmentStatus[]) {
 
 async function getFulfillmentsByVendor({
 	fulfillmentStatuses,
-	vendorId = undefined,
+	query,
+	vendorId,
 }: {
-	fulfillmentStatuses: FulfillmentStatus[];
-	vendorId?: string;
+	fulfillmentStatuses: FulfillmentStatus[] | undefined;
+	query: string | undefined;
+	vendorId: string;
 }) {
 	return await prisma.fulfillment.findMany({
 		where: {
+			OR: [
+				{
+					name: {
+						search: query,
+					},
+				},
+				{
+					order: {
+						address: {
+							line1: { search: query },
+						},
+					},
+				},
+				{
+					order: {
+						address: {
+							line2: { search: query },
+						},
+					},
+				},
+			],
 			status: {
 				in: fulfillmentStatuses,
 			},
@@ -510,4 +646,23 @@ async function getOrders(name: string, orderStatuses: OrderStatus[]) {
 			createdAt: 'desc',
 		},
 	});
+}
+
+async function getVendors() {
+	return prisma.vendor.findMany();
+}
+
+function createDropdownOptions({
+	array,
+	labelKey,
+	valueKey,
+}: {
+	array: any[];
+	labelKey: string;
+	valueKey: string;
+}) {
+	return array.map((item) => ({
+		label: item[labelKey],
+		value: item[valueKey],
+	}));
 }
