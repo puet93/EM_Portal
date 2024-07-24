@@ -379,8 +379,16 @@ export default function SampleDetailPage() {
 							<Input
 								id="title"
 								name="title"
-								label="Suggested title"
-								defaultValue={suggestedTitle}
+								label={
+									data.sample.title
+										? 'Title'
+										: 'Suggested title'
+								}
+								defaultValue={
+									data.sample.title
+										? data.sample.title
+										: suggestedTitle
+								}
 							/>
 							<button
 								className="button"

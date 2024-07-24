@@ -2,7 +2,7 @@ import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { FulfillmentStatus, OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
-import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
+import { EditIcon, TrashIcon } from '~/components/Icons';
 import Input from '~/components/Input';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
@@ -80,8 +80,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	// Search fulfillments
 	if (_action === 'search' && typeof query === 'string') {
-		console.log('SEARCH');
-
 		selectedFulfillmentStatuses = searchParams.getAll(
 			'selectedFulfillmentStatuses'
 		) as FulfillmentStatus[];
@@ -207,7 +205,10 @@ export default function OrderIndex() {
 					<h1 className="headline-h3">Orders</h1>
 					{data.userRole === 'SUPERADMIN' ? (
 						<div className="page-header__actions">
-							<Link to="new" className="primary button">
+							<Link
+								to="new"
+								className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+							>
 								Create Order
 							</Link>
 						</div>
@@ -218,24 +219,6 @@ export default function OrderIndex() {
 			<section className="page-section">
 				<div className="table-toolbar">
 					<Form method="get" replace>
-						{/* <div className="segmented-controls">
-						{data.fulfillmentStatuses.map((status) => (
-							<button
-								key={status.value}
-								type="submit"
-								name="fulfillmentStatus"
-								value={status.value}
-								className={
-									data.fulfillmentStatusQuery === status.value
-										? 'segmented-control is-active'
-										: 'segmented-control'
-								}
-							>
-								{status.label}
-							</button>
-						))}
-					</div> */}
-
 						<div className="input">
 							<label>Status</label>
 							<DropdownMultiSelect
@@ -246,34 +229,50 @@ export default function OrderIndex() {
 						</div>
 
 						{data.vendorOptions ? (
-							<div className="input">
-								<label>Vendors</label>
-
-								<select name="selectedVendor">
-									{data.vendorOptions.map((option) => (
-										<option
-											key={option.value}
-											value={option.value}
-										>
-											{option.label}
-										</option>
-									))}
+							<div>
+								<label
+									htmlFor="selectedVendor"
+									className="block text-sm font-medium leading-6 text-gray-900"
+								>
+									Vendor
+								</label>
+								<select
+									id="selectedVendor"
+									name="selectedVendor"
+									className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+								>
+									<option value="">Choose a vendor</option>
+									{data.vendorOptions.map((option: { value: string, label: string }) => (
+											<option
+												key={option.value}
+												value={option.value}
+											>
+												{option.label}
+											</option>
+										))}
 								</select>
-								{/* <DropdownMultiSelect
-									name="selectedVendors"
-									options={data.vendorOptions}
-								/> */}
 							</div>
 						) : null}
 
-						<Input
-							label="Search by name or order number"
-							name="query"
-							id="query"
-						/>
+
+						<div>
+							<label htmlFor="query" className="block text-sm font-medium leading-6 text-gray-900">
+								Search by name or order number
+							</label>
+
+							<div className="mt-2">
+								<input
+									id="query"
+									name="query"
+									type="text"
+									placeholder="#1234 or Edwina Martinson"
+									className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+								/>
+							</div>
+						</div>
 
 						<button
-							className="button"
+							className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
 							type="submit"
 							name="_action"
 							value="search"
@@ -281,7 +280,7 @@ export default function OrderIndex() {
 							Search
 						</button>
 
-						<Link className="button" to="/orders" replace>
+						<Link className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20" to="/orders" replace>
 							Reset
 						</Link>
 					</Form>
@@ -299,23 +298,54 @@ export default function OrderIndex() {
 	);
 }
 
+function FulfillmentStatusBadge({ status }) {
+	let className;
+	switch (status) {
+		case 'ERROR':
+		case 'CANCELLED':
+			className =
+				'inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20';
+			break;
+		case 'PROCESSING':
+		case 'WARNING':
+			className =
+				'inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20';
+			break;
+		case 'SUCCESS':
+		case 'COMPLETE':
+			className =
+				'inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20';
+			break;
+		case 'NEW':
+			className =
+				'inline-flex items-center rounded-md bg-blue-400/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-400/30';
+			break;
+		default:
+			className =
+				'inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20';
+	}
+
+	return <span className={className}>{toCapitalCase(status)}</span>;
+}
+
 function FulFillments({ data }) {
 	return (
-		<table>
+		<table className="min-w-full divide-y divide-gray-300 table-fixed">
 			<thead>
 				<tr>
-					<th>Order No.</th>
-					<th>Name</th>
-					<th>Shipping Address</th>
-					<th>Tracking Info</th>
-					<th>Status</th>
-					<th></th>
+					<th scope="col" className="py-3.5 pl-4 pr-3 text-left dark:text-white text-sm font-semibold text-gray-900 sm:pl-0">Order No.</th>
+					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Name</th>
+					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Shipping Address</th>
+					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Tracking Info</th>
+					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Status</th>
+					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Vendor</th>
+					<th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0"><span className="sr-only">Edit</span></th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody className="divide-y divide-gray-200">
 				{data.fulfillments.map((fulfillment) => (
 					<tr key={fulfillment.id}>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								<div>{fulfillment.name}</div>
 								<div className="caption">
@@ -325,12 +355,12 @@ function FulFillments({ data }) {
 								</div>
 							</Link>
 						</td>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								{fulfillment.order.address.line1}
 							</Link>
 						</td>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								<address className="text">
 									{fulfillment.order.address.line2 &&
@@ -345,7 +375,7 @@ function FulFillments({ data }) {
 								</address>
 							</Link>
 						</td>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								{fulfillment.trackingInfo?.number ? (
 									<>
@@ -363,18 +393,21 @@ function FulFillments({ data }) {
 								)}
 							</Link>
 						</td>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<span
-									className={`${fulfillment.status.toLowerCase()} badge`}
-								>
-									{fulfillment.status}
-								</span>
+								<FulfillmentStatusBadge
+									status={fulfillment.status}
+								/>
 							</Link>
 						</td>
-						<td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								{fulfillment.vendor?.name}
+							</Link>
+						</td>
+						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								Edit
 							</Link>
 						</td>
 					</tr>
@@ -461,11 +494,9 @@ function Orders({ data }) {
 									{order.name ? order.name : order.id}
 								</td>
 								<td>
-									<span
-										className={`${order.status.toLowerCase()} badge`}
-									>
-										{order.status}
-									</span>
+									<FulfillmentStatusBadge
+										status={order.status}
+									/>
 								</td>
 
 								<td>

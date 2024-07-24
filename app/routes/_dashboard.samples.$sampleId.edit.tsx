@@ -11,6 +11,13 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
 	const sample = await prisma.sample.findFirst({
 		where: { id: params.sampleId },
+		include: {
+			vendorProducts: {
+				include: {
+					retailerProduct: true,
+				},
+			},
+		},
 	});
 
 	const vendors = await prisma.vendor.findMany();
@@ -19,7 +26,18 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 		label: vendor.name,
 	}));
 
-	return json({ sample, vendorOptions });
+	let title = sample?.title;
+	let suggestedTitle;
+	if (
+		!title &&
+		sample?.vendorProducts &&
+		sample?.vendorProducts.length !== 0
+	) {
+		suggestedTitle =
+			sample.vendorProducts[0].retailerProduct?.title + ' Sample';
+	}
+
+	return json({ sample, vendorOptions, suggestedTitle });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -59,8 +77,23 @@ export default function SampleDetailPage() {
 		<>
 			<h2 className="headline-h5">Edit Sample Swatch</h2>
 
-			<Form method="post">
-				<Dropdown name="vendorId" options={data.vendorOptions} />
+			<Form method="post" replace>
+				<Dropdown
+					name="vendorId"
+					options={data.vendorOptions}
+					defaultValue={data.sample.vendorId}
+				/>
+
+				<Input
+					label={data.sample.title ? 'Title' : 'Suggested Title'}
+					id="title"
+					name="title"
+					defaultValue={
+						data.sample.title
+							? data.sample.title
+							: data.suggestedTitle
+					}
+				/>
 
 				<Input
 					label="Series"

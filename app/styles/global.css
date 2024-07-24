@@ -109,7 +109,7 @@ code {
 	color: cyan;
 }
 
-table {
+/* table {
 	border-collapse: collapse;
 	width: 100%;
 }
@@ -176,7 +176,7 @@ td .caption {
 .foobar tbody tr:hover .caption,
 .foobar tbody tr:hover .caption-2 {
 	color: var(--text-color);
-}
+} */
 
 ul,
 ol,

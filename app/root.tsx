@@ -12,9 +12,13 @@ import clsx from 'clsx';
 import { ThemeProvider, useTheme } from './utils/theme-provider';
 import { getUser } from '~/session.server';
 import styles from '~/styles/global.css';
+import tailwindStyles from './tailwind.css?url';
 
 export const links: LinksFunction = () => {
-	return [{ rel: 'stylesheet', href: styles }];
+	return [
+		{ rel: 'stylesheet', href: styles },
+		{ rel: 'stylesheet', href: tailwindStyles },
+	];
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

@@ -322,7 +322,7 @@ export default function SamplesPage() {
 			}
 		}
 
-		// if no checboxes are checked, set master checkbox checked to false
+		// if no checkboxes are checked, set master checkbox checked to false
 		if (checkedCount === 0) {
 			masterCheckboxRef.current.indeterminate = false;
 			masterCheckboxRef.current.checked = false;
@@ -504,7 +504,12 @@ export default function SamplesPage() {
 								</td>
 								<td>
 									{sample.vendor?.name ? (
-										sample.vendor?.name
+										<div>
+											{sample.title ? (
+												<div>{sample.title}</div>
+											) : null}
+											<div>{sample.vendor?.name}</div>
+										</div>
 									) : (
 										<SampleVendorItem
 											sampleId={sample.id}

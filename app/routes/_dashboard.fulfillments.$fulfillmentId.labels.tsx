@@ -46,17 +46,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			throw new Error('Unable to location sample swatch');
 		}
 
-		let title = '';
+		let title = sample.title ? sample.title : '';
 
-		if (sample.finish) {
+		if (!sample.title && sample.finish) {
 			title = sample.finish;
 		}
 
-		if (sample.finish && sample.colorAlias) {
+		if (!sample.title && sample.finish && sample.colorAlias) {
 			title += ' ';
 		}
 
-		if (sample.colorAlias) {
+		if (!sample.title && sample.colorAlias) {
 			title += sample.colorAlias;
 		}
 
