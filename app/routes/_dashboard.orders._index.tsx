@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { Form, Link, useLoaderData } from '@remix-run/react';
+import { Form, Link, useFetcher, useLoaderData } from '@remix-run/react';
 import { FulfillmentStatus, OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { EditIcon, TrashIcon } from '~/components/Icons';
@@ -48,17 +48,12 @@ export const loader: LoaderFunction = async ({ request }) => {
 	);
 
 	// Set default values
-	let selectedFulfillmentStatuses: FulfillmentStatus[] = [
-		'NEW',
-		'PROCESSING',
-	];
+	let selectedFulfillmentStatuses: FulfillmentStatus[] = ['NEW'];
 
 	let fulfillments;
 
 	// Loads initial data
 	if (_action !== 'search') {
-		console.log('LOADING INITIAL DATA');
-
 		// Loads initial data for external user / vendor employees
 		if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
 			fulfillments = await getFulfillmentsByVendor({
@@ -145,54 +140,71 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
-	const action = formData.get('_action');
-	const orderId = formData.get('orderId');
+	const _action = formData.get('_action');
 
-	if (typeof action !== 'string' || typeof orderId !== 'string') {
-		return json({ error: 'Invalid form data' });
-	}
-
-	if (action == 'delete') {
-		await prisma.$transaction(async (tx) => {
-			const fulfillments = await prisma.fulfillment.findMany({
-				where: { orderId: orderId },
+	switch (_action) {
+		case 'complete': {
+			const fulfillmentId = formData.get('fulfillmentId');
+			if (
+				typeof fulfillmentId !== 'string' ||
+				fulfillmentId.length === 0
+			) {
+				return json({ error: 'Invalid form data' });
+			}
+			const fulfillment = await prisma.fulfillment.update({
+				where: { id: fulfillmentId },
+				data: {
+					status: 'COMPLETE',
+				},
 			});
+			return json({ fulfillment });
+		}
+		case 'delete': {
+			const orderId = formData.get('orderId');
+			if (typeof orderId !== 'string' || orderId.length === 0) {
+				return json({ error: 'Invalid form data' });
+			}
+			const order = await prisma.$transaction(async (tx) => {
+				const fulfillments = await prisma.fulfillment.findMany({
+					where: { orderId: orderId },
+				});
 
-			fulfillments.map(async (fulfillment) => {
-				await prisma.fulfillment.update({
-					where: { id: fulfillment.id },
+				fulfillments.map(async (fulfillment) => {
+					await prisma.fulfillment.update({
+						where: { id: fulfillment.id },
+						data: {
+							lineItems: {
+								deleteMany: {},
+							},
+						},
+					});
+				});
+
+				await prisma.order.update({
+					where: { id: orderId },
 					data: {
+						items: {
+							deleteMany: {},
+						},
 						lineItems: {
+							deleteMany: {},
+						},
+						fulfillments: {
 							deleteMany: {},
 						},
 					},
 				});
-			});
 
-			await prisma.order.update({
-				where: { id: orderId },
-				data: {
-					items: {
-						deleteMany: {},
-					},
-					lineItems: {
-						deleteMany: {},
-					},
-					fulfillments: {
-						deleteMany: {},
-					},
-				},
+				await prisma.order.delete({
+					where: { id: orderId },
+				});
 			});
-
-			await prisma.order.delete({
-				where: { id: orderId },
-			});
-		});
-
-		return json({});
+			return json({ order });
+		}
+		default: {
+			return json({ error: 'Invalid form data' });
+		}
 	}
-
-	return json({});
 };
 
 export default function OrderIndex() {
@@ -242,21 +254,28 @@ export default function OrderIndex() {
 									className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
 								>
 									<option value="">Choose a vendor</option>
-									{data.vendorOptions.map((option: { value: string, label: string }) => (
+									{data.vendorOptions.map(
+										(option: {
+											value: string;
+											label: string;
+										}) => (
 											<option
 												key={option.value}
 												value={option.value}
 											>
 												{option.label}
 											</option>
-										))}
+										)
+									)}
 								</select>
 							</div>
 						) : null}
 
-
 						<div>
-							<label htmlFor="query" className="block text-sm font-medium leading-6 text-gray-900">
+							<label
+								htmlFor="query"
+								className="block text-sm font-medium leading-6 text-gray-900"
+							>
 								Search by name or order number
 							</label>
 
@@ -280,7 +299,11 @@ export default function OrderIndex() {
 							Search
 						</button>
 
-						<Link className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20" to="/orders" replace>
+						<Link
+							className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20"
+							to="/orders"
+							replace
+						>
 							Reset
 						</Link>
 					</Form>
@@ -330,22 +353,57 @@ function FulfillmentStatusBadge({ status }) {
 
 function FulFillments({ data }) {
 	return (
-		<table className="min-w-full divide-y divide-gray-300 table-fixed">
+		<table className="min-w-full table-fixed divide-y divide-zinc-700">
 			<thead>
 				<tr>
-					<th scope="col" className="py-3.5 pl-4 pr-3 text-left dark:text-white text-sm font-semibold text-gray-900 sm:pl-0">Order No.</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Name</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Shipping Address</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Tracking Info</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Status</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Vendor</th>
-					<th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0"><span className="sr-only">Edit</span></th>
+					<th
+						scope="col"
+						className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
+					>
+						Order No.
+					</th>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Name
+					</th>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Shipping Address
+					</th>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Tracking Info
+					</th>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Status
+					</th>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Vendor
+					</th>
+					<th
+						scope="col"
+						className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+					>
+						<span className="sr-only">Edit</span>
+					</th>
 				</tr>
 			</thead>
-			<tbody className="divide-y divide-gray-200">
+			<tbody className="divide-y divide-zinc-800">
 				{data.fulfillments.map((fulfillment) => (
 					<tr key={fulfillment.id}>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+						<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
 								<div>{fulfillment.name}</div>
 								<div className="caption">
@@ -362,7 +420,7 @@ function FulFillments({ data }) {
 						</td>
 						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<address className="text">
+								<address className="not-italic">
 									{fulfillment.order.address.line2 &&
 										`${fulfillment.order.address.line2}\n`}
 									{fulfillment.order.address.line3 &&
@@ -405,10 +463,8 @@ function FulFillments({ data }) {
 								{fulfillment.vendor?.name}
 							</Link>
 						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								Edit
-							</Link>
+						<td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+							<FulfillmentActions id={fulfillment.id} />
 						</td>
 					</tr>
 				))}
@@ -696,4 +752,33 @@ function createDropdownOptions({
 		label: item[labelKey],
 		value: item[valueKey],
 	}));
+}
+
+function FulfillmentActions({ id }: { id: string }) {
+	let fetcher = useFetcher();
+	let isSubmitting = fetcher.state === 'submitting';
+
+	return (
+		<div className="flex gap-x-2">
+			<Link
+				className="rounded bg-white/10 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-white/20"
+				to={`/fulfillments/${id}`}
+			>
+				View
+			</Link>
+
+			<fetcher.Form method="post">
+				<input name="fulfillmentId" value={id} type="hidden" />
+
+				<button
+					name="_action"
+					type="submit"
+					value="complete"
+					className="rounded bg-emerald-950 px-2 py-1 text-xs font-semibold text-emerald-300 shadow-sm hover:bg-emerald-900"
+				>
+					{isSubmitting ? 'Marking Complete' : 'Mark Complete'}
+				</button>
+			</fetcher.Form>
+		</div>
+	);
 }
