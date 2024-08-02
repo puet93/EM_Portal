@@ -99,10 +99,10 @@ a {
 	text-decoration: none;
 }
 
-a,
+/* a,
 a:visited {
 	color: var(--text-color);
-}
+} */
 
 code {
 	white-space-collapse: preserve;

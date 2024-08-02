@@ -246,47 +246,60 @@ export default function OrderPage() {
 
 			<div className="foobar">
 				<div className="foobar-main-content">
-					<table>
-						<thead>
-							<tr>
-								<th>Material No.</th>
-								<th>Description</th>
-								<th>Quantity</th>
-							</tr>
-						</thead>
-
-						<tbody>
-							{data.fulfillment?.lineItems.map((item) => (
-								<tr key={item.id}>
-									<td>
-										{item.orderLineItem.sample.materialNo}
-									</td>
-									<td>
-										<p className="title">
-											{
-												item.orderLineItem.sample
-													.seriesName
-											}{' '}
-											{item.orderLineItem.sample.finish}{' '}
-											{item.orderLineItem.sample.color}
-										</p>
-										<p className="caption">
-											{
-												item.orderLineItem.sample
-													.seriesAlias
-											}{' '}
-											{item.orderLineItem.sample.finish}{' '}
-											{
-												item.orderLineItem.sample
-													.colorAlias
-											}
-										</p>
-									</td>
-									<td>{item.orderLineItem.quantity}</td>
+					<div className="overflow-hidden rounded-lg ring-1 ring-white ring-opacity-5">
+						<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+							<thead>
+								<tr>
+									<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6">
+										Material No.
+									</th>
+									<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+										Description
+									</th>
+									<th className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white">
+										Quantity
+									</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+
+							<tbody className="divide-y divide-zinc-800">
+								{data.fulfillment?.lineItems.map((item) => {
+									const sample = item.orderLineItem.sample;
+									return (
+										<tr key={item.id}>
+											<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
+												{sample.materialNo}
+											</td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm">
+												<p className="text-sm text-gray-900 dark:text-white">
+													{sample.title
+														? sample.title
+														: `${sample.seriesName} ${sample.finish} ${sample.color}`}
+												</p>
+												<p className="mt-1 text-xs font-normal leading-6 text-gray-500 dark:text-zinc-400">
+													{
+														item.orderLineItem
+															.sample.seriesAlias
+													}{' '}
+													{
+														item.orderLineItem
+															.sample.finish
+													}{' '}
+													{
+														item.orderLineItem
+															.sample.colorAlias
+													}
+												</p>
+											</td>
+											<td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+												{item.orderLineItem.quantity}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
 
 					<CommentForm />
 
@@ -301,9 +314,9 @@ export default function OrderPage() {
 
 				<div className="foobar-sidebar">
 					<section className="sidebar-section">
-						<h2 className="headline-h5">Ship To</h2>
+						<h2 className="text-base font-bold">Ship To</h2>
 						{data.fulfillment?.order?.address ? (
-							<address className="text">
+							<address className="mt-2 text-sm not-italic text-gray-500">
 								{data.fulfillment.order.address.line1 &&
 									`${data.fulfillment.order.address.line1}\n`}
 								{data.fulfillment.order.address.line2 &&
@@ -345,9 +358,9 @@ export default function OrderPage() {
 									/>
 								</div>
 
-								<div className="form-actions">
+								<div className="flex gap-x-2">
 									<button
-										className="primary button"
+										className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
 										type="submit"
 										name="_action"
 										value="save"
@@ -357,7 +370,7 @@ export default function OrderPage() {
 									</button>
 
 									<button
-										className="button"
+										className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
 										type="button"
 										onClick={() => setIsEditing(false)}
 									>
@@ -396,7 +409,7 @@ export default function OrderPage() {
 									</>
 								) : (
 									<button
-										className="link"
+										className="mt-5 rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
 										onClick={() => setIsEditing(true)}
 									>
 										Add tracking info
@@ -482,7 +495,12 @@ function CommentForm() {
 				placeholder="Leave a comment..."
 			></textarea>
 
-			<button type="submit" className="" name="_action" value="comment">
+			<button
+				type="submit"
+				className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+				name="_action"
+				value="comment"
+			>
 				{isPosting ? 'Posting...' : 'Post'}
 			</button>
 		</fetcher.Form>
