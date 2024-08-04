@@ -364,7 +364,7 @@ export default function OrdersIndex() {
 					/>
 				</div>
 
-				{data.vendorOptions.length > 0 ? (
+				{data.venderOptions && data.vendorOptions.length > 0 ? (
 					<div className="basis-1/5">
 						<MultiSelectMenu
 							name="vendors"
