@@ -74,116 +74,13 @@ html.dark {
 	--shadow-04: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
 }
 
-html,
 body {
-	margin: 0;
-	padding: 0;
-	font-family: 'Inter', sans-serif;
-}
-
-body {
-	/* background-color: var(--background-color); */
 	color: var(--text-color);
 }
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	margin: 0;
-}
-
-a {
-	text-decoration: none;
-}
-
-/* a,
-a:visited {
-	color: var(--text-color);
-} */
 
 code {
 	white-space-collapse: preserve;
 	color: cyan;
-}
-
-/* table {
-	border-collapse: collapse;
-	width: 100%;
-}
-
-thead tr,
-tr:nth-child(2n) {
-	background-color: var(--secondary-bg-color);
-}
-
-th,
-td {
-	padding: 24px 12px;
-}
-
-th:first-child,
-td:first-child {
-	padding-left: 24px;
-	border-top-left-radius: 12px;
-	border-bottom-left-radius: 12px;
-}
-
-th:last-child,
-td:last-child {
-	padding-right: 24px;
-	border-top-right-radius: 12px;
-	border-bottom-right-radius: 12px;
-}
-
-th {
-	text-align: left;
-}
-
-td {
-	font-size: 14px;
-	line-height: calc(24 / 14);
-	color: var(--secondary-text-color);
-}
-
-td a,
-td .title {
-	color: var(--text-color);
-}
-
-td .title,
-td .caption {
-	margin: 0;
-}
-
-.foobar tbody tr {
-	transition: background-color 0.1s;
-}
-
-.foobar tbody tr:hover {
-	background-color: var(--primary-color);
-}
-
-.foobar tbody tr td,
-.foobar tbody tr .caption,
-.foobar tbody tr .caption-2 {
-	transition: color 0.1s;
-}
-
-.foobar tbody tr:hover td,
-.foobar tbody tr:hover .caption,
-.foobar tbody tr:hover .caption-2 {
-	color: var(--text-color);
-} */
-
-ul,
-ol,
-li {
-	list-style: none;
-	margin: 0;
-	padding: 0;
 }
 
 .visually-hidden {
@@ -211,7 +108,6 @@ li {
 	box-sizing: border-box;
 	cursor: pointer;
 	font-size: 14px;
-	font-weight: 500;
 	line-height: calc(24 / 14);
 	padding: var(--input-padding);
 	text-align: center;
@@ -391,7 +287,6 @@ li {
 	box-sizing: border-box;
 	cursor: pointer;
 	font-size: 14px;
-	font-weight: 500;
 	line-height: calc(24 / 14);
 	padding: 16px 20px;
 	text-decoration: none;
@@ -455,14 +350,12 @@ li {
 
 .headline-h5 {
 	font-size: 24px;
-	font-weight: 700;
 	line-height: calc(32 / 24);
 }
 
 .headline-h6 {
 	font-size: 18px;
 	font-style: normal;
-	font-weight: 400;
 	line-height: calc(24 / 18);
 
 	margin-bottom: 32px;
@@ -475,7 +368,6 @@ li {
 p,
 .text {
 	font-size: 14px;
-	font-weight: 400;
 	font-style: normal;
 	line-height: calc(24 / 14);
 }
@@ -483,7 +375,6 @@ p,
 .title {
 	font-size: 16px;
 	font-style: normal;
-	font-weight: 400;
 	line-height: calc(24 / 16);
 }
 
@@ -491,13 +382,11 @@ th,
 .caption {
 	font-size: 13px;
 	font-style: normal;
-	font-weight: 400;
 	line-height: calc(18 / 13);
 	color: var(--secondary-text-color);
 }
 
 .caption.caption--bold {
-	font-weight: 500;
 	color: white;
 }
 
@@ -650,7 +539,6 @@ th,
 
 .sample-cart-item__description {
 	font-size: 14px;
-	font-weight: 500;
 	line-height: calc(20 / 14);
 }
 
@@ -855,7 +743,6 @@ address {
 
 .message {
 	font-size: 14px;
-	font-weight: 500;
 	line-height: calc(24 / 14);
 	border-radius: var(--input-border-radius);
 	box-sizing: border-box;
@@ -886,7 +773,6 @@ address {
 	border-radius: 999em;
 	box-sizing: border-box;
 	font-size: 11px;
-	font-weight: 700;
 	line-height: calc(14 / 11);
 	padding: 5px 11px;
 
@@ -1087,11 +973,6 @@ input::file-selector-button {
 	border-radius: var(--input-border-radius);
 }
 
-.dropdown,
-.dropdown-menu-item {
-	font-weight: 500;
-}
-
 .dropdown {
 	display: flex;
 	flex-direction: row-reverse;
@@ -1192,7 +1073,6 @@ input::file-selector-button {
 .input > label {
 	display: block;
 	font-size: 14px;
-	font-weight: 400;
 	line-height: calc(16 / 12);
 	margin-bottom: 16px;
 	color: var(--neutral-4);
@@ -1326,7 +1206,6 @@ input::file-selector-button {
 
 .counter__value {
 	font-size: 16px;
-	font-weight: 500;
 	line-height: 1.5;
 }
 
@@ -1430,7 +1309,6 @@ input::file-selector-button {
 
 .vendor-card-title {
 	font-size: 18px;
-	font-weight: 600;
 	line-height: calc(24 / 18);
 	margin-top: 16px;
 }
@@ -1438,7 +1316,6 @@ input::file-selector-button {
 .vendor-card address {
 	font-size: 13px;
 	font-style: normal;
-	font-weight: 400;
 	line-height: calc(20 / 13);
 	color: var(--neutral-6);
 	margin-top: 8px;
@@ -1463,14 +1340,12 @@ input::file-selector-button {
 }
 
 .vendor-card-detail__counter {
-	font-weight: 700;
 	color: var(--neutral-6);
 	margin-left: 6px;
 	margin-right: 6px;
 }
 
 .vendor-card-detail__label {
-	font-weight: 400;
 	color: var(--neutral-5);
 }
 
@@ -1555,7 +1430,6 @@ input::file-selector-button {
 
 .comment__name {
 	font-size: 14px;
-	font-weight: 700;
 }
 
 .comment__time {

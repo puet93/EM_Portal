@@ -6,13 +6,15 @@ import {
 	useLoaderData,
 	useSearchParams,
 } from '@remix-run/react';
+import { useEffect, useState } from 'react';
 import { FulfillmentStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
-import DropdownMultiSelect from '~/components/DropdownMultiSelect';
+import MultiSelectMenu from '~/components/MultiSelectMenu';
+import type { Option } from '~/components/MultiSelectMenu';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 // import type { Prisma } from '@prisma/client';
 
@@ -24,16 +26,15 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const search = searchParams.get('search') || '';
 
 	// Create dropdown options from FulfillmentStatus object
-	const statusOptions = Object.values(FulfillmentStatus).map((status) => {
+	let statusOptions = Object.values(FulfillmentStatus).map((status) => {
 		return { value: status, label: toCapitalCase(status) };
 	});
 
 	// Create vendor option dropdown if user is a super admin
-	const vendors = user.role !== 'SUPERADMIN' ? null : await getVendors();
-	let vendorOptions;
-	if (vendors) {
+	let vendorOptions: Option[] = [];
+	if (user.role === 'SUPERADMIN') {
 		vendorOptions = createDropdownOptions({
-			array: vendors,
+			array: await getVendors(),
 			labelKey: 'name',
 			valueKey: 'id',
 		});
@@ -89,10 +90,22 @@ export const loader: LoaderFunction = async ({ request }) => {
 	}
 
 	// Vendors
+	let vendors = searchParams.getAll('vendors');
 	if (user.role !== 'SUPERADMIN') {
 		where = {
 			...where,
 			vendorId: user.vendorId,
+		};
+	} else if (vendors && vendors.length > 0) {
+		where = {
+			...where,
+			vendorId: { in: vendors },
+		};
+	} else if (searchParams.has('search')) {
+		// If search is present but no vendors are selected, query all vendors
+		where = {
+			...where,
+			vendorId: { in: undefined },
 		};
 	}
 
@@ -128,7 +141,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 		userRole: user.role,
 		statuses,
 		statusOptions,
-		vendorOptions,
+		vendors: user.role === 'SUPERADMIN' ? vendors : null,
+		vendorOptions: user.role === 'SUPERADMIN' ? vendorOptions : null,
 	});
 };
 
@@ -224,7 +238,7 @@ export const action: ActionFunction = async ({ request }) => {
 	}
 };
 
-export default function OrderIndex() {
+export default function OrdersIndex() {
 	const { count, fulfillments, offset, pageSize, ...data } =
 		useLoaderData<typeof loader>();
 	const [searchParams] = useSearchParams();
@@ -233,42 +247,78 @@ export default function OrderIndex() {
 	const startIndex = offset + 1;
 	const endIndex = Math.min(offset + pageSize, count);
 
+	// data.statuses and data.vendors are search parameters from the loader, not useSearchParams
+	const [selectedStatuses, setSelectedStatuses] = useState<Option[]>([]);
+	const [selectedVendors, setSelectedVendors] = useState<Option[]>([]);
+
+	useEffect(() => {
+		const indices: number[] = data.statuses.map(
+			(status: FulfillmentStatus) =>
+				data.statusOptions.findIndex(
+					(option: Option) => option.value === status
+				)
+		);
+		setSelectedStatuses(indices.map((index) => data.statusOptions[index]));
+	}, [data.statuses, data.statusOptions]);
+
+	useEffect(() => {
+		if (!data.vendors) {
+			console.log('No vendors');
+			return;
+		}
+
+		if (data.vendorOptions.length === 0) {
+			console.log('No vendor options');
+			return;
+		}
+
+		const indices: number[] = data.vendors.map((vendor: string) =>
+			data.vendorOptions.findIndex(
+				(option: Option) => option.value === vendor
+			)
+		);
+		setSelectedVendors(indices.map((index) => data.vendorOptions[index]));
+	}, [data.vendors, data.vendorOptions]);
+
 	return (
 		<>
 			{/* Page Header */}
-			<header className="page-header">
-				<div className="page-header__row">
-					<h1 className="text-4xl font-bold">Orders</h1>
-					{data.userRole === 'SUPERADMIN' ? (
-						<div className="page-header__actions">
-							<Link
-								to="new"
-								className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-							>
-								Create Order
-							</Link>
-						</div>
-					) : null}
+			<div className="md:flex md:items-center md:justify-between">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+						Orders
+					</h1>
 				</div>
-			</header>
+
+				{data.userRole === 'SUPERADMIN' ? (
+					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
+						<Link
+							to="new"
+							className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
+						>
+							Create Order
+						</Link>
+					</div>
+				) : null}
+			</div>
 
 			{/* Tabs */}
 			{data.userRole === 'SUPERADMIN' ? (
-				<div className="border-b border-zinc-700 pb-0">
+				<div className="mt-10 border-b border-zinc-700 pb-0 dark:border-white/10">
 					<div className="mt-4">
 						<div className="block">
 							<nav className="-mb-px flex space-x-8">
 								{/* Current: "border-indigo-500 text-indigo-600" */}
 								{/* Default: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" */}
 								<div
-									className="whitespace-nowrap border-b-2 border-indigo-300 px-1 pb-4 text-sm font-medium text-indigo-300"
+									className="whitespace-nowrap border-b-2 border-indigo-500 px-1 pb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400"
 									aria-current="page"
 								>
 									Fulfillments
 								</div>
 								<Link
 									to="all"
-									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-white"
+									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white"
 								>
 									Order Admin
 								</Link>
@@ -278,27 +328,16 @@ export default function OrderIndex() {
 				</div>
 			) : null}
 
-			{/* Fulfillment Table Header */}
+			{/* Search */}
 			<Form
 				id="search"
 				method="get"
-				className="flex flex-wrap items-end gap-x-6"
+				className="mt-12 flex items-end gap-x-4"
 			>
-				<div className="w-full">
-					<div className="input">
-						<label>Status</label>
-						<DropdownMultiSelect
-							name="statuses"
-							options={data.statusOptions}
-							defaultValue={data.statuses}
-						/>
-					</div>
-				</div>
-
-				<div className="grow">
+				<div className="grow basis-2/5">
 					<label
 						htmlFor="search"
-						className="block text-sm font-medium leading-6 text-white"
+						className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
 					>
 						Search by name or order number
 					</label>
@@ -315,35 +354,29 @@ export default function OrderIndex() {
 					</div>
 				</div>
 
-				{data.vendorOptions ? (
-					<div>
-						<label
-							htmlFor="vendors"
-							className="block text-sm font-medium leading-6 text-white"
-						>
-							Vendor
-						</label>
-						<select
-							id="vendors"
+				<div className="basis-1/5">
+					<MultiSelectMenu
+						name="statuses"
+						label="Statuses"
+						options={data.statusOptions}
+						selectedOptions={selectedStatuses}
+						setSelectedOptions={setSelectedStatuses}
+					/>
+				</div>
+
+				{data.vendorOptions.length > 0 ? (
+					<div className="basis-1/5">
+						<MultiSelectMenu
 							name="vendors"
-							className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
-						>
-							<option value="">Choose a vendor</option>
-							{data.vendorOptions.map(
-								(option: { value: string; label: string }) => (
-									<option
-										key={option.value}
-										value={option.value}
-									>
-										{option.label}
-									</option>
-								)
-							)}
-						</select>
+							label="Vendors"
+							options={data.vendorOptions}
+							selectedOptions={selectedVendors}
+							setSelectedOptions={setSelectedVendors}
+						/>
 					</div>
 				) : null}
 
-				<div className="flex shrink-0 gap-x-4">
+				<div className="flex basis-1/5 gap-x-4">
 					<button
 						className="flex-grow rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
 						type="submit"
@@ -418,6 +451,15 @@ export default function OrderIndex() {
 									});
 							}
 
+							// Vendors
+							if (searchParams.has('vendors')) {
+								searchParams.getAll('vendors').map((vendor) => {
+									searchParamsString =
+										searchParamsString +
+										`&vendors=${vendor}`;
+								});
+							}
+
 							return (
 								<Link
 									aria-current={
@@ -452,7 +494,7 @@ function FulfillmentActions({ id, name }: { id: string; name: string }) {
 		<fetcher.Form method="post">
 			<input name="id" value={id} type="hidden" />
 			<Menu as="div" className="relative flex-none">
-				<MenuButton className="-m-2.5 block p-2.5 text-zinc-400 transition-colors hover:text-white">
+				<MenuButton className="-m-2.5 block p-2.5 text-gray-500 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white">
 					<span className="sr-only">Open options</span>
 					<EllipsisVerticalIcon
 						aria-hidden="true"
@@ -551,141 +593,117 @@ function FulFillments({
 }) {
 	return (
 		<>
-			<div className="container mx-auto">
-				<table className="min-w-full table-fixed divide-y divide-gray-300 dark:divide-zinc-700">
-					<thead>
-						<tr>
-							<th
-								scope="col"
-								className="w-1/6 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
-							>
-								Order No.
-							</th>
-							<th
-								scope="col"
-								className="w-1/6 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-							>
-								Ship to
-							</th>
-							<th
-								scope="col"
-								className="w-1/6 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-							>
-								Tracking Info
-							</th>
-							<th
-								scope="col"
-								className="w-1/6 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-							>
-								Status
-							</th>
-							<th
-								scope="col"
-								className="w-1/6 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-							>
-								<span className="sr-only">View order</span>
-							</th>
-							<th
-								scope="col"
-								className="relative w-1/6 py-3.5 pl-3 pr-4 sm:pr-0"
-							>
-								<span className="sr-only">Edit</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
-						{fulfillments.map((fulfillment) => (
-							<tr key={fulfillment.id}>
-								<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<div className="text-sm font-bold text-gray-900 dark:text-white">
-											{fulfillment.name}
-										</div>
-										<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-											{new Date(
-												fulfillment.order.createdAt
-											).toLocaleString('en-US')}
-										</div>
+			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+				<thead>
+					<tr>
+						<th
+							scope="col"
+							className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
+						>
+							Order No.
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Ship to
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Tracking Info
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Status
+						</th>
+						<th
+							scope="col"
+							className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+						>
+							<span className="sr-only">Actions</span>
+						</th>
+					</tr>
+				</thead>
+				<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+					{fulfillments.map((fulfillment) => (
+						<tr key={fulfillment.id}>
+							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<div className="text-sm font-bold text-gray-900 dark:text-white">
+										{fulfillment.name}
+									</div>
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{new Date(
+											fulfillment.order.createdAt
+										).toLocaleString('en-US')}
+									</div>
 
-										<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-											{fulfillment.vendor?.name}
-										</div>
-									</Link>
-								</td>
-								<td className="whitespace-nowrap px-3 py-4 text-sm">
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<address className="not-italic">
-											<span className="block leading-6 text-gray-900 dark:text-white">
-												{
-													fulfillment.order.address
-														.line1
-												}
-											</span>
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{fulfillment.vendor?.name}
+									</div>
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4 text-sm">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<address className="not-italic">
+										<span className="block leading-6 text-gray-900 dark:text-white">
+											{fulfillment.order.address.line1}
+										</span>
 
-											<span className="leading-5 text-gray-500 dark:text-zinc-300">
-												{fulfillment.order.address
-													.line2 &&
-													`${fulfillment.order.address.line2}\n`}
-												{fulfillment.order.address
-													.line3 &&
-													`${fulfillment.order.address.line3}\n`}
-												{fulfillment.order.address
-													.line4 &&
-													`${fulfillment.order.address.line4}\n`}
-												{fulfillment.order.address.city}
-												,{' '}
+										<span className="leading-5 text-gray-500 dark:text-zinc-300">
+											{fulfillment.order.address.line2 &&
+												`${fulfillment.order.address.line2}\n`}
+											{fulfillment.order.address.line3 &&
+												`${fulfillment.order.address.line3}\n`}
+											{fulfillment.order.address.line4 &&
+												`${fulfillment.order.address.line4}\n`}
+											{fulfillment.order.address.city},{' '}
+											{fulfillment.order.address.state}{' '}
+											{
+												fulfillment.order.address
+													.postalCode
+											}
+										</span>
+									</address>
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									{fulfillment.trackingInfo?.number ? (
+										<>
+											<div className="text-gray-500 dark:text-zinc-300">
 												{
-													fulfillment.order.address
-														.state
-												}{' '}
-												{
-													fulfillment.order.address
-														.postalCode
+													fulfillment.trackingInfo
+														.number
 												}
-											</span>
-										</address>
-									</Link>
-								</td>
-								<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										{fulfillment.trackingInfo?.number ? (
-											<>
-												<div className="text-gray-500 dark:text-zinc-300">
-													{
-														fulfillment.trackingInfo
-															.number
-													}
-												</div>
-												<div className="text-gray-500 dark:text-zinc-300">
-													{
-														fulfillment.trackingInfo
-															.company
-													}
-												</div>
-											</>
-										) : (
-											<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
-												Needs tracking info
-											</span>
-										)}
-									</Link>
-								</td>
-								<td className="whitespace-nowrap px-3 py-4">
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<FulfillmentStatusBadge
-											status={fulfillment.status}
-										/>
-									</Link>
-								</td>
-								<td>
+											</div>
+											<div className="text-gray-500 dark:text-zinc-300">
+												{
+													fulfillment.trackingInfo
+														.company
+												}
+											</div>
+										</>
+									) : (
+										<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
+											Needs tracking info
+										</span>
+									)}
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<FulfillmentStatusBadge
+										status={fulfillment.status}
+									/>
+								</Link>
+							</td>
+							<td className="py-4 pl-3 pr-4 sm:pr-0">
+								<div className="flex items-center justify-end gap-x-4">
 									<Link
 										to={`/fulfillments/${fulfillment.id}`}
 										className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-gray-900 shadow-sm hover:bg-white/20 dark:text-white"
@@ -695,37 +713,17 @@ function FulFillments({
 											, {fulfillment.name}
 										</span>
 									</Link>
-								</td>
-								<td className="py-5 pl-3 pr-0 sm:pr-0">
+
 									<FulfillmentActions
 										id={fulfillment.id}
 										name={fulfillment.name}
 									/>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
-
-			{/* {data.count !== 0 ? (
-				<>
-					<input
-						form="search"
-						name="page"
-						type="hidden"
-						value={data.page}
-					/>
-					<button
-						form="search"
-						name="_action"
-						value="paginate"
-						className="flex w-full items-center justify-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 shadow-sm hover:bg-indigo-100 focus-visible:outline-offset-0 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-					>
-						Load More...
-					</button>
-				</>
-			) : null} */}
+								</div>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
 		</>
 	);
 }
