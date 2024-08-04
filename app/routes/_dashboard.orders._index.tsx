@@ -308,8 +308,6 @@ export default function OrdersIndex() {
 					<div className="mt-4">
 						<div className="block">
 							<nav className="-mb-px flex space-x-8">
-								{/* Current: "border-indigo-500 text-indigo-600" */}
-								{/* Default: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" */}
 								<div
 									className="whitespace-nowrap border-b-2 border-indigo-500 px-1 pb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400"
 									aria-current="page"
@@ -364,7 +362,7 @@ export default function OrdersIndex() {
 					/>
 				</div>
 
-				{data.venderOptions && data.vendorOptions.length > 0 ? (
+				{data.vendorOptions && data.vendorOptions.length > 0 ? (
 					<div className="basis-1/5">
 						<MultiSelectMenu
 							name="vendors"
@@ -383,9 +381,6 @@ export default function OrdersIndex() {
 					>
 						Search
 					</button>
-
-					{/* light: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" */}
-					{/* dark:  "rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20" */}
 
 					<Link
 						className="rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
@@ -421,8 +416,8 @@ export default function OrdersIndex() {
 							// Style based on current page
 							const className =
 								page === currentPage
-									? 'relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-									: 'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-zinc-950 focus:z-20 focus:outline-offset-0 dark:text-white';
+									? 'relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-zinc-950'
+									: 'relative inline-flex items-center px-4 py-2 text-sm font-semibold dark:bg-white/10 dark:hover:bg-white/20 text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-white dark:ring-0';
 
 							// Create search params string
 							let searchParamsString = '';
@@ -488,7 +483,6 @@ export default function OrdersIndex() {
 
 function FulfillmentActions({ id, name }: { id: string; name: string }) {
 	let fetcher = useFetcher();
-	// let isSubmitting = fetcher.state === 'submitting';
 
 	return (
 		<fetcher.Form method="post">
@@ -537,15 +531,6 @@ function FulfillmentActions({ id, name }: { id: string; name: string }) {
 							complete
 						</button>
 					</MenuItem>
-					{/* <MenuItem>
-						<button
-							type="button"
-							className="w-full px-3 py-1 text-left text-sm leading-6 text-gray-900 data-[focus]:bg-gray-200"
-						>
-							Delete
-							<span className="sr-only">, {name}</span>
-						</button>
-					</MenuItem> */}
 				</MenuItems>
 			</Menu>
 		</fetcher.Form>
@@ -558,21 +543,17 @@ function FulfillmentStatusBadge({ status }: { status: FulfillmentStatus }) {
 		case 'ERROR':
 		case 'CANCELLED':
 			className =
-				'inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20';
+				' bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10 inline-flex items-center rounded-md dark:bg-red-400/10 px-2 py-1 text-xs font-medium dark:text-red-400 dark:ring-red-400/20';
 			break;
 		case 'PROCESSING':
-			// LGHT: "inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20"
-			// DARK: "inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20"
 			className =
 				'inline-flex items-center rounded-md bg-yellow-50 dark:bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-500 dark:ring-yellow-400/20 ring-1 ring-inset ring-yellow-600/20';
 			break;
 		case 'COMPLETE':
 			className =
-				'inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20';
+				'bg-green-50 text-green-700 ring-green-600/20 inline-flex items-center rounded-md dark:bg-green-500/10 px-2 py-1 text-xs font-medium dark:text-green-400 ring-1 ring-inset dark:ring-green-500/20';
 			break;
 		case 'NEW':
-			// LGHT: inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10
-			// DARK: inline-flex items-center rounded-md bg-blue-400/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-400/30
 			className =
 				'inline-flex items-center rounded-md bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-400/10 px-2 py-1 text-xs font-medium dark:text-blue-400 ring-1 ring-inset dark:ring-blue-400/30';
 			break;
