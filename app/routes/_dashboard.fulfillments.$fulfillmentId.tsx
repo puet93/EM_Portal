@@ -15,6 +15,7 @@ import { badRequest } from '~/utils/request.server';
 import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
+import { parseISO, addDays, format } from 'date-fns';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUser(request);
@@ -301,14 +302,24 @@ export default function OrderPage() {
 						</table>
 					</div>
 
-					<CommentForm />
+					<h3 className="mt-10 text-base font-medium text-gray-900 dark:text-white">
+						Comments
+					</h3>
 
-					{data.comments ? (
-						<div className="comments">
-							{data.comments.map((comment) => (
-								<Comment key={comment.id} comment={comment} />
+					<div className="my-6">
+						<CommentForm />
+					</div>
+
+					{data.comments && data.comments.length > 0 ? (
+						<ul className="space-y-6">
+							{data.comments.map((comment, index) => (
+								<Comment
+									key={comment.id}
+									comment={comment}
+									isEnd={data.comments.length - 1 === index}
+								/>
 							))}
-						</div>
+						</ul>
 					) : null}
 				</div>
 
@@ -432,45 +443,93 @@ export default function OrderPage() {
 					</section>
 				</div>
 			</div>
-
-			{/* {data.fulfillment ? (
-				<code>{JSON.stringify(data.fulfillment, null, 4)}</code>
-			) : null} */}
 		</>
 	);
 }
 
-function Comment({ comment }) {
+function Comment({ comment, isEnd }: { comment: any; isEnd: boolean }) {
 	let fetcher = useFetcher();
 	let isDeleting = fetcher.state === 'submitting';
 
-	// TODO: Style "isDeleting" state
+	const date = parseISO(comment.createdAt);
+	const formattedDate = format(date, 'MMM d h:mm a');
+	const className = isEnd
+		? 'absolute left-0 top-0 flex w-6 justify-center'
+		: 'absolute top-3 -bottom-10 left-0 top-0 flex w-6 justify-center';
 
 	return (
-		<fetcher.Form method="post" className="comment">
-			<div>
-				<input name="commentId" value={comment.id} type="hidden" />
-
-				<div>
-					<span className="comment__name">
-						{comment.user.firstName} {comment.user.lastName}
-					</span>
-					<span className="comment__time">{comment.createdAt}</span>
+		<>
+			<li className="relative flex gap-x-4">
+				<div className={className}>
+					<div className="w-px bg-gray-200 dark:bg-zinc-700"></div>
 				</div>
 
-				<div className="comment__content">{comment.content}</div>
-			</div>
+				<span className="relative mt-3 inline-block h-6 w-6 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-700">
+					<svg
+						className="h-full w-full text-gray-300 dark:text-zinc-800"
+						fill="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+					</svg>
+				</span>
 
-			<button
-				type="submit"
-				name="_action"
-				value="comment delete"
-				className="sample-cart-delete-button"
-				disabled={isDeleting}
+				<div className="flex flex-auto gap-x-3 rounded-md p-3 ring-1 ring-inset ring-gray-200 dark:ring-white/5">
+					<div className="grow">
+						<div className="flex justify-between gap-x-4">
+							<div className="py-0.5 text-xs leading-5">
+								<span className="font-medium text-gray-900 dark:text-white">
+									{comment.user.firstName}{' '}
+									{comment.user.lastName}
+								</span>{' '}
+								<time
+									dateTime={comment.createdAt}
+									className="flex-none py-0.5 text-xs leading-5 text-gray-500 dark:text-zinc-400"
+								>
+									{formattedDate}
+								</time>
+							</div>
+						</div>
+						<p className="text-sm font-light leading-6 text-gray-500 dark:text-white">
+							{comment.content}
+						</p>
+					</div>
+
+					<fetcher.Form method="post" className="shrink-0">
+						<input
+							name="commentId"
+							value={comment.id}
+							type="hidden"
+						/>
+
+						<button
+							type="submit"
+							name="_action"
+							value="comment delete"
+							disabled={isDeleting}
+							className="items-center rounded-md bg-transparent px-1 py-1 text-sm font-semibold text-gray-400 transition-colors hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-zinc-600 dark:hover:bg-zinc-950 dark:hover:text-white md:inline-flex"
+						>
+							<span className="sr-only">Delete comment</span>
+							<TrashIcon />
+						</button>
+					</fetcher.Form>
+				</div>
+			</li>
+		</>
+	);
+}
+
+function CommentAvatar() {
+	return (
+		<span className="inline-block h-6 w-6 overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-700">
+			<svg
+				className="h-full w-full text-gray-300 dark:text-zinc-800"
+				fill="currentColor"
+				viewBox="0 0 24 24"
 			>
-				<TrashIcon />
-			</button>
-		</fetcher.Form>
+				<path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+			</svg>
+		</span>
 	);
 }
 
@@ -486,23 +545,41 @@ function CommentForm() {
 	});
 
 	return (
-		<fetcher.Form className="comment-form" method="post" ref={formRef}>
-			<label htmlFor="comment">Comment</label>
-			<textarea
-				id="comment"
-				name="comment"
-				rows={6}
-				placeholder="Leave a comment..."
-			></textarea>
+		<>
+			<div className="flex gap-x-3">
+				<CommentAvatar />
 
-			<button
-				type="submit"
-				className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-				name="_action"
-				value="comment"
-			>
-				{isPosting ? 'Posting...' : 'Post'}
-			</button>
-		</fetcher.Form>
+				<fetcher.Form
+					action="#"
+					className="relative flex-auto"
+					method="post"
+					ref={formRef}
+				>
+					<div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-indigo-600 dark:bg-white/5 dark:ring-white/10">
+						<label htmlFor="comment" className="sr-only">
+							Add your comment
+						</label>
+						<textarea
+							rows={4}
+							name="comment"
+							id="comment"
+							className="block w-full resize-none border-0 bg-transparent py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 dark:text-white dark:placeholder:text-zinc-500 sm:text-sm sm:leading-6"
+							placeholder="Add your comment..."
+						></textarea>
+					</div>
+
+					<div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
+						<button
+							name="_action"
+							value="comment"
+							type="submit"
+							className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-indigo-500 dark:text-white dark:ring-0 dark:hover:bg-indigo-400"
+						>
+							{isPosting ? 'Posting...' : 'Comment'}
+						</button>
+					</div>
+				</fetcher.Form>
+			</div>
+		</>
 	);
 }

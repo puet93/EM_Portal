@@ -949,6 +949,7 @@ export function TrashIcon() {
 			fill="none"
 			aria-hidden
 			focusable="false"
+			stroke="currentColor"
 		>
 			<path
 				d="M5 7H19"
