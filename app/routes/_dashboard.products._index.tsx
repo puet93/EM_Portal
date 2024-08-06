@@ -20,10 +20,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 		labelKey: 'name',
 		valueKey: 'id',
 	});
-	const vendorOptionsFiltered = await getVendors([
-		'Florim',
-		'European Porcelain Ceramics',
-	]);
+	const vendorOptionsFiltered = await getVendors([]);
 	const vendorOptionsDefaults: string[] = createDropdownDefaultValues(
 		vendorOptionsFiltered,
 		'id'
