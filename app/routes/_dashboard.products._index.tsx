@@ -124,7 +124,7 @@ export default function ProductsPage() {
 		<>
 			<header className="page-header">
 				<div className="page-header__row">
-					<h1>Products</h1>
+					<h1 className="text-4xl font-bold">Products</h1>
 					<div className="page-header__actions">
 						<Link className="button" to="import">
 							Import
@@ -134,36 +134,45 @@ export default function ProductsPage() {
 			</header>
 
 			<div className="table-toolbar">
-				<Form method="get">
-					<div className="input">
-						<label>Vendor</label>
-						<DropdownMultiSelect
-							name={data.vendorDropdownName}
-							options={data.vendorOptions}
-							defaultValue={data.vendorOptionsDefaults}
-						/>
+				<Form method="get" className="flex items-end gap-x-6">
+					<div className="shrink grow-0">
+						<label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
+							Vendor
+						</label>
+						<div className="mt-2">
+							<DropdownMultiSelect
+								name={data.vendorDropdownName}
+								options={data.vendorOptions}
+								defaultValue={data.vendorOptionsDefaults}
+							/>
+						</div>
 					</div>
 
-					<div className="search-bar">
-						<SearchIcon className="search-icon" id="search-icon" />
-						<input
-							className="search-input"
-							aria-labelledby="search-icon"
-							type="search"
-							name="query"
-							id="query"
-							placeholder="Search"
-							defaultValue={data.query}
-						/>
-						<button
-							className="primary button"
-							type="submit"
-							name="_action"
-							value="search"
-						>
+					<div className="shrink-0 grow">
+						<label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
 							Search
-						</button>
+						</label>
+
+						<div className="mt-2">
+							<input
+								id="query"
+								name="query"
+								type="text"
+								className="block w-full rounded-md border-0 py-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 sm:text-sm sm:leading-6"
+								placeholder="Search"
+								defaultValue={data.query}
+							/>
+						</div>
 					</div>
+
+					<button
+						className="primary button"
+						type="submit"
+						name="_action"
+						value="search"
+					>
+						Search
+					</button>
 				</Form>
 			</div>
 
@@ -173,28 +182,41 @@ export default function ProductsPage() {
 						{data.results.length} products found
 					</div>
 
-					<table style={{ marginTop: '36px' }}>
+					<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
 						<thead>
 							<tr>
-								<th>Vendor</th>
-								<th>Edward Martin</th>
-								<th>Item No.</th>
-								<th>Cost</th>
-								<th>Sample Material No.</th>
+								<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+									Vendor
+								</th>
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+									Edward Martin
+								</th>
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+									Item No.
+								</th>
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+									Cost
+								</th>
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+									Sample Material No.
+								</th>
 							</tr>
 						</thead>
 
-						<tbody ref={tableBodyRef}>
+						<tbody
+							ref={tableBodyRef}
+							className="divide-y divide-gray-200 dark:divide-zinc-800"
+						>
 							{data.results.map((product: any) => {
 								return (
 									<tr key={product.id}>
-										<td>
+										<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">
 											{
 												product.vendorProduct?.vendor
 													?.name
 											}
 										</td>
-										<td>
+										<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 											<Link to={product.id}>
 												<div>{product.title}</div>
 												<div>{product.sku}</div>
@@ -202,7 +224,7 @@ export default function ProductsPage() {
 										</td>
 
 										{product.vendorProduct ? (
-											<td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 												<div>
 													{product.vendorProduct
 														.itemNo
@@ -226,14 +248,14 @@ export default function ProductsPage() {
 												</div>
 											</td>
 										) : (
-											<td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 												<span className="error indicator"></span>{' '}
 												MISSING
 											</td>
 										)}
 
 										{product.vendorProduct?.listPrice ? (
-											<td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 												{
 													product.vendorProduct
 														.listPrice
@@ -244,14 +266,14 @@ export default function ProductsPage() {
 										)}
 
 										{product.vendorProduct?.sample ? (
-											<td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 												{
 													product.vendorProduct
 														?.sample.materialNo
 												}
 											</td>
 										) : (
-											<td>
+											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
 												<span className="error indicator"></span>{' '}
 												MISSING
 											</td>
@@ -268,8 +290,6 @@ export default function ProductsPage() {
 }
 
 async function getProducts(query: string, vendors: string[]) {
-	const formattedQuery = formatSearchQuery(query);
-	const title = formattedQuery ? { search: formattedQuery } : undefined;
 	const include = {
 		vendorProduct: {
 			include: {
@@ -278,17 +298,44 @@ async function getProducts(query: string, vendors: string[]) {
 			},
 		},
 	};
-	const vendor =
-		vendors.length !== 0
-			? {
-					id: { in: vendors },
-			  }
-			: undefined;
 
-	return await prisma.retailerProduct.findMany({
+	const products = await prisma.retailerProduct.findMany({
 		where: {
-			title,
-			vendorProduct: { vendor },
+			OR: [
+				{
+					title: { search: query || undefined },
+					vendorProduct: {
+						vendorId: {
+							in:
+								vendors && vendors.length > 0
+									? vendors
+									: undefined,
+						},
+					},
+				},
+				{
+					vendorProduct: {
+						vendorId: {
+							in:
+								vendors && vendors.length > 0
+									? vendors
+									: undefined,
+						},
+						color: { search: query || undefined },
+					},
+				},
+				{
+					vendorProduct: {
+						vendorId: {
+							in:
+								vendors && vendors.length > 0
+									? vendors
+									: undefined,
+						},
+						seriesName: { search: query || undefined },
+					},
+				},
+			],
 		},
 		orderBy: [
 			{
@@ -302,6 +349,8 @@ async function getProducts(query: string, vendors: string[]) {
 		],
 		include,
 	});
+
+	return products;
 }
 
 async function getVendors(names: string[] | undefined = undefined) {
