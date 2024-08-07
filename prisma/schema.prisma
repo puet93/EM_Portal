@@ -75,6 +75,7 @@ model Fulfillment {
     trackingInfo TrackingInfo?
     vendor       Vendor?               @relation(fields: [vendorId], references: [id])
     vendorId     String?
+    isArchived   Boolean?              @default(false)
 }
 
 model FulfillmentLineItem {

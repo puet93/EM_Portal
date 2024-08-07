@@ -17,6 +17,7 @@ import tailwindStyles from './tailwind.css?url';
 export const links: LinksFunction = () => {
 	return [
 		{ rel: 'stylesheet', href: styles },
+		{ rel: 'stylesheet', href: 'https://rsms.me/inter/inter.css' },
 		{ rel: 'stylesheet', href: tailwindStyles },
 	];
 };
@@ -39,7 +40,7 @@ function App() {
 				<Meta />
 				<Links />
 			</head>
-			<body className="h-full">
+			<body className="h-full bg-white dark:bg-zinc-900">
 				<Outlet />
 				<ScrollRestoration />
 				<Scripts />

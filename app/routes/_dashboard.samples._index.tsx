@@ -356,8 +356,35 @@ export default function SamplesPage() {
 	}
 
 	return (
-		<div>
-			<h1 className="headline-h3">Samples List</h1>
+		<>
+			<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+				<div className="md:flex md:items-center md:justify-between">
+					<div className="min-w-0 flex-1">
+						<h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+							Samples
+						</h2>
+					</div>
+					<div className="mt-4 flex gap-x-4 md:ml-4 md:mt-0">
+						<Form method="post" id="publish">
+							<button
+								className="button"
+								type="submit"
+								name="_action"
+								value="publish"
+							>
+								Publish
+							</button>
+						</Form>
+
+						<Link
+							className="button transition-colors hover:bg-blue-500 dark:bg-blue-600"
+							to="new"
+						>
+							Create New Sample
+						</Link>
+					</div>
+				</div>
+			</div>
 
 			{/* Bulk Upload Form */}
 			{/* TODO: Move to own component */}
@@ -393,7 +420,7 @@ export default function SamplesPage() {
 				</Form>
 			</div> */}
 
-			{actionData && actionData.empty?.length === 0 ? (
+			{/* {actionData && actionData.empty?.length === 0 ? (
 				<div className="success message">
 					Contgrats! {actionData.empty.length} out of{' '}
 					{actionData.productCount} products without samples.
@@ -409,159 +436,176 @@ export default function SamplesPage() {
 
 			{actionData && actionData.upsertedSamples ? (
 				<div className="success message">UPDATED!</div>
-			) : null}
+			) : null} */}
 
 			{/* Search Form */}
-			<div className="table-toolbar">
-				<Form
-					className="inline-form"
-					method="get"
-					replace
-					style={{
-						display: 'flex',
-						alignItems: 'flex-end',
-						justifyContent: 'space-between',
-					}}
-				>
-					<Input
-						label="Series"
-						id="series"
-						name="series"
-						defaultValue={data.fields.series}
-					/>
+			<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+				<Form className="flex items-end gap-x-6" method="get" replace>
+					<div className="grow">
+						<Input
+							label="Series"
+							id="series"
+							name="series"
+							defaultValue={data.fields.series}
+						/>
+					</div>
 
-					<Input
-						label="Color"
-						id="color"
-						name="color"
-						defaultValue={data.fields.color}
-					/>
+					<div className="grow">
+						<Input
+							label="Color"
+							id="color"
+							name="color"
+							defaultValue={data.fields.color}
+						/>
+					</div>
 
-					<Input
-						label="Finish"
-						id="finish"
-						name="finish"
-						defaultValue={data.fields.finish}
-					/>
+					<div className="grow">
+						<Input
+							label="Finish"
+							id="finish"
+							name="finish"
+							defaultValue={data.fields.finish}
+						/>
+					</div>
 
-					<Dropdown
-						name="vendorId"
-						options={data.vendorFilterOptions}
-						defaultValue={data.fields.vendorId}
-					/>
+					<div className="mb-5 grow">
+						<Dropdown
+							name="vendorId"
+							options={data.vendorFilterOptions}
+							defaultValue={data.fields.vendorId}
+						/>
+					</div>
 
-					<button className="primary button" type="submit">
+					<button
+						className="button mb-5 transition-colors hover:bg-blue-500 dark:bg-blue-600 "
+						type="submit"
+					>
 						Search
 					</button>
 				</Form>
-
-				<Form method="post" id="publish">
-					<button
-						className="button"
-						type="submit"
-						name="_action"
-						value="publish"
-					>
-						Publish
-					</button>
-				</Form>
-
-				<Link className="button" to="new">
-					Create New Sample
-				</Link>
 			</div>
 
-			<div>Displaying {data.samples.length} samples</div>
-
 			{data.samples ? (
-				<table>
-					<tbody ref={tableBodyRef}>
-						<tr>
-							<th>
-								<input
-									ref={masterCheckboxRef}
-									id="master-checkbox"
-									type="checkbox"
-									onChange={handleMasterCheckboxChange}
-								/>
-							</th>
-							<th>Vendor</th>
-							<th>Material No.</th>
-							<th>Series</th>
-							<th>Linked Items</th>
-							<th style={{ textAlign: 'center' }}>Shopify</th>
-						</tr>
-						{data.samples.map((sample) => (
-							<tr className="row" key={sample.id}>
-								<td>
+				<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+					<div>Displaying {data.samples.length} samples</div>
+
+					<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+						<thead>
+							<tr>
+								<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">
 									<input
+										ref={masterCheckboxRef}
+										id="master-checkbox"
 										type="checkbox"
-										name="sampleId"
-										value={sample.id}
-										onChange={handleChange}
-										form="publish"
+										onChange={handleMasterCheckboxChange}
 									/>
-								</td>
-								<td>
-									{sample.vendor?.name ? (
-										<div>
-											{sample.title ? (
-												<div>{sample.title}</div>
-											) : null}
-											<div>{sample.vendor?.name}</div>
-										</div>
-									) : (
-										<SampleVendorItem
-											sampleId={sample.id}
-											vendorOptions={data.vendorOptions}
-										/>
-									)}
-								</td>
-								<td>
-									<Link to={sample.id}>
-										{sample.materialNo}
-									</Link>
-								</td>
-								<td>
-									<Link to={sample.id}>
-										{sample.seriesName} - {sample.color}{' '}
-										{sample.finish}
-									</Link>
-								</td>
-								<td>
-									<Link to={sample.id}>
-										{sample.vendorProducts.map(
-											(vendorProduct) => (
-												<div
-													key={
-														vendorProduct
-															.retailerProduct.id
-													}
-												>
-													{
-														vendorProduct
-															.retailerProduct
-															.title
-													}
-												</div>
-											)
-										)}
-									</Link>
-								</td>
-								<td style={{ textAlign: 'center' }}>
-									{sample.gid ? (
-										<span className="success indicator"></span>
-									) : (
-										<Link to={`${sample.id}/edit`}>
-											Edit
-										</Link>
-									)}
-								</td>
+								</th>
+
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-white">
+									Vendor
+								</th>
+
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-white">
+									Material No.
+								</th>
+
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-white">
+									Series
+								</th>
+
+								<th className="px-3 py-3.5 text-left text-sm font-semibold text-white">
+									Linked Items
+								</th>
+
+								<th className="py-3.5 pl-3 pr-4 text-left text-sm font-semibold text-white sm:pr-0">
+									Shopify
+								</th>
 							</tr>
-						))}
-					</tbody>
-				</table>
+						</thead>
+						<tbody
+							ref={tableBodyRef}
+							className="divide-y divide-gray-200 dark:divide-zinc-800"
+						>
+							{data.samples.map((sample) => (
+								<tr key={sample.id}>
+									<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium dark:text-white sm:pl-0">
+										<input
+											type="checkbox"
+											name="sampleId"
+											value={sample.id}
+											onChange={handleChange}
+											form="publish"
+										/>
+									</td>
+
+									<td className="whitespace-nowrap px-3 py-4 text-sm dark:text-zinc-300">
+										{sample.vendor?.name ? (
+											<div>
+												{sample.title ? (
+													<div>{sample.title}</div>
+												) : null}
+												<div>{sample.vendor?.name}</div>
+											</div>
+										) : (
+											<SampleVendorItem
+												sampleId={sample.id}
+												vendorOptions={
+													data.vendorOptions
+												}
+											/>
+										)}
+									</td>
+
+									<td className="whitespace-nowrap px-3 py-4 text-sm dark:text-zinc-300">
+										<Link to={sample.id}>
+											{sample.materialNo}
+										</Link>
+									</td>
+
+									<td className="whitespace-nowrap px-3 py-4 text-sm dark:text-zinc-300">
+										<Link to={sample.id}>
+											{sample.seriesName} - {sample.color}{' '}
+											{sample.finish}
+										</Link>
+									</td>
+
+									<td className="whitespace-nowrap px-3 py-4 text-sm dark:text-zinc-300">
+										<Link to={sample.id}>
+											{sample.vendorProducts.map(
+												(vendorProduct) => (
+													<div
+														key={
+															vendorProduct
+																.retailerProduct
+																.id
+														}
+													>
+														{
+															vendorProduct
+																.retailerProduct
+																.title
+														}
+													</div>
+												)
+											)}
+										</Link>
+									</td>
+
+									<td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm dark:text-zinc-300">
+										{sample.gid ? (
+											<span className="success indicator"></span>
+										) : (
+											<Link to={`${sample.id}/edit`}>
+												Edit
+											</Link>
+										)}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
 			) : null}
-		</div>
+		</>
 	);
 }

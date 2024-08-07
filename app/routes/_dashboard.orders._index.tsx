@@ -1,324 +1,561 @@
 import { json } from '@remix-run/node';
-import { Form, Link, useLoaderData } from '@remix-run/react';
-import { FulfillmentStatus, OrderStatus } from '@prisma/client';
+import {
+	Form,
+	Link,
+	useFetcher,
+	useLoaderData,
+	useSearchParams,
+} from '@remix-run/react';
+import { useEffect, useState } from 'react';
+import { FulfillmentStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
-import { EditIcon, TrashIcon } from '~/components/Icons';
-import Input from '~/components/Input';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import MultiSelectMenu from '~/components/MultiSelectMenu';
+import type { Option } from '~/components/MultiSelectMenu';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
-import DropdownMultiSelect from '~/components/DropdownMultiSelect';
+// import type { Prisma } from '@prisma/client';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
 	const searchParams = new URL(request.url).searchParams;
-	const _action = searchParams.get('_action');
-	const query = searchParams.get('query');
-
-	// TODO: DELETE
-	// Order status dropdown
-	const orderStatusDefaults: OrderStatus[] = ['DRAFT', 'NEW'];
-	const orderStatusDropdownName: string = 'selectedStatuses';
-	const orderStatusOptions: { value: OrderStatus; label: string }[] =
-		Object.values(OrderStatus).map((status) => {
-			return { value: status, label: toCapitalCase(status) };
-		});
-
-	let selectedOrderStatuses = orderStatusDefaults;
-	if (_action === 'search-orders') {
-		selectedOrderStatuses = searchParams.getAll(
-			orderStatusDropdownName
-		) as OrderStatus[];
-	}
-	let name = '';
-
-	for (const [key, value] of searchParams) {
-		if (key === 'name') {
-			name = value;
-			continue;
-		}
-	}
-	// END TODO
+	const offset = Number(searchParams.get('offset')) || 0;
+	const pageSize = Number(searchParams.get('pageSize')) || 50;
+	const search = searchParams.get('search') || '';
 
 	// Create dropdown options from FulfillmentStatus object
-	const fulfillmentStatuses = Object.values(FulfillmentStatus).map(
-		(status) => {
-			return { value: status, label: toCapitalCase(status) };
-		}
-	);
+	let statusOptions = Object.values(FulfillmentStatus).map((status) => {
+		return { value: status, label: toCapitalCase(status) };
+	});
 
-	// Set default values
-	let selectedFulfillmentStatuses: FulfillmentStatus[] = [
-		'NEW',
-		'PROCESSING',
-	];
-
-	let fulfillments;
-
-	// Loads initial data
-	if (_action !== 'search') {
-		console.log('LOADING INITIAL DATA');
-
-		// Loads initial data for external user / vendor employees
-		if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
-			fulfillments = await getFulfillmentsByVendor({
-				query: undefined,
-				vendorId: user.vendorId,
-				fulfillmentStatuses: selectedFulfillmentStatuses,
-			});
-		}
-
-		// Loads initial data for superadmins / Edward Martin employees
-		if (user.role === 'SUPERADMIN' && _action !== 'search') {
-			fulfillments = await getFulfillments(
-				undefined,
-				selectedFulfillmentStatuses,
-				undefined
-			);
-		}
-	}
-
-	// Search fulfillments
-	if (_action === 'search' && typeof query === 'string') {
-		selectedFulfillmentStatuses = searchParams.getAll(
-			'selectedFulfillmentStatuses'
-		) as FulfillmentStatus[];
-
-		const searchTerm: string | undefined =
-			query.length === 0 ? undefined : query;
-
-		// Loads initial data for external user / vendor employees
-		if (typeof user.vendorId === 'string' && user.vendorId.length !== 0) {
-			fulfillments = await getFulfillmentsByVendor({
-				query: searchTerm,
-				vendorId: user.vendorId,
-				fulfillmentStatuses:
-					selectedFulfillmentStatuses.length === 0
-						? undefined
-						: selectedFulfillmentStatuses,
-			});
-		}
-
-		const selectedVendorParam = searchParams.get('selectedVendor');
-		const vendorId = selectedVendorParam ? selectedVendorParam : undefined;
-
-		// Search fulfillments as superadmins / Edward Martin employees
-		if (user.role === 'SUPERADMIN') {
-			fulfillments = await getFulfillments(
-				searchTerm,
-				selectedFulfillmentStatuses.length === 0
-					? undefined
-					: selectedFulfillmentStatuses,
-				vendorId
-			);
-		}
-	}
-
-	const vendors = user.role !== 'SUPERADMIN' ? null : await getVendors();
-
-	let vendorOptions;
-	if (vendors) {
+	// Create vendor option dropdown if user is a super admin
+	let vendorOptions: Option[] = [];
+	if (user.role === 'SUPERADMIN') {
 		vendorOptions = createDropdownOptions({
-			array: vendors,
+			array: await getVendors(),
 			labelKey: 'name',
 			valueKey: 'id',
 		});
 	}
 
+	// Search
+	let where = search
+		? {
+				OR: [
+					{
+						name: {
+							search,
+						},
+					},
+					{
+						order: {
+							address: {
+								line1: { search },
+							},
+						},
+					},
+					{
+						order: {
+							address: {
+								line2: { search },
+							},
+						},
+					},
+				],
+		  }
+		: {};
+
+	// Statuses
+	let statuses = searchParams.getAll('statuses') as FulfillmentStatus[];
+	if (statuses && statuses.length > 0) {
+		where = {
+			...where,
+			status: { in: statuses },
+		};
+	} else if (searchParams.has('search')) {
+		// If search is present but no statuses are selected, query all statuses
+		where = {
+			...where,
+			status: { in: undefined },
+		};
+	} else {
+		// Default to loading "NEW" fulfillments for the initial load
+		statuses = ['NEW'];
+		where = {
+			...where,
+			status: { in: statuses },
+		};
+	}
+
+	// Vendors
+	let vendors = searchParams.getAll('vendors');
+	if (user.role !== 'SUPERADMIN') {
+		where = {
+			...where,
+			vendorId: user.vendorId,
+		};
+	} else if (vendors && vendors.length > 0) {
+		where = {
+			...where,
+			vendorId: { in: vendors },
+		};
+	} else if (searchParams.has('search')) {
+		// If search is present but no vendors are selected, query all vendors
+		where = {
+			...where,
+			vendorId: { in: undefined },
+		};
+	}
+
+	const [fulfillments, count] = await prisma.$transaction([
+		prisma.fulfillment.findMany({
+			where,
+			skip: offset,
+			take: pageSize,
+			orderBy: {
+				order: {
+					createdAt: 'asc',
+				},
+			},
+			include: {
+				trackingInfo: true,
+				vendor: true,
+				order: {
+					include: {
+						address: true,
+					},
+				},
+			},
+		}),
+		prisma.fulfillment.count({ where }),
+	]);
+
 	return json({
+		count,
 		fulfillments,
-		fulfillmentStatuses,
-		selectedFulfillmentStatuses,
-		name,
-		orders:
-			user.role !== 'SUPERADMIN'
-				? null
-				: await getOrders(name, selectedOrderStatuses),
-		orderStatusDropdownName,
-		orderStatusOptions,
-		orderStatusDefaults,
-		query,
+		offset,
+		pageSize,
+		search,
 		userRole: user.role,
-		vendorOptions,
+		statuses,
+		statusOptions,
+		vendors: user.role === 'SUPERADMIN' ? vendors : null,
+		vendorOptions: user.role === 'SUPERADMIN' ? vendorOptions : null,
 	});
 };
 
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
-	const action = formData.get('_action');
-	const orderId = formData.get('orderId');
+	const _action = formData.get('_action');
 
-	if (typeof action !== 'string' || typeof orderId !== 'string') {
-		return json({ error: 'Invalid form data' });
-	}
-
-	if (action == 'delete') {
-		await prisma.$transaction(async (tx) => {
-			const fulfillments = await prisma.fulfillment.findMany({
-				where: { orderId: orderId },
+	switch (_action) {
+		case 'complete': {
+			const id = formData.get('id');
+			if (typeof id !== 'string' || id.length === 0) {
+				return json({ error: 'Invalid form data' });
+			}
+			const fulfillment = await prisma.fulfillment.update({
+				where: { id },
+				data: {
+					status: 'COMPLETE',
+				},
 			});
+			return json({ fulfillment });
+		}
+		case 'processing': {
+			const id = formData.get('id');
+			if (typeof id !== 'string' || id.length === 0) {
+				return json({ error: 'Invalid form data' });
+			}
+			const fulfillment = await prisma.fulfillment.update({
+				where: { id },
+				data: {
+					status: 'PROCESSING',
+				},
+			});
+			return json({ fulfillment });
+		}
+		case 'new': {
+			const id = formData.get('id');
+			if (typeof id !== 'string' || id.length === 0) {
+				return json({ error: 'Invalid form data' });
+			}
+			const fulfillment = await prisma.fulfillment.update({
+				where: { id },
+				data: {
+					status: 'NEW',
+				},
+			});
+			return json({ fulfillment });
+		}
+		case 'delete': {
+			const orderId = formData.get('orderId');
+			if (typeof orderId !== 'string' || orderId.length === 0) {
+				return json({ error: 'Invalid form data' });
+			}
+			const order = await prisma.$transaction(async (tx) => {
+				const fulfillments = await prisma.fulfillment.findMany({
+					where: { orderId: orderId },
+				});
 
-			fulfillments.map(async (fulfillment) => {
-				await prisma.fulfillment.update({
-					where: { id: fulfillment.id },
+				fulfillments.map(async (fulfillment) => {
+					await prisma.fulfillment.update({
+						where: { id: fulfillment.id },
+						data: {
+							lineItems: {
+								deleteMany: {},
+							},
+						},
+					});
+				});
+
+				await prisma.order.update({
+					where: { id: orderId },
 					data: {
+						items: {
+							deleteMany: {},
+						},
 						lineItems: {
+							deleteMany: {},
+						},
+						fulfillments: {
 							deleteMany: {},
 						},
 					},
 				});
-			});
 
-			await prisma.order.update({
-				where: { id: orderId },
-				data: {
-					items: {
-						deleteMany: {},
-					},
-					lineItems: {
-						deleteMany: {},
-					},
-					fulfillments: {
-						deleteMany: {},
-					},
-				},
+				await prisma.order.delete({
+					where: { id: orderId },
+				});
 			});
-
-			await prisma.order.delete({
-				where: { id: orderId },
-			});
-		});
-
-		return json({});
+			return json({ order });
+		}
+		default: {
+			return json({ error: 'Invalid form data' });
+		}
 	}
-
-	return json({});
 };
 
-export default function OrderIndex() {
-	const data = useLoaderData<typeof loader>();
+export default function OrdersIndex() {
+	const { count, fulfillments, offset, pageSize, ...data } =
+		useLoaderData<typeof loader>();
+	const [searchParams] = useSearchParams();
+	const currentPage = Math.floor(offset / pageSize) + 1;
+	const totalPages = Math.ceil(count / pageSize);
+	const startIndex = offset + 1;
+	const endIndex = Math.min(offset + pageSize, count);
+
+	// data.statuses and data.vendors are search parameters from the loader, not useSearchParams
+	const [selectedStatuses, setSelectedStatuses] = useState<Option[]>([]);
+	const [selectedVendors, setSelectedVendors] = useState<Option[]>([]);
+
+	useEffect(() => {
+		const indices: number[] = data.statuses.map(
+			(status: FulfillmentStatus) =>
+				data.statusOptions.findIndex(
+					(option: Option) => option.value === status
+				)
+		);
+		setSelectedStatuses(indices.map((index) => data.statusOptions[index]));
+	}, [data.statuses, data.statusOptions]);
+
+	useEffect(() => {
+		if (!data.vendors) {
+			console.log('No vendors');
+			return;
+		}
+
+		if (data.vendorOptions.length === 0) {
+			console.log('No vendor options');
+			return;
+		}
+
+		const indices: number[] = data.vendors.map((vendor: string) =>
+			data.vendorOptions.findIndex(
+				(option: Option) => option.value === vendor
+			)
+		);
+		setSelectedVendors(indices.map((index) => data.vendorOptions[index]));
+	}, [data.vendors, data.vendorOptions]);
 
 	return (
 		<>
-			<header className="page-header">
-				<div className="page-header__row">
-					<h1 className="headline-h3">Orders</h1>
-					{data.userRole === 'SUPERADMIN' ? (
-						<div className="page-header__actions">
-							<Link
-								to="new"
-								className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-							>
-								Create Order
-							</Link>
-						</div>
-					) : null}
+			{/* Page Header */}
+			<div className="md:flex md:items-center md:justify-between">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+						Orders
+					</h1>
 				</div>
-			</header>
 
-			<section className="page-section">
-				<div className="table-toolbar">
-					<Form method="get" replace>
-						<div className="input">
-							<label>Status</label>
-							<DropdownMultiSelect
-								name="selectedFulfillmentStatuses"
-								options={data.fulfillmentStatuses}
-								defaultValue={data.selectedFulfillmentStatuses}
-							/>
-						</div>
-
-						{data.vendorOptions ? (
-							<div>
-								<label
-									htmlFor="selectedVendor"
-									className="block text-sm font-medium leading-6 text-gray-900"
-								>
-									Vendor
-								</label>
-								<select
-									id="selectedVendor"
-									name="selectedVendor"
-									className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
-								>
-									<option value="">Choose a vendor</option>
-									{data.vendorOptions.map((option: { value: string, label: string }) => (
-											<option
-												key={option.value}
-												value={option.value}
-											>
-												{option.label}
-											</option>
-										))}
-								</select>
-							</div>
-						) : null}
-
-
-						<div>
-							<label htmlFor="query" className="block text-sm font-medium leading-6 text-gray-900">
-								Search by name or order number
-							</label>
-
-							<div className="mt-2">
-								<input
-									id="query"
-									name="query"
-									type="text"
-									placeholder="#1234 or Edwina Martinson"
-									className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-								/>
-							</div>
-						</div>
-
-						<button
-							className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-							type="submit"
-							name="_action"
-							value="search"
+				{data.userRole === 'SUPERADMIN' ? (
+					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
+						<Link
+							to="new"
+							className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
 						>
-							Search
-						</button>
-
-						<Link className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20" to="/orders" replace>
-							Reset
+							Create Order
 						</Link>
-					</Form>
+					</div>
+				) : null}
+			</div>
+
+			{/* Tabs */}
+			{data.userRole === 'SUPERADMIN' ? (
+				<div className="mt-10 border-b border-zinc-700 pb-0 dark:border-white/10">
+					<div className="mt-4">
+						<div className="block">
+							<nav className="-mb-px flex space-x-8">
+								<div
+									className="whitespace-nowrap border-b-2 border-indigo-500 px-1 pb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400"
+									aria-current="page"
+								>
+									Fulfillments
+								</div>
+								<Link
+									to="all"
+									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white"
+								>
+									Order Admin
+								</Link>
+							</nav>
+						</div>
+					</div>
+				</div>
+			) : null}
+
+			{/* Search */}
+			<Form
+				id="search"
+				method="get"
+				className="mt-12 flex items-end gap-x-4"
+			>
+				<div className="grow basis-2/5">
+					<label
+						htmlFor="search"
+						className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
+					>
+						Search by name or order number
+					</label>
+
+					<div className="mt-2">
+						<input
+							id="search"
+							name="search"
+							type="text"
+							placeholder="#1234 or Edwina Martinson"
+							defaultValue={data.search}
+							className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+						/>
+					</div>
 				</div>
 
-				{data.fulfillments ? (
-					<FulFillments data={data} />
+				<div className="basis-1/5">
+					<MultiSelectMenu
+						name="statuses"
+						label="Statuses"
+						options={data.statusOptions}
+						selectedOptions={selectedStatuses}
+						setSelectedOptions={setSelectedStatuses}
+					/>
+				</div>
+
+				{data.vendorOptions && data.vendorOptions.length > 0 ? (
+					<div className="basis-1/5">
+						<MultiSelectMenu
+							name="vendors"
+							label="Vendors"
+							options={data.vendorOptions}
+							selectedOptions={selectedVendors}
+							setSelectedOptions={setSelectedVendors}
+						/>
+					</div>
+				) : null}
+
+				<div className="flex basis-1/5 gap-x-4">
+					<button
+						className="flex-grow rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+						type="submit"
+					>
+						Search
+					</button>
+
+					<Link
+						className="rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+						to="/orders"
+						replace
+					>
+						Reset
+					</Link>
+				</div>
+			</Form>
+
+			{/* Fulfillments */}
+			<section className="page-section">
+				{/* Pagination */}
+				<div className="flex items-center justify-between py-4">
+					{count !== 0 ? (
+						<p className="text-sm text-gray-700 dark:text-zinc-300">
+							Showing{' '}
+							<span className="font-medium">{startIndex}</span> to{' '}
+							<span className="font-medium">{endIndex}</span> of{' '}
+							<span className="font-medium">{count}</span> results
+						</p>
+					) : null}
+
+					<nav
+						className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+						aria-label="Pagination"
+					>
+						{Array.from(
+							{ length: totalPages },
+							(_, i) => i + 1
+						).map((page) => {
+							// Style based on current page
+							const className =
+								page === currentPage
+									? 'relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-zinc-950'
+									: 'relative inline-flex items-center px-4 py-2 text-sm font-semibold dark:bg-white/10 dark:hover:bg-white/20 text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-white dark:ring-0';
+
+							// Create search params string
+							let searchParamsString = '';
+
+							// Offset and page size
+							searchParamsString =
+								searchParamsString +
+								`?offset=${(page - 1) * pageSize}` +
+								`&pageSize=${pageSize}`;
+
+							// Search
+							if (searchParams.has('search')) {
+								searchParamsString =
+									searchParamsString +
+									`&search=${searchParams.get('search')}`;
+							}
+
+							// Statuses
+							if (searchParams.has('statuses')) {
+								searchParams
+									.getAll('statuses')
+									.map((status) => {
+										searchParamsString =
+											searchParamsString +
+											`&statuses=${status}`;
+									});
+							}
+
+							// Vendors
+							if (searchParams.has('vendors')) {
+								searchParams.getAll('vendors').map((vendor) => {
+									searchParamsString =
+										searchParamsString +
+										`&vendors=${vendor}`;
+								});
+							}
+
+							return (
+								<Link
+									aria-current={
+										page === currentPage ? 'page' : false
+									}
+									className={className}
+									key={page}
+									to={searchParamsString}
+								>
+									{page}
+								</Link>
+							);
+						})}
+					</nav>
+				</div>
+
+				{fulfillments && fulfillments.length !== 0 ? (
+					<FulFillments fulfillments={fulfillments} count={count} />
 				) : (
 					<div>No results</div>
 				)}
 			</section>
-
-			{data.orders ? <Orders data={data} /> : null}
 		</>
 	);
 }
 
-function FulfillmentStatusBadge({ status }) {
+function FulfillmentActions({ id, name }: { id: string; name: string }) {
+	let fetcher = useFetcher();
+
+	return (
+		<fetcher.Form method="post">
+			<input name="id" value={id} type="hidden" />
+			<Menu as="div" className="relative flex-none">
+				<MenuButton className="-m-2.5 block p-2.5 text-gray-500 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white">
+					<span className="sr-only">Open options</span>
+					<EllipsisVerticalIcon
+						aria-hidden="true"
+						className="h-5 w-5"
+					/>
+				</MenuButton>
+				<MenuItems
+					transition
+					className="absolute right-0 z-10 mt-3 w-40 origin-top-right rounded-md bg-zinc-950 py-2 shadow-lg ring-1 ring-zinc-900/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+				>
+					<MenuItem>
+						<button
+							name="_action"
+							value="new"
+							type="submit"
+							className="w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-zinc-800"
+						>
+							Mark <span className="sr-only">{name} </span>as new
+						</button>
+					</MenuItem>
+					<MenuItem>
+						<button
+							name="_action"
+							value="processing"
+							type="submit"
+							className="w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-zinc-800"
+						>
+							Mark <span className="sr-only">{name} </span>as
+							processing
+						</button>
+					</MenuItem>
+					<MenuItem>
+						<button
+							name="_action"
+							value="complete"
+							type="submit"
+							className="w-full px-3 py-1 text-left text-sm leading-6 text-white data-[focus]:bg-zinc-800"
+						>
+							Mark <span className="sr-only">{name} </span>as
+							complete
+						</button>
+					</MenuItem>
+				</MenuItems>
+			</Menu>
+		</fetcher.Form>
+	);
+}
+
+function FulfillmentStatusBadge({ status }: { status: FulfillmentStatus }) {
 	let className;
 	switch (status) {
 		case 'ERROR':
 		case 'CANCELLED':
 			className =
-				'inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20';
+				' bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10 inline-flex items-center rounded-md dark:bg-red-400/10 px-2 py-1 text-xs font-medium dark:text-red-400 dark:ring-red-400/20';
 			break;
 		case 'PROCESSING':
-		case 'WARNING':
 			className =
-				'inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20';
+				'inline-flex items-center rounded-md bg-yellow-50 dark:bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-500 dark:ring-yellow-400/20 ring-1 ring-inset ring-yellow-600/20';
 			break;
-		case 'SUCCESS':
 		case 'COMPLETE':
 			className =
-				'inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20';
+				'bg-green-50 text-green-700 ring-green-600/20 inline-flex items-center rounded-md dark:bg-green-500/10 px-2 py-1 text-xs font-medium dark:text-green-400 ring-1 ring-inset dark:ring-green-500/20';
 			break;
 		case 'NEW':
 			className =
-				'inline-flex items-center rounded-md bg-blue-400/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-400/30';
+				'inline-flex items-center rounded-md bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-400/10 px-2 py-1 text-xs font-medium dark:text-blue-400 ring-1 ring-inset dark:ring-blue-400/30';
 			break;
 		default:
 			className =
@@ -328,355 +565,148 @@ function FulfillmentStatusBadge({ status }) {
 	return <span className={className}>{toCapitalCase(status)}</span>;
 }
 
-function FulFillments({ data }) {
+function FulFillments({
+	fulfillments,
+	count,
+}: {
+	fulfillments: any;
+	count: number;
+}) {
 	return (
-		<table className="min-w-full divide-y divide-gray-300 table-fixed">
-			<thead>
-				<tr>
-					<th scope="col" className="py-3.5 pl-4 pr-3 text-left dark:text-white text-sm font-semibold text-gray-900 sm:pl-0">Order No.</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Name</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Shipping Address</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Tracking Info</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Status</th>
-					<th scope="col" className="px-3 py-3.5 text-left dark:text-white text-sm font-semibold text-gray-900">Vendor</th>
-					<th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0"><span className="sr-only">Edit</span></th>
-				</tr>
-			</thead>
-			<tbody className="divide-y divide-gray-200">
-				{data.fulfillments.map((fulfillment) => (
-					<tr key={fulfillment.id}>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<div>{fulfillment.name}</div>
-								<div className="caption">
-									{new Date(
-										fulfillment.order.createdAt
-									).toLocaleString('en-US')}
-								</div>
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								{fulfillment.order.address.line1}
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<address className="text">
-									{fulfillment.order.address.line2 &&
-										`${fulfillment.order.address.line2}\n`}
-									{fulfillment.order.address.line3 &&
-										`${fulfillment.order.address.line3}\n`}
-									{fulfillment.order.address.line4 &&
-										`${fulfillment.order.address.line4}\n`}
-									{fulfillment.order.address.city},{' '}
-									{fulfillment.order.address.state}{' '}
-									{fulfillment.order.address.postalCode}
-								</address>
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								{fulfillment.trackingInfo?.number ? (
-									<>
-										<div>
-											{fulfillment.trackingInfo.number}
-										</div>
-										<div className="caption">
-											{fulfillment.trackingInfo.company}
-										</div>
-									</>
-								) : (
-									<span className="caption">
-										Needs tracking info
-									</span>
-								)}
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<FulfillmentStatusBadge
-									status={fulfillment.status}
-								/>
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								{fulfillment.vendor?.name}
-							</Link>
-						</td>
-						<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								Edit
-							</Link>
-						</td>
-					</tr>
-				))}
-			</tbody>
-		</table>
-	);
-}
-
-function Orders({ data }) {
-	return (
-		<section className="page-section">
-			<div className="page-section-header">
-				<h2 className="headline-h5">Old System</h2>
-				<p>
-					The section below only appears to Edward Martin and will be
-					phased out entirely. Vendors cannot interact with this.
-				</p>
-			</div>
-
-			<div className="table-toolbar">
-				<Form method="get" replace preventScrollReset={true}>
-					<div className="input">
-						<label>Order Status</label>
-						<DropdownMultiSelect
-							name={data.orderStatusDropdownName}
-							options={data.orderStatusOptions}
-							defaultValue={data.orderStatusDefaults}
-						/>
-					</div>
-
-					<Input
-						label="Search by name or order number"
-						name="name"
-						id="name"
-						defaultValue={data.name}
-					/>
-
-					<button
-						className="primary button"
-						type="submit"
-						name="_action"
-						value="search-orders"
-					>
-						Search
-					</button>
-				</Form>
-			</div>
-
-			<table>
+		<>
+			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
 				<thead>
 					<tr>
-						<th>Name</th>
-						<th>Created</th>
-						<th>Order No.</th>
-						<th>Status</th>
-						<th>
-							<span className="visually-hidden">Actions</span>
+						<th
+							scope="col"
+							className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
+						>
+							Order No.
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Ship to
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Tracking Info
+						</th>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Status
+						</th>
+						<th
+							scope="col"
+							className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+						>
+							<span className="sr-only">Actions</span>
 						</th>
 					</tr>
 				</thead>
-				<tbody>
-					{data.orders.map((order) => {
-						const address = order.address;
-						const { city, state, postalCode } = address;
-						const date = new Date(order.createdAt).toLocaleString(
-							'en-US'
-						);
-
-						return (
-							<tr key={order.id}>
-								<td>
-									<Link to={order.id}>
-										<div className="title">
-											{order.address.line1}
-										</div>
-										{city && state && postalCode ? (
-											<div className="caption">{`${city}, ${state} ${postalCode}`}</div>
-										) : null}
-									</Link>
-								</td>
-								<td>{date}</td>
-								<td className="caption">
-									{order.name ? order.name : order.id}
-								</td>
-								<td>
-									<FulfillmentStatusBadge
-										status={order.status}
-									/>
-								</td>
-
-								<td>
-									<div className="table-row-actions">
-										<Link
-											className="circle-button"
-											to={`drafts/${order.id}`}
-										>
-											<span className="visually-hidden">
-												Edit
-											</span>
-											<EditIcon />
-										</Link>
-										<Form method="post">
-											<input
-												type="hidden"
-												name="orderId"
-												value={order.id}
-											/>
-											<button
-												className="destructive circle-button"
-												type="submit"
-												name="_action"
-												value="delete"
-											>
-												<span className="visually-hidden">
-													Delete
-												</span>
-												<TrashIcon />
-											</button>
-										</Form>
+				<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+					{fulfillments.map((fulfillment) => (
+						<tr key={fulfillment.id}>
+							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<div className="text-sm font-bold text-gray-900 dark:text-white">
+										{fulfillment.name}
 									</div>
-								</td>
-							</tr>
-						);
-					})}
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{new Date(
+											fulfillment.order.createdAt
+										).toLocaleString('en-US')}
+									</div>
+
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{fulfillment.vendor?.name}
+									</div>
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4 text-sm">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<address className="not-italic">
+										<span className="block leading-6 text-gray-900 dark:text-white">
+											{fulfillment.order.address.line1}
+										</span>
+
+										<span className="leading-5 text-gray-500 dark:text-zinc-300">
+											{fulfillment.order.address.line2 &&
+												`${fulfillment.order.address.line2}\n`}
+											{fulfillment.order.address.line3 &&
+												`${fulfillment.order.address.line3}\n`}
+											{fulfillment.order.address.line4 &&
+												`${fulfillment.order.address.line4}\n`}
+											{fulfillment.order.address.city},{' '}
+											{fulfillment.order.address.state}{' '}
+											{
+												fulfillment.order.address
+													.postalCode
+											}
+										</span>
+									</address>
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									{fulfillment.trackingInfo?.number ? (
+										<>
+											<div className="text-gray-500 dark:text-zinc-300">
+												{
+													fulfillment.trackingInfo
+														.number
+												}
+											</div>
+											<div className="text-gray-500 dark:text-zinc-300">
+												{
+													fulfillment.trackingInfo
+														.company
+												}
+											</div>
+										</>
+									) : (
+										<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
+											Needs tracking info
+										</span>
+									)}
+								</Link>
+							</td>
+							<td className="whitespace-nowrap px-3 py-4">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<FulfillmentStatusBadge
+										status={fulfillment.status}
+									/>
+								</Link>
+							</td>
+							<td className="py-4 pl-3 pr-4 sm:pr-0">
+								<div className="flex items-center justify-end gap-x-4">
+									<Link
+										to={`/fulfillments/${fulfillment.id}`}
+										className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-gray-900 shadow-sm hover:bg-white/20 dark:text-white"
+									>
+										View
+										<span className="sr-only">
+											, {fulfillment.name}
+										</span>
+									</Link>
+
+									<FulfillmentActions
+										id={fulfillment.id}
+										name={fulfillment.name}
+									/>
+								</div>
+							</td>
+						</tr>
+					))}
 				</tbody>
 			</table>
-		</section>
+		</>
 	);
-}
-
-async function getFulfillments(
-	query: string | undefined,
-	fulfillmentStatuses: FulfillmentStatus[] | undefined,
-	vendorId: string | undefined
-) {
-	return await prisma.fulfillment.findMany({
-		where: {
-			OR: [
-				{
-					name: {
-						search: query,
-					},
-				},
-				{
-					order: {
-						address: {
-							line1: { search: query },
-						},
-					},
-				},
-				{
-					order: {
-						address: {
-							line2: { search: query },
-						},
-					},
-				},
-			],
-			status: {
-				in: fulfillmentStatuses,
-			},
-			vendorId,
-		},
-		orderBy: {
-			order: {
-				createdAt: 'desc',
-			},
-		},
-		include: {
-			trackingInfo: true,
-			vendor: true,
-			order: {
-				include: {
-					address: true,
-				},
-			},
-		},
-	});
-}
-
-async function getFulfillmentsByVendor({
-	fulfillmentStatuses,
-	query,
-	vendorId,
-}: {
-	fulfillmentStatuses: FulfillmentStatus[] | undefined;
-	query: string | undefined;
-	vendorId: string;
-}) {
-	return await prisma.fulfillment.findMany({
-		where: {
-			OR: [
-				{
-					name: {
-						search: query,
-					},
-				},
-				{
-					order: {
-						address: {
-							line1: { search: query },
-						},
-					},
-				},
-				{
-					order: {
-						address: {
-							line2: { search: query },
-						},
-					},
-				},
-			],
-			status: {
-				in: fulfillmentStatuses,
-			},
-			order: {
-				status: { not: 'DRAFT' },
-			},
-			vendorId,
-		},
-		orderBy: {
-			order: {
-				createdAt: 'desc',
-			},
-		},
-		include: {
-			trackingInfo: true,
-			vendor: true,
-			order: {
-				include: {
-					address: true,
-				},
-			},
-		},
-	});
-}
-
-async function getOrders(name: string, orderStatuses: OrderStatus[]) {
-	const addresses = await prisma.address.findMany({
-		where: {
-			line1: {
-				contains: name,
-				mode: 'insensitive',
-			},
-		},
-	});
-
-	return await prisma.order.findMany({
-		where: {
-			status: {
-				in: orderStatuses.length !== 0 ? orderStatuses : undefined,
-			},
-			OR: [
-				{ id: { contains: name } },
-				{
-					address: {
-						id: { in: addresses?.map((address) => address.id) },
-					},
-				},
-			],
-		},
-		include: {
-			address: true,
-		},
-		orderBy: {
-			createdAt: 'desc',
-		},
-	});
 }
 
 async function getVendors() {

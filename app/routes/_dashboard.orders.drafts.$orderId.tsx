@@ -110,12 +110,17 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 			await prisma.$transaction(initTransactions());
 
-			await prisma.order.update({
+			const order = await prisma.order.update({
 				where: { id: params.orderId },
 				data: { status: status as OrderStatus },
 			});
 
-			return redirect('/orders');
+			if (order && order.name) {
+				const encodedOrderName = encodeURIComponent(order.name);
+				return redirect(`/orders?search=${encodedOrderName}`);
+			} else {
+				return redirect(`/orders`);
+			}
 		}
 		case 'search': {
 			return json({});
@@ -248,7 +253,9 @@ export default function NewOrderDetailsPage() {
 			<header className="page-header">
 				<div className="page-header__row">
 					{data?.order?.name ? (
-						<h1 className="headline-h3">Order {data.order.name}</h1>
+						<h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+							Order {data.order.name}
+						</h1>
 					) : (
 						<h1 className="headline-h3">Order {data.order.id}</h1>
 					)}
@@ -294,13 +301,21 @@ export default function NewOrderDetailsPage() {
 									{fulfillment.name}
 								</Link>
 							</div>
-							<table>
+							<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
 								<thead>
 									<tr>
-										<th>Material No.</th>
-										<th>{fulfillment.vendor.name}</th>
-										<th>Edward Martin</th>
-										<th>Quantity</th>
+										<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+											Material No.
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											{fulfillment.vendor.name}
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Edward Martin
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Quantity
+										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -315,16 +330,18 @@ export default function NewOrderDetailsPage() {
 										} = lineItem.orderLineItem.sample;
 										return (
 											<tr key={lineItem.orderLineItem.id}>
-												<td>{materialNo}</td>
-												<td>
+												<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">
+													{materialNo}
+												</td>
+												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 													{seriesName} {finish}{' '}
 													{color}
 												</td>
-												<td>
+												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 													{seriesAlias} {finish}{' '}
 													{colorAlias}
 												</td>
-												<td>
+												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 													<Counter
 														min={1}
 														name={
@@ -350,10 +367,10 @@ export default function NewOrderDetailsPage() {
 
 					{search.data ? (
 						search.data.results ? (
-							<table className="new-order-search-results">
+							<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
 								<thead>
 									<tr>
-										<th>
+										<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
 											<input
 												ref={masterCheckboxRef}
 												id="master-checkbox"
@@ -363,12 +380,21 @@ export default function NewOrderDetailsPage() {
 												}
 											/>
 										</th>
-										<th>Product</th>
-										<th>Florim Item No.</th>
-										<th>Material No.</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Product
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Florim Item No.
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Material No.
+										</th>
 									</tr>
 								</thead>
-								<tbody ref={tableBodyRef}>
+								<tbody
+									ref={tableBodyRef}
+									className="divide-y divide-gray-200 dark:divide-zinc-800"
+								>
 									{search.data.results.map(
 										(item: {
 											id: string;
@@ -383,7 +409,7 @@ export default function NewOrderDetailsPage() {
 
 											return (
 												<tr key={item.id}>
-													<td>
+													<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">
 														<input
 															id={`${item.id}-checkbox`}
 															type="checkbox"
@@ -398,7 +424,8 @@ export default function NewOrderDetailsPage() {
 															}
 														/>
 													</td>
-													<td>
+
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 														<label
 															className="checkbox-label"
 															htmlFor={`${item.id}-checkbox`}
@@ -411,13 +438,15 @@ export default function NewOrderDetailsPage() {
 															</div>
 														</label>
 													</td>
-													<td>
+
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 														{
 															item.vendorProduct
 																.itemNo
 														}
 													</td>
-													<td>
+
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-400">
 														{item.vendorProduct
 															.sample
 															? item.vendorProduct
@@ -439,7 +468,9 @@ export default function NewOrderDetailsPage() {
 
 				<aside className="foobar-sidebar sample-cart">
 					<div className="page-section-header">
-						<h2>Ship To</h2>
+						<h2 className="text-base font-bold text-gray-900 dark:text-white">
+							Ship To
+						</h2>
 					</div>
 
 					<div className="shipping-info">

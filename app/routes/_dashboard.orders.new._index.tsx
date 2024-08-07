@@ -140,7 +140,9 @@ export default function NewOrderPage() {
 		<>
 			<header className="page-header">
 				<div className="page-header__row">
-					<h1 className="headline-h3">Create Order</h1>
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+						Create Order
+					</h1>
 
 					<div className="page-header__actions">
 						<div className="input">
@@ -181,23 +183,32 @@ export default function NewOrderPage() {
 				<section className="foobar-main-content">
 					<h2 className="headline-h6">Search for items</h2>
 					<search.Form method="get" action="/swatch">
-						<div className="search-bar">
-							<SearchIcon
-								className="search-icon"
-								id="search-icon"
-							/>
-							<input
-								aria-labelledby="search-icon"
-								className="search-input"
-								type="search"
-								name="query"
-								id="query"
-								placeholder="Search"
-								autoComplete="off"
-								defaultValue={data.searchHint}
-							/>
+						<div className="flex items-end gap-x-6">
+							<div className="grow">
+								<label
+									htmlFor="query"
+									className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
+								>
+									Search
+								</label>
 
-							<button className="button" type="submit">
+								<div className="mt-2">
+									<input
+										className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+										type="text"
+										name="query"
+										id="query"
+										placeholder="Search"
+										autoComplete="off"
+										defaultValue={data.searchHint}
+									/>
+								</div>
+							</div>
+
+							<button
+								className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+								type="submit"
+							>
 								Search
 							</button>
 						</div>
@@ -211,51 +222,12 @@ export default function NewOrderPage() {
 						))}
 
 					{search?.data?.results ? (
-						<table className="new-order-search-results">
-							<tbody>
-								<tr>
-									<th></th>
-									<th>Material No.</th>
-									<th>Description</th>
-									<th>Vendor</th>
-								</tr>
-								{search.data.results.map((item) => {
-									const checked = isAlreadyInCart(item, cart);
-
-									return (
-										<tr key={item.id}>
-											<td>
-												<input
-													name="item"
-													id={`${item.id}-checkbox`}
-													type="checkbox"
-													onChange={(e) => {
-														handleChange(e, item);
-													}}
-													value={item.id}
-													defaultChecked={checked}
-												/>
-											</td>
-											<td>{item.materialNo}</td>
-											<td>
-												<label
-													className="checkbox-label"
-													htmlFor={`${item.id}-checkbox`}
-												>
-													<div className="title">
-														{item.seriesName}
-													</div>
-													<div className="caption">
-														{item.color}
-													</div>
-												</label>
-											</td>
-											<td>{item.vendor?.name}</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
+						<ResultsTable
+							results={search.data.results}
+							cart={cart}
+							handleChange={handleChange}
+							isAlreadyInCart={isAlreadyInCart}
+						/>
 					) : null}
 				</section>
 
@@ -491,4 +463,85 @@ export default function NewOrderPage() {
 		if (checkbox === null) return;
 		checkbox.checked = false;
 	}
+}
+
+function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
+	return (
+		<table className="new-order-search-results min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+			<thead>
+				<tr>
+					<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+						Vendor Names and No.
+					</th>
+					<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+						Edward Martin Names and Color
+					</th>
+					<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+						Vendor
+					</th>
+				</tr>
+			</thead>
+
+			<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+				{results.map((item) => {
+					const checked = isAlreadyInCart(item, cart);
+
+					return (
+						<tr key={item.id}>
+							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
+								<div className="relative flex items-start">
+									<div className="flex h-6 items-center">
+										<input
+											id={`${item.id}-checkbox`}
+											// aria-describedby="comments-description"
+											name="item"
+											type="checkbox"
+											className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+											onChange={(e) => {
+												handleChange(e, item);
+											}}
+											value={item.id}
+											defaultChecked={checked}
+										/>
+									</div>
+									<div className="ml-3 text-sm leading-6">
+										<label
+											htmlFor={`${item.id}-checkbox`}
+											className="font-medium text-gray-900 dark:text-white"
+										>
+											{item.materialNo}
+											<div
+												id="comments-description"
+												className="text-gray-500 dark:text-zinc-400"
+											>
+												{item.seriesName} {item.color}
+											</div>
+										</label>
+									</div>
+								</div>
+							</td>
+
+							<td className="whitespace-nowrap px-3 py-4 text-sm">
+								<label
+									className="checkbox-label"
+									htmlFor={`${item.id}-checkbox`}
+								>
+									<div className="text-sm font-medium text-gray-900 dark:text-white">
+										{item.seriesAlias}
+									</div>
+									<div className="text-sm font-normal text-gray-500 dark:text-zinc-400">
+										{item.colorAlias}
+									</div>
+								</label>
+							</td>
+
+							<td className="whitespace-nowrap px-3 py-4 text-sm">
+								{item.vendor?.name}
+							</td>
+						</tr>
+					);
+				})}
+			</tbody>
+		</table>
+	);
 }
