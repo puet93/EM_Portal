@@ -118,19 +118,24 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<>
-			<header className="page-header">
-				<div className="page-header__row">
+		<div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
+			{/* Page Header */}
+			<div className="mt-2 md:flex md:items-center md:justify-between">
+				<div className="min-w-0 flex-1">
 					<h1 className="text-4xl font-bold">Products</h1>
-					<div className="page-header__actions">
-						<Link className="button" to="import">
-							Import
-						</Link>
-					</div>
 				</div>
-			</header>
+				<div className="mt-4 flex md:ml-4 md:mt-0">
+					<Link
+						className="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+						to="import"
+					>
+						Import
+					</Link>
+				</div>
+			</div>
 
-			<div className="table-toolbar">
+			{/* Table Toolbar */}
+			<div className="mt-16">
 				<Form method="get" className="flex items-end gap-x-6">
 					<div className="shrink grow-0">
 						<label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
@@ -174,115 +179,129 @@ export default function ProductsPage() {
 			</div>
 
 			{data.results ? (
-				<>
-					<div className="message">
-						{data.results.length} products found
-					</div>
-
-					<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
-						<thead>
-							<tr>
-								<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
-									Vendor
-								</th>
-								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-									Edward Martin
-								</th>
-								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-									Item No.
-								</th>
-								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-									Cost
-								</th>
-								<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-									Sample Material No.
-								</th>
-							</tr>
-						</thead>
-
-						<tbody
-							ref={tableBodyRef}
-							className="divide-y divide-gray-200 dark:divide-zinc-800"
-						>
-							{data.results.map((product: any) => {
-								return (
-									<tr key={product.id}>
-										<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">
-											{
-												product.vendorProduct?.vendor
-													?.name
-											}
-										</td>
-										<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-											<Link to={product.id}>
-												<div>{product.title}</div>
-												<div>{product.sku}</div>
-											</Link>
-										</td>
-
-										{product.vendorProduct ? (
-											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-												<div>
-													{product.vendorProduct
-														.itemNo
-														? product.vendorProduct
-																.itemNo
-														: 'Missing item number'}
-												</div>
-												<div>
-													{product.vendorProduct
-														.seriesName
-														? product.vendorProduct
-																.seriesName
-														: 'Missing series'}
-												</div>
-
-												<div>
-													{product.vendorProduct.color
-														? product.vendorProduct
-																.color
-														: 'Missing color'}
-												</div>
-											</td>
-										) : (
-											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-												<span className="error indicator"></span>{' '}
-												MISSING
-											</td>
-										)}
-
-										{product.vendorProduct?.listPrice ? (
-											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-												{
-													product.vendorProduct
-														.listPrice
-												}
-											</td>
-										) : (
-											<td>--</td>
-										)}
-
-										{product.vendorProduct?.sample ? (
-											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-												{
-													product.vendorProduct
-														?.sample.materialNo
-												}
-											</td>
-										) : (
-											<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
-												<span className="error indicator"></span>{' '}
-												MISSING
-											</td>
-										)}
+				<div className="mt-8 flow-root">
+					<div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+						<div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+							<table className="mt-4 min-w-full table-fixed divide-y divide-gray-300 dark:divide-zinc-700">
+								<thead>
+									<tr>
+										<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+											Vendor
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Edward Martin
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Item No.
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Cost
+										</th>
+										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+											Sample Material No.
+										</th>
 									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</>
+								</thead>
+
+								<tbody
+									ref={tableBodyRef}
+									className="divide-y divide-gray-200 dark:divide-zinc-800"
+								>
+									{data.results.map((product: any) => {
+										return (
+											<tr key={product.id}>
+												<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">
+													{
+														product.vendorProduct
+															?.vendor?.name
+													}
+												</td>
+												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+													<Link to={product.id}>
+														<div>
+															{product.title}
+														</div>
+														<div>{product.sku}</div>
+													</Link>
+												</td>
+
+												{product.vendorProduct ? (
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+														<div>
+															{product
+																.vendorProduct
+																.itemNo
+																? product
+																		.vendorProduct
+																		.itemNo
+																: 'Missing item number'}
+														</div>
+														<div>
+															{product
+																.vendorProduct
+																.seriesName
+																? product
+																		.vendorProduct
+																		.seriesName
+																: 'Missing series'}
+														</div>
+
+														<div>
+															{product
+																.vendorProduct
+																.color
+																? product
+																		.vendorProduct
+																		.color
+																: 'Missing color'}
+														</div>
+													</td>
+												) : (
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+														<span className="error indicator"></span>{' '}
+														MISSING
+													</td>
+												)}
+
+												{product.vendorProduct
+													?.listPrice ? (
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+														{
+															product
+																.vendorProduct
+																.listPrice
+														}
+													</td>
+												) : (
+													<td>--</td>
+												)}
+
+												{product.vendorProduct
+													?.sample ? (
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+														{
+															product
+																.vendorProduct
+																?.sample
+																.materialNo
+														}
+													</td>
+												) : (
+													<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-zinc-300">
+														<span className="error indicator"></span>{' '}
+														MISSING
+													</td>
+												)}
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
 			) : null}
-		</>
+		</div>
 	);
 }
 

@@ -1,11 +1,5 @@
 import { Outlet } from '@remix-run/react';
 
 export default function RetailerProductPage() {
-	return (
-		<main className="content">
-			<div className="wrapper">
-				<Outlet />
-			</div>
-		</main>
-	);
+	return <Outlet />;
 }
