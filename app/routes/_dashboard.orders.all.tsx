@@ -216,7 +216,9 @@ function Orders({ data }) {
 	return (
 		<section className="page-section">
 			<div className="page-section-header">
-				<h2 className="headline-h5">Old System</h2>
+				<h2 className="text-4xl font-bold text-gray-900 dark:text-white">
+					Old System
+				</h2>
 				<p>
 					The section below only appears to Edward Martin and will be
 					phased out entirely. Vendors cannot interact with this.
@@ -285,9 +287,11 @@ function Orders({ data }) {
 									</Link>
 								</td>
 								<td>{date}</td>
+
 								<td className="caption">
 									{order.name ? order.name : order.id}
 								</td>
+
 								<td>
 									<FulfillmentStatusBadge
 										status={order.status}
@@ -298,7 +302,7 @@ function Orders({ data }) {
 									<div className="table-row-actions">
 										<Link
 											className="circle-button"
-											to={`drafts/${order.id}`}
+											to={`/orders/drafts/${order.id}`}
 										>
 											<span className="visually-hidden">
 												Edit
