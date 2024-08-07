@@ -64,8 +64,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 						},
 					},
 				],
+				isArchived: false,
 		  }
-		: {};
+		: { isArchived: false };
 
 	// Statuses
 	let statuses = searchParams.getAll('statuses') as FulfillmentStatus[];

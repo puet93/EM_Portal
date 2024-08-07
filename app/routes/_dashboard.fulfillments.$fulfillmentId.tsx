@@ -15,16 +15,15 @@ import { badRequest } from '~/utils/request.server';
 import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
-import { parseISO, addDays, format } from 'date-fns';
+import { parseISO, format } from 'date-fns';
+
+// For Toggle
+import { Description, Field, Label, Switch } from '@headlessui/react';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-	await requireUser(request);
+	const user = await requireUser(request);
+
 	const fulfillmentId = params.fulfillmentId;
-
-	// if (typeof fulfillmentId !== 'string' || fulfillmentId.length === 0) {
-	// 	return badRequest({ message: 'Invalid request' });
-	// }
-
 	const fulfillment = await prisma.fulfillment.findUnique({
 		where: {
 			id: fulfillmentId,
@@ -63,7 +62,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			? fulfillment.comments
 			: null;
 
-	return json({ fulfillment, comments });
+	return json({ fulfillment, comments, user });
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
@@ -167,6 +166,22 @@ export const action: ActionFunction = async ({ params, request }) => {
 		case 'complete': {
 			return json({ success: 'Saved and completed!' });
 		}
+		case 'archive': {
+			await prisma.fulfillment.update({
+				where: { id: params.fulfillmentId },
+				data: { isArchived: true },
+			});
+
+			return json({ success: 'Fulfillment archived' });
+		}
+		case 'unarchive': {
+			await prisma.fulfillment.update({
+				where: { id: params.fulfillmentId },
+				data: { isArchived: false },
+			});
+
+			return json({ success: 'Fulfillment un-archived' });
+		}
 		default:
 			return badRequest({ errors: { form: 'Unsupported action' } });
 	}
@@ -197,12 +212,11 @@ export default function OrderPage() {
 		<>
 			<header className="page-header">
 				<div className="page-header__row">
-					<h1 className="headline-h5">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
 						{data?.fulfillment?.name
 							? data.fulfillment.name
 							: 'Sample Order'}
 					</h1>
-
 					<div className="page-header__actions">
 						<Form method="post" className="inline-form">
 							<Dropdown
@@ -240,8 +254,16 @@ export default function OrderPage() {
 					</div>
 				</div>
 
-				<div className="page-header__row">
-					{data?.fulfillment?.vendor?.name}
+				<div>
+					<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
+						{data?.fulfillment?.vendor?.name}
+					</span>
+					{data.fulfillment?.isArchived ? (
+						<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
+							{' '}
+							| Archived
+						</span>
+					) : null}
 				</div>
 			</header>
 
@@ -323,8 +345,8 @@ export default function OrderPage() {
 					) : null}
 				</div>
 
-				<div className="foobar-sidebar">
-					<section className="sidebar-section">
+				<div className="foobar-sidebar flex flex-col gap-y-6">
+					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
 						<h2 className="text-base font-bold">Ship To</h2>
 						{data.fulfillment?.order?.address ? (
 							<address className="mt-2 text-sm not-italic text-gray-500">
@@ -429,18 +451,41 @@ export default function OrderPage() {
 							</div>
 						)}
 
-						{/* {actionData?.success ? (
-							<div className="success message">
-								{actionData.success}
-							</div>
-						) : null} */}
-
 						{actionData?.errors?.form ? (
 							<div className="error message">
 								{actionData.errors.form}
 							</div>
 						) : null}
 					</section>
+
+					{data.user.role === 'SUPERADMIN' ? (
+						<Form
+							method="post"
+							className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800"
+						>
+							<Toggle />
+
+							{data.fulfillment && data.fulfillment.isArchived ? (
+								<button
+									className="mt-6 w-full rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-0 dark:hover:bg-white/20"
+									type="submit"
+									name="_action"
+									value="unarchive"
+								>
+									Unarchive
+								</button>
+							) : (
+								<button
+									className="mt-6 w-full rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-0 dark:hover:bg-white/20"
+									type="submit"
+									name="_action"
+									value="archive"
+								>
+									Archive
+								</button>
+							)}
+						</Form>
+					) : null}
 				</div>
 			</div>
 		</>
@@ -581,5 +626,42 @@ function CommentForm() {
 				</fetcher.Form>
 			</div>
 		</>
+	);
+}
+
+function Toggle() {
+	const [enabled, setEnabled] = useState(false);
+
+	return (
+		<Field className="flex items-center justify-between gap-x-5">
+			<span className="flex flex-grow flex-col">
+				<Label
+					as="span"
+					passive
+					className="text-sm font-medium leading-6 text-gray-900 dark:text-white"
+				>
+					Archive fulfillment order
+				</Label>
+				<Description
+					as="span"
+					className="mt-2 text-sm font-normal leading-6 text-gray-500 dark:text-zinc-400"
+				>
+					{/* Archiving an order will prevent the order from showing up on
+					the order pages. This helps clear the workspace clear of
+					fulfilled orders. */}
+					The toggle doesn't work right now. Use the button instead.
+				</Description>
+			</span>
+			<Switch
+				checked={enabled}
+				onChange={setEnabled}
+				className="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 data-[checked]:bg-indigo-600"
+			>
+				<span
+					aria-hidden="true"
+					className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out group-data-[checked]:translate-x-5"
+				/>
+			</Switch>
+		</Field>
 	);
 }
