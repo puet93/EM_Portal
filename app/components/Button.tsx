@@ -3,9 +3,9 @@ import { Link } from '@remix-run/react';
 
 // Define the size classes
 const sizes = {
-	sm: 'rounded text-xs font-semibold px-2 py-1 ',
-	xs: 'rounded text-sm font-semibold px-2 py-1  ',
-	md: 'rounded-md text-sm px-2.5 py-1.5',
+	xs: 'rounded text-xs font-semibold px-2 py-1 ',
+	sm: 'rounded text-sm font-semibold px-2 py-1  ',
+	md: 'rounded-md text-sm font-semibold px-2.5 py-1.5',
 	lg: 'rounded-md text-sm font-semibold px-3 py-2 ',
 	xl: 'rounded-md text-sm font-semibold px-3.5 py-2.5 ',
 };
@@ -24,6 +24,7 @@ type ButtonType = 'button' | 'submit' | 'reset';
 interface ButtonProps {
 	as?: 'button' | 'link';
 	color?: 'primary' | 'secondary' | 'soft';
+	fullWidth?: boolean;
 	name?: string;
 	onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 	size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -36,6 +37,7 @@ interface ButtonProps {
 export default function Button({
 	as = 'button',
 	color = 'secondary',
+	fullWidth = false,
 	onClick,
 	name,
 	size = 'lg',
@@ -47,6 +49,10 @@ export default function Button({
 	let colorClasses = colors[color];
 	let sizeClasses = sizes[size];
 	let commonClasses = `font-medium ${sizeClasses} ${colorClasses}`;
+
+	if (fullWidth) {
+		commonClasses = commonClasses + ' w-full';
+	}
 
 	if (as === 'link') {
 		return (
