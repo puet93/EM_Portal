@@ -13,10 +13,10 @@ import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
+import Button from '~/components/Button';
 import MultiSelectMenu from '~/components/MultiSelectMenu';
 import type { Option } from '~/components/MultiSelectMenu';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
-// import type { Prisma } from '@prisma/client';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
@@ -293,12 +293,9 @@ export default function OrdersIndex() {
 
 				{data.userRole === 'SUPERADMIN' ? (
 					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
-						<Link
-							to="new"
-							className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
-						>
+						<Button as="link" to="new" color="primary">
 							Create Order
-						</Link>
+						</Button>
 					</div>
 				) : null}
 			</div>
@@ -310,7 +307,7 @@ export default function OrdersIndex() {
 						<div className="block">
 							<nav className="-mb-px flex space-x-8">
 								<div
-									className="whitespace-nowrap border-b-2 border-indigo-500 px-1 pb-4 text-sm font-medium text-indigo-600 dark:text-indigo-400"
+									className="whitespace-nowrap border-b-2 border-sky-500 px-1 pb-4 text-sm font-medium text-sky-600 dark:text-sky-400"
 									aria-current="page"
 								>
 									Fulfillments
@@ -376,12 +373,9 @@ export default function OrdersIndex() {
 				) : null}
 
 				<div className="flex basis-1/5 gap-x-4">
-					<button
-						className="flex-grow rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-						type="submit"
-					>
+					<Button color="primary" type="submit" fullWidth>
 						Search
-					</button>
+					</Button>
 
 					<Link
 						className="rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
@@ -686,15 +680,16 @@ function FulFillments({
 							</td>
 							<td className="py-4 pl-3 pr-4 sm:pr-0">
 								<div className="flex items-center justify-end gap-x-4">
-									<Link
+									<Button
+										as="link"
 										to={`/fulfillments/${fulfillment.id}`}
-										className="rounded bg-white/10 px-2 py-1 text-xs font-medium text-gray-900 shadow-sm hover:bg-white/20 dark:text-white"
+										size="sm"
 									>
 										View
 										<span className="sr-only">
 											, {fulfillment.name}
 										</span>
-									</Link>
+									</Button>
 
 									<FulfillmentActions
 										id={fulfillment.id}

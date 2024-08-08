@@ -16,6 +16,7 @@ import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
+import Button from '~/components/Button';
 
 // For Toggle
 import { Description, Field, Label, Switch } from '@headlessui/react';
@@ -349,7 +350,7 @@ export default function OrderPage() {
 					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
 						<h2 className="text-base font-bold">Ship To</h2>
 						{data.fulfillment?.order?.address ? (
-							<address className="mt-2 text-sm not-italic text-gray-500">
+							<address className="mt-2 text-sm not-italic leading-6 text-gray-500">
 								{data.fulfillment.order.address.line1 &&
 									`${data.fulfillment.order.address.line1}\n`}
 								{data.fulfillment.order.address.line2 &&
@@ -365,8 +366,14 @@ export default function OrderPage() {
 						) : null}
 
 						{isEditing ? (
-							<Form method="post">
-								<div className="input input--sm">
+							<Form
+								method="post"
+								className="mt-4 flex flex-col gap-y-3"
+							>
+								<div>
+									<label className="sr-only">
+										Tracking number
+									</label>
 									<input
 										ref={trackingNumberRef}
 										type="text"
@@ -376,10 +383,14 @@ export default function OrderPage() {
 											data.fulfillment?.trackingInfo
 												?.number
 										}
+										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
 									/>
 								</div>
 
-								<div className="input input--sm">
+								<div className="">
+									<label className="sr-only">
+										Shipping carrier
+									</label>
 									<input
 										type="text"
 										name="shippingCarrier"
@@ -388,27 +399,27 @@ export default function OrderPage() {
 											data.fulfillment?.trackingInfo
 												?.company
 										}
+										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
 									/>
 								</div>
 
-								<div className="flex gap-x-2">
-									<button
-										className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+								<div className="flex flex-row-reverse justify-start gap-x-2">
+									<Button
+										color="primary"
+										size="xs"
 										type="submit"
 										name="_action"
 										value="save"
-										disabled={isSaving}
 									>
 										{isSaving ? 'Saving...' : 'Save'}
-									</button>
+									</Button>
 
-									<button
-										className="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-										type="button"
+									<Button
+										size="xs"
 										onClick={() => setIsEditing(false)}
 									>
 										Cancel
-									</button>
+									</Button>
 								</div>
 							</Form>
 						) : (
@@ -430,23 +441,25 @@ export default function OrderPage() {
 											</div>
 										</div>
 										<div>
-											<button
+											<Button
+												size="xs"
 												onClick={() =>
 													setIsEditing(true)
 												}
 											>
 												Edit
-											</button>
-											<button>Copy</button>
+											</Button>
 										</div>
 									</>
 								) : (
-									<button
-										className="mt-5 rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-										onClick={() => setIsEditing(true)}
-									>
-										Add tracking info
-									</button>
+									<div className="mt-4">
+										<Button
+											size="xs"
+											onClick={() => setIsEditing(true)}
+										>
+											Add tracking
+										</Button>
+									</div>
 								)}
 							</div>
 						)}
@@ -465,25 +478,28 @@ export default function OrderPage() {
 						>
 							<Toggle />
 
-							{data.fulfillment && data.fulfillment.isArchived ? (
-								<button
-									className="mt-6 w-full rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-0 dark:hover:bg-white/20"
-									type="submit"
-									name="_action"
-									value="unarchive"
-								>
-									Unarchive
-								</button>
-							) : (
-								<button
-									className="mt-6 w-full rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-white/10 dark:text-white dark:ring-0 dark:hover:bg-white/20"
-									type="submit"
-									name="_action"
-									value="archive"
-								>
-									Archive
-								</button>
-							)}
+							<div className="mt-4">
+								{data.fulfillment &&
+								data.fulfillment.isArchived ? (
+									<Button
+										size="xs"
+										type="submit"
+										name="_action"
+										value="unarchive"
+									>
+										Unarchive
+									</Button>
+								) : (
+									<Button
+										size="xs"
+										type="submit"
+										name="_action"
+										value="archive"
+									>
+										Archive
+									</Button>
+								)}
+							</div>
 						</Form>
 					) : null}
 				</div>
@@ -614,14 +630,15 @@ function CommentForm() {
 					</div>
 
 					<div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
-						<button
+						<Button
+							size="md"
 							name="_action"
 							value="comment"
 							type="submit"
-							className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-indigo-500 dark:text-white dark:ring-0 dark:hover:bg-indigo-400"
+							color="primary"
 						>
 							{isPosting ? 'Posting...' : 'Comment'}
-						</button>
+						</Button>
 					</div>
 				</fetcher.Form>
 			</div>

@@ -11,9 +11,12 @@ import {
 import { fetchOrderByName } from '~/utils/shopify.server';
 import { prisma } from '~/db.server';
 import { useRef, useState } from 'react';
-import { SearchIcon, TrashIcon } from '~/components/Icons';
-import Counter from '~/components/Counter';
+import { TrashIcon } from '~/components/Icons';
 import { badRequest } from '~/utils/request.server';
+
+// Custom components
+import Button from '~/components/Button';
+import Counter from '~/components/Counter';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -138,263 +141,295 @@ export default function NewOrderPage() {
 
 	return (
 		<>
-			<header className="page-header">
-				<div className="page-header__row">
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-						Create Order
-					</h1>
-
-					<div className="page-header__actions">
-						<div className="input">
-							<input
-								form={addressFormId}
-								placeholder="Order Name"
-								type="text"
-								id="order-name"
-								name="orderName"
-								defaultValue={data.order?.name}
-							/>
-						</div>
-
-						<Link className="button" to="..">
-							Discard
-						</Link>
-
-						<button
-							type="button"
-							className="primary button full-width"
-							onClick={handleSubmit}
-						>
-							Save
-						</button>
-					</div>
-				</div>
-
-				{actionData?.errors?.form ? (
+			<div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+				<header className="page-header">
 					<div className="page-header__row">
-						<div className="error message">
-							{actionData.errors.form}
+						<h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+							Create Order
+						</h1>
+
+						<div className="ml-auto mt-1 flex items-center gap-x-4">
+							<div className="input">
+								<input
+									form={addressFormId}
+									placeholder="Order Name"
+									type="text"
+									id="order-name"
+									name="orderName"
+									defaultValue={data.order?.name}
+								/>
+							</div>
+
+							<div className="flex gap-x-4">
+								<Button to="..">Discard</Button>
+
+								<Button color="primary" onClick={handleSubmit}>
+									Save
+								</Button>
+							</div>
 						</div>
 					</div>
-				) : null}
-			</header>
 
-			<div className="foobar">
-				<section className="foobar-main-content">
-					<h2 className="headline-h6">Search for items</h2>
-					<search.Form method="get" action="/swatch">
-						<div className="flex items-end gap-x-6">
-							<div className="grow">
-								<label
-									htmlFor="query"
-									className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
-								>
+					{actionData?.errors?.form ? (
+						<div className="page-header__row">
+							<div className="error message">
+								{actionData.errors.form}
+							</div>
+						</div>
+					) : null}
+				</header>
+			</div>
+
+			{/* Autocomplete */}
+			<div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+				<div className="rounded-lg bg-gray-50 p-6 dark:bg-zinc-800">
+					<Form
+						className="flex items-center gap-x-6"
+						method="get"
+						replace
+					>
+						<div className="grow">
+							<label
+								htmlFor="autofill-query"
+								className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
+							>
+								Prefetch data from Shopify Order No.
+							</label>
+							<div className="mt-2">
+								<input
+									autoFocus
+									type="text"
+									id="autofill-query"
+									name="query"
+									placeholder="#2743"
+									className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
+								/>
+							</div>
+							<p
+								id="autofill-description"
+								className="mt-2 text-sm text-gray-500 dark:text-zinc-300"
+							>
+								This will pull data from the specified Shopify
+								order and populate that data onto this draft
+								order.
+							</p>
+						</div>
+
+						<div className="mt-1">
+							<Button type="submit" color="primary">
+								Autofill
+							</Button>
+						</div>
+					</Form>
+				</div>
+			</div>
+
+			<div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+				<div className="foobar">
+					<section className="foobar-main-content">
+						<search.Form method="get" action="/swatch">
+							<div className="flex flex-row-reverse items-end gap-x-6">
+								<Button color="primary" type="submit">
 									Search
-								</label>
+								</Button>
 
-								<div className="mt-2">
-									<input
-										className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-										type="text"
-										name="query"
-										id="query"
-										placeholder="Search"
-										autoComplete="off"
-										defaultValue={data.searchHint}
-									/>
+								<div className="grow">
+									<label
+										htmlFor="query"
+										className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
+									>
+										Search
+									</label>
+
+									<div className="mt-2">
+										<input
+											className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+											type="text"
+											name="query"
+											id="query"
+											placeholder="Search"
+											autoComplete="off"
+											defaultValue={data.searchHint}
+										/>
+									</div>
 								</div>
 							</div>
+						</search.Form>
 
-							<button
-								className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-								type="submit"
-							>
-								Search
-							</button>
-						</div>
-					</search.Form>
-
-					{search?.data?.errors &&
-						search.data.errors.map((error: string) => (
-							<div key={error} className="error message">
-								{error}
-							</div>
-						))}
-
-					{search?.data?.results ? (
-						<ResultsTable
-							results={search.data.results}
-							cart={cart}
-							handleChange={handleChange}
-							isAlreadyInCart={isAlreadyInCart}
-						/>
-					) : null}
-				</section>
-
-				<aside className="foobar-sidebar sample-cart">
-					<Form className="inline-form" method="get" replace>
-						<div className="input">
-							<label htmlFor="autofill-query">
-								Shopify Order No.
-							</label>
-							<input
-								autoFocus
-								type="text"
-								id="autofill-query"
-								name="query"
-								placeholder="#2743"
-							/>
-						</div>
-						<button type="submit" className="button">
-							Autofill
-						</button>
-					</Form>
-
-					<div className="shipping-info">
-						<form ref={shippingAddressForm} id={addressFormId}>
-							<div className="input input--sm">
-								<label htmlFor="ship-to-name">Name</label>
-								<input
-									type="text"
-									autoComplete="name"
-									id="ship-to-name"
-									name="name"
-									defaultValue={
-										data.order?.shippingAddress?.name
-											? data.order.shippingAddress.name
-											: ''
-									}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="ship-to-address-line-1">
-									Street Address
-								</label>
-								<input
-									type="text"
-									autoComplete="address-line1"
-									id="ship-to-address-1"
-									name="address1"
-									defaultValue={
-										data.order?.shippingAddress?.address1
-											? data.order.shippingAddress
-													.address1
-											: ''
-									}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="ship-to-address-line-2">
-									Suite, Unit, Apt #
-								</label>
-								<input
-									type="text"
-									autoComplete="address-line2"
-									id="ship-to-address-line-2"
-									name="address2"
-									defaultValue={
-										data.order?.shippingAddress?.address2
-											? data.order.shippingAddress
-													.address2
-											: ''
-									}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="ship-to-city">City</label>
-								<input
-									type="text"
-									autoComplete="address-level2"
-									id="ship-to-city"
-									name="city"
-									defaultValue={
-										data.order?.shippingAddress?.city
-											? data.order.shippingAddress.city
-											: ''
-									}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="ship-to-state">State</label>
-								<input
-									type="text"
-									autoComplete="address-level1"
-									id="ship-to-state"
-									name="province"
-									defaultValue={
-										data.order?.shippingAddress?.province
-											? data.order.shippingAddress
-													.province
-											: ''
-									}
-								/>
-							</div>
-
-							<div className="input input--sm">
-								<label htmlFor="ship-to-zip">ZIP Code</label>
-								<input
-									type="text"
-									autoComplete="postal-code"
-									id="ship-to-zip"
-									name="zip"
-									defaultValue={
-										data.order?.shippingAddress?.zip
-											? data.order.shippingAddress.zip
-											: ''
-									}
-								/>
-							</div>
-						</form>
-					</div>
-
-					<div style={{ marginTop: 64 }}>
-						{cart.length > 0 ? (
-							<h2 className="headline-h6">
-								Item Count:{' '}
-								{cart.reduce(
-									(accumulator, item) =>
-										accumulator + item.quantity,
-									0
-								)}
-							</h2>
-						) : null}
-
-						<ul className="sample-cart-list">
-							{cart.map((item) => (
-								<li className="sample-cart-item" key={item.id}>
-									<div className="sample-cart-item__description">
-										<div className="">
-											{item.materialNo}
-										</div>
-									</div>
-
-									<Counter
-										min={1}
-										name={`quantity-${item.materialNo}`}
-										onChange={(quantity) => {
-											handleQtyChange(quantity, item);
-										}}
-										defaultValue={1}
-									/>
-
-									<button
-										aria-label="Delete"
-										className="sample-cart-delete-button"
-										onClick={() => {
-											removeFromCart(item);
-										}}
-									>
-										<TrashIcon />
-									</button>
-								</li>
+						{search?.data?.errors &&
+							search.data.errors.map((error: string) => (
+								<div key={error} className="error message">
+									{error}
+								</div>
 							))}
-						</ul>
-					</div>
-				</aside>
+
+						{search?.data?.results ? (
+							<ResultsTable
+								results={search.data.results}
+								cart={cart}
+								handleChange={handleChange}
+								isAlreadyInCart={isAlreadyInCart}
+							/>
+						) : null}
+					</section>
+
+					<aside className="foobar-sidebar sample-cart">
+						<div className="shipping-info">
+							<form ref={shippingAddressForm} id={addressFormId}>
+								<div className="input input--sm">
+									<label htmlFor="ship-to-name">Name</label>
+									<input
+										type="text"
+										autoComplete="name"
+										id="ship-to-name"
+										name="name"
+										defaultValue={
+											data.order?.shippingAddress?.name
+												? data.order.shippingAddress
+														.name
+												: ''
+										}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="ship-to-address-line-1">
+										Street Address
+									</label>
+									<input
+										type="text"
+										autoComplete="address-line1"
+										id="ship-to-address-1"
+										name="address1"
+										defaultValue={
+											data.order?.shippingAddress
+												?.address1
+												? data.order.shippingAddress
+														.address1
+												: ''
+										}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="ship-to-address-line-2">
+										Suite, Unit, Apt #
+									</label>
+									<input
+										type="text"
+										autoComplete="address-line2"
+										id="ship-to-address-line-2"
+										name="address2"
+										defaultValue={
+											data.order?.shippingAddress
+												?.address2
+												? data.order.shippingAddress
+														.address2
+												: ''
+										}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="ship-to-city">City</label>
+									<input
+										type="text"
+										autoComplete="address-level2"
+										id="ship-to-city"
+										name="city"
+										defaultValue={
+											data.order?.shippingAddress?.city
+												? data.order.shippingAddress
+														.city
+												: ''
+										}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="ship-to-state">State</label>
+									<input
+										type="text"
+										autoComplete="address-level1"
+										id="ship-to-state"
+										name="province"
+										defaultValue={
+											data.order?.shippingAddress
+												?.province
+												? data.order.shippingAddress
+														.province
+												: ''
+										}
+									/>
+								</div>
+
+								<div className="input input--sm">
+									<label htmlFor="ship-to-zip">
+										ZIP Code
+									</label>
+									<input
+										type="text"
+										autoComplete="postal-code"
+										id="ship-to-zip"
+										name="zip"
+										defaultValue={
+											data.order?.shippingAddress?.zip
+												? data.order.shippingAddress.zip
+												: ''
+										}
+									/>
+								</div>
+							</form>
+						</div>
+
+						<div style={{ marginTop: 64 }}>
+							{cart.length > 0 ? (
+								<h2 className="headline-h6">
+									Item Count:{' '}
+									{cart.reduce(
+										(accumulator, item) =>
+											accumulator + item.quantity,
+										0
+									)}
+								</h2>
+							) : null}
+
+							<ul className="sample-cart-list">
+								{cart.map((item) => (
+									<li
+										className="sample-cart-item"
+										key={item.id}
+									>
+										<div className="sample-cart-item__description">
+											<div className="">
+												{item.materialNo}
+											</div>
+										</div>
+
+										<Counter
+											min={1}
+											name={`quantity-${item.materialNo}`}
+											onChange={(quantity) => {
+												handleQtyChange(quantity, item);
+											}}
+											defaultValue={1}
+										/>
+
+										<button
+											aria-label="Delete"
+											className="sample-cart-delete-button"
+											onClick={() => {
+												removeFromCart(item);
+											}}
+										>
+											<TrashIcon />
+										</button>
+									</li>
+								))}
+							</ul>
+						</div>
+					</aside>
+				</div>
 			</div>
 		</>
 	);
@@ -493,7 +528,6 @@ function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
 									<div className="flex h-6 items-center">
 										<input
 											id={`${item.id}-checkbox`}
-											// aria-describedby="comments-description"
 											name="item"
 											type="checkbox"
 											className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
@@ -507,15 +541,17 @@ function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
 									<div className="ml-3 text-sm leading-6">
 										<label
 											htmlFor={`${item.id}-checkbox`}
-											className="font-medium text-gray-900 dark:text-white"
+											className="bg-blue-300 font-medium text-gray-900 hover:cursor-pointer dark:text-white"
 										>
-											{item.materialNo}
-											<div
+											<span className="block">
+												{item.materialNo}
+											</span>
+											<span
 												id="comments-description"
-												className="text-gray-500 dark:text-zinc-400"
+												className="block text-gray-500 dark:text-zinc-400"
 											>
 												{item.seriesName} {item.color}
-											</div>
+											</span>
 										</label>
 									</div>
 								</div>
@@ -523,13 +559,13 @@ function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
 
 							<td className="whitespace-nowrap px-3 py-4 text-sm">
 								<label
-									className="checkbox-label"
+									className="checkbox-label hover:cursor-pointer"
 									htmlFor={`${item.id}-checkbox`}
 								>
-									<div className="text-sm font-medium text-gray-900 dark:text-white">
+									<div className="cursor-pointer text-sm font-medium text-gray-900 dark:text-white">
 										{item.seriesAlias}
 									</div>
-									<div className="text-sm font-normal text-gray-500 dark:text-zinc-400">
+									<div className="cursor-pointer text-sm font-normal text-gray-500 dark:text-zinc-400">
 										{item.colorAlias}
 									</div>
 								</label>
