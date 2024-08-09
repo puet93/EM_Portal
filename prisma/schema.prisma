@@ -140,6 +140,7 @@ model Sample {
     gid            String?         @unique
     materialNo     String          @unique
     title          String?
+    vendorTitle    String?
     seriesName     String
     seriesAlias    String?
     color          String
