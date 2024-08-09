@@ -193,14 +193,16 @@ export default function OrderPage() {
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
 	const isSaving = navigation.state === 'submitting';
-	const [isEditing, setIsEditing] = useState(false);
+	const [isEditing, setIsEditing] = useState(
+		!data.fulfillment?.trackingInfo?.number
+	);
 	const trackingNumberRef = useRef(null);
 
-	useEffect(() => {
-		if (!isSaving) {
-			setIsEditing(false);
-		}
-	}, [isSaving]);
+	// useEffect(() => {
+	// 	if (!isSaving) {
+	// 		setIsEditing(false);
+	// 	}
+	// }, [isSaving]);
 
 	useEffect(() => {
 		if (isEditing) {
