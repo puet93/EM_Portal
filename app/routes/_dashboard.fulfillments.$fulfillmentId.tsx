@@ -294,27 +294,30 @@ export default function OrderPage() {
 									return (
 										<tr key={item.id}>
 											<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
-												{sample.materialNo}
+												{data.user.role ===
+												'SUPERADMIN' ? (
+													<Link
+														to={`/samples/${sample.id}`}
+													>
+														{sample.materialNo}
+													</Link>
+												) : (
+													<span>
+														{sample.materialNo}
+													</span>
+												)}
 											</td>
 											<td className="whitespace-nowrap px-3 py-4 text-sm">
 												<p className="text-sm text-gray-900 dark:text-white">
-													{sample.title
-														? sample.title
+													{sample.vendorTitle
+														? sample.vendorTitle
 														: `${sample.seriesName} ${sample.finish} ${sample.color}`}
 												</p>
+
 												<p className="mt-1 text-xs font-normal leading-6 text-gray-500 dark:text-zinc-400">
-													{
-														item.orderLineItem
-															.sample.seriesAlias
-													}{' '}
-													{
-														item.orderLineItem
-															.sample.finish
-													}{' '}
-													{
-														item.orderLineItem
-															.sample.colorAlias
-													}
+													{sample.title
+														? sample.title
+														: `${sample.seriesAlias} ${sample.finish} ${sample.colorAlias}`}
 												</p>
 											</td>
 											<td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -665,13 +668,13 @@ function Toggle() {
 					as="span"
 					className="mt-2 text-sm font-normal leading-6 text-gray-500 dark:text-zinc-400"
 				>
-					{/* Archiving an order will prevent the order from showing up on
+					Archiving an order will prevent the order from showing up on
 					the order pages. This helps clear the workspace clear of
-					fulfilled orders. */}
-					The toggle doesn't work right now. Use the button instead.
+					fulfilled orders.
+					{/* The toggle doesn't work right now. Use the button instead. */}
 				</Description>
 			</span>
-			<Switch
+			{/* <Switch
 				checked={enabled}
 				onChange={setEnabled}
 				className="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 data-[checked]:bg-indigo-600"
@@ -680,7 +683,7 @@ function Toggle() {
 					aria-hidden="true"
 					className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out group-data-[checked]:translate-x-5"
 				/>
-			</Switch>
+			</Switch> */}
 		</Field>
 	);
 }
