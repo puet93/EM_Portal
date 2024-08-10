@@ -58,6 +58,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 		},
 	});
 
+	if (!fulfillment) {
+		throw new Response('Error from the Fulfillment Detail page.', {
+			status: 404,
+		});
+	}
+
 	const comments =
 		fulfillment?.comments && fulfillment.comments.length > 0
 			? fulfillment.comments
@@ -192,24 +198,23 @@ export default function OrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
-	const isSaving = navigation.state === 'submitting';
 	const [isEditing, setIsEditing] = useState(
-		!data.fulfillment?.trackingInfo?.number
+		!data.fulfillment.trackingInfo?.number ||
+			!data.fulfillment.trackingInfo?.company
 	);
-	const trackingNumberRef = useRef(null);
-
-	// useEffect(() => {
-	// 	if (!isSaving) {
-	// 		setIsEditing(false);
-	// 	}
-	// }, [isSaving]);
 
 	useEffect(() => {
-		if (isEditing) {
-			trackingNumberRef.current?.focus();
-			trackingNumberRef.current?.select();
+		if (
+			navigation.state === 'loading' &&
+			navigation.formMethod === 'POST'
+		) {
+			setIsEditing(false);
 		}
-	}, [isEditing]);
+	}, [navigation]);
+
+	const handleCancelClick = () => {
+		setIsEditing(false);
+	};
 
 	return (
 		<>
@@ -353,121 +358,76 @@ export default function OrderPage() {
 
 				<div className="foobar-sidebar flex flex-col gap-y-6">
 					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
-						<h2 className="text-base font-bold">Ship To</h2>
-						{data.fulfillment?.order?.address ? (
-							<address className="mt-2 text-sm not-italic leading-6 text-gray-500">
-								{data.fulfillment.order.address.line1 &&
-									`${data.fulfillment.order.address.line1}\n`}
-								{data.fulfillment.order.address.line2 &&
-									`${data.fulfillment.order.address.line2}\n`}
-								{data.fulfillment.order.address.line3 &&
-									`${data.fulfillment.order.address.line3}\n`}
-								{data.fulfillment.order.address.line4 &&
-									`${data.fulfillment.order.address.line4}\n`}
-								{data.fulfillment.order.address.city},{' '}
-								{data.fulfillment.order.address.state}{' '}
-								{data.fulfillment.order.address.postalCode}
-							</address>
-						) : null}
+						<div>
+							<h3 className="text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+								Ship To
+							</h3>
 
-						{isEditing ? (
-							<Form
-								method="post"
-								className="mt-4 flex flex-col gap-y-3"
-							>
-								<div>
-									<label className="sr-only">
-										Tracking number
-									</label>
-									<input
-										ref={trackingNumberRef}
-										type="text"
-										name="trackingNumber"
-										placeholder="Tracking number"
-										defaultValue={
-											data.fulfillment?.trackingInfo
-												?.number
-										}
-										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
-									/>
-								</div>
+							{data.fulfillment.order?.address ? (
+								<address className="mt-2 text-sm not-italic leading-6 text-gray-500 dark:text-zinc-400">
+									{data.fulfillment.order.address.line1 &&
+										`${data.fulfillment.order.address.line1}\n`}
+									{data.fulfillment.order.address.line2 &&
+										`${data.fulfillment.order.address.line2}\n`}
+									{data.fulfillment.order.address.line3 &&
+										`${data.fulfillment.order.address.line3}\n`}
+									{data.fulfillment.order.address.line4 &&
+										`${data.fulfillment.order.address.line4}\n`}
+									{data.fulfillment.order.address.city},{' '}
+									{data.fulfillment.order.address.state}{' '}
+									{data.fulfillment.order.address.postalCode}
+								</address>
+							) : null}
+						</div>
 
-								<div className="">
-									<label className="sr-only">
-										Shipping carrier
-									</label>
-									<input
-										type="text"
-										name="shippingCarrier"
-										placeholder="Shipping carrier"
-										defaultValue={
-											data.fulfillment?.trackingInfo
-												?.company
-										}
-										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
-									/>
-								</div>
+						<div className="mt-6">
+							<div className="item-center flex gap-x-3">
+								<h3 className="grow text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+									Tracking Info
+								</h3>
 
-								<div className="flex flex-row-reverse justify-start gap-x-2">
-									<Button
-										color="primary"
-										size="xs"
-										type="submit"
-										name="_action"
-										value="save"
-									>
-										{isSaving ? 'Saving...' : 'Save'}
-									</Button>
-
-									<Button
-										size="xs"
-										onClick={() => setIsEditing(false)}
-									>
-										Cancel
-									</Button>
-								</div>
-							</Form>
-						) : (
-							<div>
-								{data.fulfillment?.trackingInfo ? (
-									<>
-										<div>
-											<div>
-												{
-													data.fulfillment
-														?.trackingInfo?.number
-												}
-											</div>
-											<div>
-												{
-													data.fulfillment
-														?.trackingInfo?.company
-												}
-											</div>
-										</div>
-										<div>
-											<Button
-												size="xs"
-												onClick={() =>
-													setIsEditing(true)
-												}
-											>
-												Edit
-											</Button>
-										</div>
-									</>
-								) : (
-									<div className="mt-4">
-										<Button
-											size="xs"
-											onClick={() => setIsEditing(true)}
-										>
-											Add tracking
-										</Button>
-									</div>
-								)}
+								<button
+									className="text-sm font-normal leading-4 text-sky-600"
+									type="button"
+									onClick={() => setIsEditing(!isEditing)}
+								>
+									Edit
+								</button>
 							</div>
-						)}
+
+							{isEditing && (
+								<TrackingForm
+									fulfillment={data.fulfillment}
+									handleCancelClick={handleCancelClick}
+								/>
+							)}
+
+							{!isEditing && (
+								<div className="mt-4">
+									<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
+										{data.fulfillment.trackingInfo
+											?.number ? (
+											data.fulfillment.trackingInfo.number
+										) : (
+											<span className="italic text-zinc-600">
+												No tracking number
+											</span>
+										)}
+									</div>
+									<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
+										{data.fulfillment.trackingInfo
+											?.company ? (
+											data.fulfillment.trackingInfo
+												.company
+										) : (
+											<span className="italic text-zinc-600">
+												No shipping carrier
+											</span>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
 
 						{actionData?.errors?.form ? (
 							<div className="error message">
@@ -660,7 +620,7 @@ function Toggle() {
 				<Label
 					as="span"
 					passive
-					className="text-sm font-medium leading-6 text-gray-900 dark:text-white"
+					className="text-sm font-semibold leading-4 text-gray-900 dark:text-white"
 				>
 					Archive fulfillment order
 				</Label>
@@ -686,4 +646,127 @@ function Toggle() {
 			</Switch> */}
 		</Field>
 	);
+}
+
+function TrackingForm({
+	fulfillment,
+	handleCancelClick,
+}: {
+	fulfillment: { trackingInfo: { number: string; company: string } };
+	handleCancelClick: () => void;
+}) {
+	const [trackingNumber, setTrackingNumber] = useState<string>('');
+	const [carrier, setCarrier] = useState<string | null>('');
+
+	const handleTrackingNumberChange = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const value = event.target.value;
+		setTrackingNumber(value);
+
+		// Detect the carrier and update the carrier field
+		const detectedCarrier = detectCarrier(value);
+		setCarrier(detectedCarrier);
+	};
+
+	const trackingNumberRef = useRef<HTMLInputElement>(null);
+	useEffect(() => {
+		trackingNumberRef.current?.focus();
+		trackingNumberRef.current?.select();
+	}, []);
+
+	return (
+		<Form method="post" className="mt-4 flex flex-col gap-y-3">
+			<div>
+				<label className="sr-only">Tracking number</label>
+				<input
+					ref={trackingNumberRef}
+					type="text"
+					name="trackingNumber"
+					placeholder="Tracking number"
+					defaultValue={fulfillment.trackingInfo?.number}
+					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+				/>
+			</div>
+
+			<div className="">
+				<label className="sr-only">Shipping carrier</label>
+				<input
+					type="text"
+					name="shippingCarrier"
+					placeholder="Shipping carrier"
+					defaultValue={fulfillment.trackingInfo?.company}
+					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+				/>
+			</div>
+
+			<div className="mt-1 flex justify-start gap-x-3">
+				<Button
+					color="primary"
+					size="xs"
+					type="submit"
+					name="_action"
+					value="save"
+				>
+					Save
+				</Button>
+
+				<Button size="xs" onClick={handleCancelClick}>
+					Cancel
+				</Button>
+			</div>
+		</Form>
+	);
+
+	return (
+		<form className="space-y-4">
+			<div>
+				<label htmlFor="trackingNumber" className="sr-only">
+					Tracking Number
+				</label>
+				<input
+					type="text"
+					id="trackingNumber"
+					value={trackingNumber}
+					onChange={handleTrackingNumberChange}
+					className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+				/>
+			</div>
+
+			<div>
+				<label htmlFor="carrier" className="sr-only">
+					Carrier
+				</label>
+				<input
+					type="text"
+					id="carrier"
+					value={carrier || ''}
+					readOnly
+					className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+				/>
+			</div>
+		</form>
+	);
+}
+
+function detectCarrier(trackingNumber: string): string | null {
+	const cleanedTrackingNumber = trackingNumber.replace(/[\s-]/g, '');
+
+	const fedexRegex = /^(96\d{20}|\d{15}|\d{12}|\d{20})$/;
+	const upsRegex = /^1Z[0-9A-Z]{16}$/i;
+	const uspsRegex = /^(\d{20}|\d{22}|[A-Z]{2}\d{9}[A-Z]{2})$/i;
+
+	if (fedexRegex.test(cleanedTrackingNumber)) {
+		return 'FedEx';
+	} else if (upsRegex.test(cleanedTrackingNumber)) {
+		return 'UPS';
+	} else if (uspsRegex.test(cleanedTrackingNumber)) {
+		return 'USPS';
+	} else {
+		return null;
+	}
+}
+
+export function ErrorBoundary() {
+	return <div>Error Boundary Component</div>;
 }
