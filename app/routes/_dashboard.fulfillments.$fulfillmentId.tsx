@@ -397,7 +397,18 @@ export default function OrderPage() {
 
 							{isEditing && (
 								<TrackingForm
-									fulfillment={data.fulfillment}
+									initialCarrier={
+										data.fulfillment.trackingInfo?.company
+											? data.fulfillment.trackingInfo
+													.company
+											: ''
+									}
+									initialTrackingNumber={
+										data.fulfillment.trackingInfo?.number
+											? data.fulfillment.trackingInfo
+													.number
+											: ''
+									}
 									handleCancelClick={handleCancelClick}
 								/>
 							)}
@@ -649,14 +660,18 @@ function Toggle() {
 }
 
 function TrackingForm({
-	fulfillment,
+	initialTrackingNumber,
+	initialCarrier,
 	handleCancelClick,
 }: {
-	fulfillment: { trackingInfo: { number: string; company: string } };
+	initialTrackingNumber: string;
+	initialCarrier: string;
 	handleCancelClick: () => void;
 }) {
-	const [trackingNumber, setTrackingNumber] = useState<string>('');
-	const [carrier, setCarrier] = useState<string | null>('');
+	const [trackingNumber, setTrackingNumber] = useState<string>(
+		initialTrackingNumber
+	);
+	const [carrier, setCarrier] = useState<string>(initialCarrier);
 
 	const handleTrackingNumberChange = (
 		event: React.ChangeEvent<HTMLInputElement>
@@ -684,7 +699,8 @@ function TrackingForm({
 					type="text"
 					name="trackingNumber"
 					placeholder="Tracking number"
-					defaultValue={fulfillment.trackingInfo?.number}
+					value={trackingNumber}
+					onChange={handleTrackingNumberChange}
 					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
 				/>
 			</div>
@@ -695,7 +711,8 @@ function TrackingForm({
 					type="text"
 					name="shippingCarrier"
 					placeholder="Shipping carrier"
-					defaultValue={fulfillment.trackingInfo?.company}
+					value={carrier}
+					onChange={(e) => setCarrier(e.target.value)}
 					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
 				/>
 			</div>
@@ -717,39 +734,9 @@ function TrackingForm({
 			</div>
 		</Form>
 	);
-
-	return (
-		<form className="space-y-4">
-			<div>
-				<label htmlFor="trackingNumber" className="sr-only">
-					Tracking Number
-				</label>
-				<input
-					type="text"
-					id="trackingNumber"
-					value={trackingNumber}
-					onChange={handleTrackingNumberChange}
-					className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-				/>
-			</div>
-
-			<div>
-				<label htmlFor="carrier" className="sr-only">
-					Carrier
-				</label>
-				<input
-					type="text"
-					id="carrier"
-					value={carrier || ''}
-					readOnly
-					className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-				/>
-			</div>
-		</form>
-	);
 }
 
-function detectCarrier(trackingNumber: string): string | null {
+function detectCarrier(trackingNumber: string): string {
 	const cleanedTrackingNumber = trackingNumber.replace(/[\s-]/g, '');
 
 	const fedexRegex = /^(96\d{20}|\d{15}|\d{12}|\d{20})$/;
@@ -763,7 +750,7 @@ function detectCarrier(trackingNumber: string): string | null {
 	} else if (uspsRegex.test(cleanedTrackingNumber)) {
 		return 'USPS';
 	} else {
-		return null;
+		return '';
 	}
 }
 
