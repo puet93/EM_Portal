@@ -11,10 +11,19 @@ import { FulfillmentStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { requireUser } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import {
+	Menu,
+	MenuButton,
+	MenuItem,
+	MenuItems,
+	Popover,
+	PopoverButton,
+	PopoverPanel,
+} from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import Button from '~/components/Button';
 import MultiSelectMenu from '~/components/MultiSelectMenu';
+import type { SyntheticEvent } from 'react';
 import type { Option } from '~/components/MultiSelectMenu';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 
@@ -476,6 +485,66 @@ export default function OrdersIndex() {
 	);
 }
 
+function CopyButton({ text }: { text: string }) {
+	const [copySuccess, setCopySuccess] = useState('');
+
+	const copyToClipboard = async (
+		event: SyntheticEvent<HTMLButtonElement>
+	) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopySuccess('Copied!');
+
+			// Reset the state after 1 second
+			setTimeout(() => {
+				setCopySuccess('');
+			}, 1000);
+		} catch (err) {
+			setCopySuccess('Failed to copy!');
+
+			// Reset the state after 1 second
+			setTimeout(() => {
+				setCopySuccess('');
+			}, 1000);
+		}
+	};
+
+	return (
+		<div className="flex flex-col items-center">
+			<Popover className="relative">
+				<PopoverButton
+					as="button"
+					onClick={copyToClipboard}
+					className="rounded-full bg-transparent p-1.5 font-bold text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none dark:text-zinc-700 dark:hover:bg-zinc-950 dark:hover:text-white"
+					aria-label="Copy to clipboard"
+				>
+					<svg
+						fill="none"
+						viewBox="0 0 24 24"
+						strokeWidth={1.5}
+						stroke="currentColor"
+						className="h-5 w-5"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
+						/>
+					</svg>
+				</PopoverButton>
+				{copySuccess && (
+					<PopoverPanel
+						static
+						className="absolute -left-1/2 bottom-10 z-10 mt-2 rounded-md bg-black px-3 py-2 text-center text-xs text-white"
+					>
+						{copySuccess}
+					</PopoverPanel>
+				)}
+			</Popover>
+		</div>
+	);
+}
+
 function FulfillmentActions({ id, name }: { id: string; name: string }) {
 	let fetcher = useFetcher();
 
@@ -648,28 +717,38 @@ function FulFillments({
 								</Link>
 							</td>
 							<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
-								<Link to={`/fulfillments/${fulfillment.id}`}>
-									{fulfillment.trackingInfo?.number ? (
-										<>
-											<div className="text-gray-500 dark:text-zinc-300">
+								{fulfillment.trackingInfo?.number ? (
+									<div className="flex items-center gap-x-4">
+										<div>
+											<span className="block text-gray-500 dark:text-zinc-300">
 												{
 													fulfillment.trackingInfo
 														.number
 												}
-											</div>
-											<div className="text-gray-500 dark:text-zinc-300">
+											</span>
+											<span className="block text-gray-500 dark:text-zinc-300">
 												{
 													fulfillment.trackingInfo
 														.company
 												}
-											</div>
-										</>
-									) : (
+											</span>
+										</div>
+
+										<CopyButton
+											text={
+												fulfillment.trackingInfo.number
+											}
+										/>
+									</div>
+								) : (
+									<Link
+										to={`/fulfillments/${fulfillment.id}`}
+									>
 										<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
 											Needs tracking info
 										</span>
-									)}
-								</Link>
+									</Link>
+								)}
 							</td>
 							<td className="whitespace-nowrap px-3 py-4">
 								<Link to={`/fulfillments/${fulfillment.id}`}>

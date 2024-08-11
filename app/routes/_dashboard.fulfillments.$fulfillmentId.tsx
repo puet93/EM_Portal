@@ -17,9 +17,14 @@ import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
 import Button from '~/components/Button';
-
-// For Toggle
-import { Description, Field, Label, Switch } from '@headlessui/react';
+import {
+	Description,
+	Field,
+	Label,
+	Popover,
+	PopoverButton,
+	PopoverPanel,
+} from '@headlessui/react';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	const user = await requireUser(request);
@@ -57,6 +62,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			vendor: true,
 		},
 	});
+
+	if (!fulfillment) {
+		throw new Response('Error from the Fulfillment Detail page.', {
+			status: 404,
+		});
+	}
 
 	const comments =
 		fulfillment?.comments && fulfillment.comments.length > 0
@@ -192,22 +203,25 @@ export default function OrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
-	const isSaving = navigation.state === 'submitting';
-	const [isEditing, setIsEditing] = useState(false);
-	const trackingNumberRef = useRef(null);
+	const [isEditing, setIsEditing] = useState(
+		!data.fulfillment.trackingInfo?.number ||
+			!data.fulfillment.trackingInfo?.company
+	);
+
+	const address = data.fulfillment.order?.address;
 
 	useEffect(() => {
-		if (!isSaving) {
+		if (
+			navigation.state === 'loading' &&
+			navigation.formMethod === 'POST'
+		) {
 			setIsEditing(false);
 		}
-	}, [isSaving]);
+	}, [navigation]);
 
-	useEffect(() => {
-		if (isEditing) {
-			trackingNumberRef.current?.focus();
-			trackingNumberRef.current?.select();
-		}
-	}, [isEditing]);
+	const handleCancelClick = () => {
+		setIsEditing(false);
+	};
 
 	return (
 		<>
@@ -292,27 +306,30 @@ export default function OrderPage() {
 									return (
 										<tr key={item.id}>
 											<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
-												{sample.materialNo}
+												{data.user.role ===
+												'SUPERADMIN' ? (
+													<Link
+														to={`/samples/${sample.id}`}
+													>
+														{sample.materialNo}
+													</Link>
+												) : (
+													<span>
+														{sample.materialNo}
+													</span>
+												)}
 											</td>
 											<td className="whitespace-nowrap px-3 py-4 text-sm">
 												<p className="text-sm text-gray-900 dark:text-white">
-													{sample.title
-														? sample.title
+													{sample.vendorTitle
+														? sample.vendorTitle
 														: `${sample.seriesName} ${sample.finish} ${sample.color}`}
 												</p>
+
 												<p className="mt-1 text-xs font-normal leading-6 text-gray-500 dark:text-zinc-400">
-													{
-														item.orderLineItem
-															.sample.seriesAlias
-													}{' '}
-													{
-														item.orderLineItem
-															.sample.finish
-													}{' '}
-													{
-														item.orderLineItem
-															.sample.colorAlias
-													}
+													{sample.title
+														? sample.title
+														: `${sample.seriesAlias} ${sample.finish} ${sample.colorAlias}`}
 												</p>
 											</td>
 											<td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -348,121 +365,100 @@ export default function OrderPage() {
 
 				<div className="foobar-sidebar flex flex-col gap-y-6">
 					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
-						<h2 className="text-base font-bold">Ship To</h2>
-						{data.fulfillment?.order?.address ? (
-							<address className="mt-2 text-sm not-italic leading-6 text-gray-500">
-								{data.fulfillment.order.address.line1 &&
-									`${data.fulfillment.order.address.line1}\n`}
-								{data.fulfillment.order.address.line2 &&
-									`${data.fulfillment.order.address.line2}\n`}
-								{data.fulfillment.order.address.line3 &&
-									`${data.fulfillment.order.address.line3}\n`}
-								{data.fulfillment.order.address.line4 &&
-									`${data.fulfillment.order.address.line4}\n`}
-								{data.fulfillment.order.address.city},{' '}
-								{data.fulfillment.order.address.state}{' '}
-								{data.fulfillment.order.address.postalCode}
-							</address>
-						) : null}
+						<div>
+							<h3 className="text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+								Ship To
+							</h3>
 
-						{isEditing ? (
-							<Form
-								method="post"
-								className="mt-4 flex flex-col gap-y-3"
-							>
-								<div>
-									<label className="sr-only">
-										Tracking number
-									</label>
-									<input
-										ref={trackingNumberRef}
-										type="text"
-										name="trackingNumber"
-										placeholder="Tracking number"
-										defaultValue={
-											data.fulfillment?.trackingInfo
-												?.number
-										}
-										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
-									/>
-								</div>
+							{address ? (
+								<>
+									<address className="mt-2 text-sm not-italic leading-6 text-gray-500 dark:text-zinc-400">
+										{address.line1 && `${address.line1}\n`}
+										{address.line2 && `${address.line2}\n`}
+										{address.line3 && `${address.line3}\n`}
+										{address.line4 && `${address.line4}\n`}
+										{address.city}, {address.state}{' '}
+										{address.postalCode}
+									</address>
 
-								<div className="">
-									<label className="sr-only">
-										Shipping carrier
-									</label>
-									<input
-										type="text"
-										name="shippingCarrier"
-										placeholder="Shipping carrier"
-										defaultValue={
-											data.fulfillment?.trackingInfo
-												?.company
-										}
-										className="block w-full rounded-sm border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 sm:text-sm sm:leading-6"
-									/>
-								</div>
-
-								<div className="flex flex-row-reverse justify-start gap-x-2">
-									<Button
-										color="primary"
-										size="xs"
-										type="submit"
-										name="_action"
-										value="save"
-									>
-										{isSaving ? 'Saving...' : 'Save'}
-									</Button>
-
-									<Button
-										size="xs"
-										onClick={() => setIsEditing(false)}
-									>
-										Cancel
-									</Button>
-								</div>
-							</Form>
-						) : (
-							<div>
-								{data.fulfillment?.trackingInfo ? (
-									<>
-										<div>
-											<div>
-												{
-													data.fulfillment
-														?.trackingInfo?.number
-												}
+									{address.phoneNumber ? (
+										<div className="-mr-1 mt-2 flex items-center gap-x-3">
+											<div className="grow text-sm not-italic leading-6 text-gray-500 dark:text-zinc-400">
+												{formatPhoneNumber(
+													address.phoneNumber
+												)}
 											</div>
-											<div>
-												{
-													data.fulfillment
-														?.trackingInfo?.company
-												}
-											</div>
+
+											<CopyButton
+												text={address.phoneNumber}
+												label="Copy phone number"
+												successLabel="Copied phone!"
+											/>
 										</div>
-										<div>
-											<Button
-												size="xs"
-												onClick={() =>
-													setIsEditing(true)
-												}
-											>
-												Edit
-											</Button>
-										</div>
-									</>
-								) : (
-									<div className="mt-4">
-										<Button
-											size="xs"
-											onClick={() => setIsEditing(true)}
-										>
-											Add tracking
-										</Button>
-									</div>
-								)}
+									) : null}
+								</>
+							) : null}
+						</div>
+
+						<div className="mt-6">
+							<div className="item-center flex gap-x-3">
+								<h3 className="grow text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+									Tracking Info
+								</h3>
+
+								<button
+									className="text-sm font-normal leading-4 text-sky-600"
+									type="button"
+									onClick={() => setIsEditing(!isEditing)}
+								>
+									Edit
+								</button>
 							</div>
-						)}
+
+							{isEditing && (
+								<TrackingForm
+									initialCarrier={
+										data.fulfillment.trackingInfo?.company
+											? data.fulfillment.trackingInfo
+													.company
+											: ''
+									}
+									initialTrackingNumber={
+										data.fulfillment.trackingInfo?.number
+											? data.fulfillment.trackingInfo
+													.number
+											: ''
+									}
+									handleCancelClick={handleCancelClick}
+								/>
+							)}
+
+							{!isEditing && (
+								<div className="mt-4">
+									<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
+										{data.fulfillment.trackingInfo
+											?.number ? (
+											data.fulfillment.trackingInfo.number
+										) : (
+											<span className="italic text-zinc-600">
+												No tracking number
+											</span>
+										)}
+									</div>
+									<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
+										{data.fulfillment.trackingInfo
+											?.company ? (
+											data.fulfillment.trackingInfo
+												.company
+										) : (
+											<span className="italic text-zinc-600">
+												No shipping carrier
+											</span>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
 
 						{actionData?.errors?.form ? (
 							<div className="error message">
@@ -505,6 +501,72 @@ export default function OrderPage() {
 				</div>
 			</div>
 		</>
+	);
+}
+
+function CopyButton({
+	text,
+	label = 'Copy to clipboard',
+	successLabel = 'Copied!',
+}: {
+	text: string;
+	label?: string;
+	successLabel?: string;
+}) {
+	const [copySuccess, setCopySuccess] = useState('');
+
+	const copyToClipboard = async () => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopySuccess(successLabel);
+
+			// Reset the state after 1 second
+			setTimeout(() => {
+				setCopySuccess('');
+			}, 1000);
+		} catch (err) {
+			setCopySuccess('Failed to copy!');
+
+			// Reset the state after 1 second
+			setTimeout(() => {
+				setCopySuccess('');
+			}, 1000);
+		}
+	};
+
+	return (
+		<div className="flex flex-col items-center">
+			<Popover className="relative">
+				<PopoverButton
+					as="button"
+					onClick={copyToClipboard}
+					className="rounded-full bg-transparent p-1.5 font-bold text-gray-400 transition-colors hover:bg-black/10 hover:text-gray-900 focus:outline-none dark:text-zinc-400 dark:hover:bg-black/50 dark:hover:text-white"
+					aria-label={label}
+				>
+					<svg
+						fill="none"
+						viewBox="0 0 24 24"
+						strokeWidth={1.5}
+						stroke="currentColor"
+						className="h-5 w-5"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
+						/>
+					</svg>
+				</PopoverButton>
+				{copySuccess && (
+					<PopoverPanel
+						static
+						className="absolute bottom-10 left-1/2 z-10 mt-2 -translate-x-1/2 transform rounded-md bg-black px-3 py-2 text-center text-xs text-white"
+					>
+						<span className="whitespace-nowrap">{copySuccess}</span>
+					</PopoverPanel>
+				)}
+			</Popover>
+		</div>
 	);
 }
 
@@ -655,7 +717,7 @@ function Toggle() {
 				<Label
 					as="span"
 					passive
-					className="text-sm font-medium leading-6 text-gray-900 dark:text-white"
+					className="text-sm font-semibold leading-4 text-gray-900 dark:text-white"
 				>
 					Archive fulfillment order
 				</Label>
@@ -663,13 +725,13 @@ function Toggle() {
 					as="span"
 					className="mt-2 text-sm font-normal leading-6 text-gray-500 dark:text-zinc-400"
 				>
-					{/* Archiving an order will prevent the order from showing up on
+					Archiving an order will prevent the order from showing up on
 					the order pages. This helps clear the workspace clear of
-					fulfilled orders. */}
-					The toggle doesn't work right now. Use the button instead.
+					fulfilled orders.
+					{/* The toggle doesn't work right now. Use the button instead. */}
 				</Description>
 			</span>
-			<Switch
+			{/* <Switch
 				checked={enabled}
 				onChange={setEnabled}
 				className="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 data-[checked]:bg-indigo-600"
@@ -678,7 +740,119 @@ function Toggle() {
 					aria-hidden="true"
 					className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out group-data-[checked]:translate-x-5"
 				/>
-			</Switch>
+			</Switch> */}
 		</Field>
 	);
+}
+
+function TrackingForm({
+	initialTrackingNumber,
+	initialCarrier,
+	handleCancelClick,
+}: {
+	initialTrackingNumber: string;
+	initialCarrier: string;
+	handleCancelClick: () => void;
+}) {
+	const [trackingNumber, setTrackingNumber] = useState<string>(
+		initialTrackingNumber
+	);
+	const [carrier, setCarrier] = useState<string>(initialCarrier);
+
+	const handleTrackingNumberChange = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const value = event.target.value;
+		setTrackingNumber(value);
+
+		// Detect the carrier and update the carrier field
+		const detectedCarrier = detectCarrier(value);
+		setCarrier(detectedCarrier);
+	};
+
+	const trackingNumberRef = useRef<HTMLInputElement>(null);
+	useEffect(() => {
+		trackingNumberRef.current?.focus();
+		trackingNumberRef.current?.select();
+	}, []);
+
+	return (
+		<Form method="post" className="mt-4 flex flex-col gap-y-3">
+			<div>
+				<label className="sr-only">Tracking number</label>
+				<input
+					ref={trackingNumberRef}
+					type="text"
+					name="trackingNumber"
+					placeholder="Tracking number"
+					value={trackingNumber}
+					onChange={handleTrackingNumberChange}
+					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+				/>
+			</div>
+
+			<div className="">
+				<label className="sr-only">Shipping carrier</label>
+				<input
+					type="text"
+					name="shippingCarrier"
+					placeholder="Shipping carrier"
+					value={carrier}
+					onChange={(e) => setCarrier(e.target.value)}
+					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+				/>
+			</div>
+
+			<div className="mt-1 flex justify-start gap-x-3">
+				<Button
+					color="primary"
+					size="xs"
+					type="submit"
+					name="_action"
+					value="save"
+				>
+					Save
+				</Button>
+
+				<Button size="xs" onClick={handleCancelClick}>
+					Cancel
+				</Button>
+			</div>
+		</Form>
+	);
+}
+
+function detectCarrier(trackingNumber: string): string {
+	const cleanedTrackingNumber = trackingNumber.replace(/[\s-]/g, '');
+
+	const fedexRegex = /^(96\d{20}|\d{15}|\d{12}|\d{20})$/;
+	const upsRegex = /^1Z[0-9A-Z]{16}$/i;
+	const uspsRegex = /^(\d{20}|\d{22}|[A-Z]{2}\d{9}[A-Z]{2})$/i;
+
+	if (fedexRegex.test(cleanedTrackingNumber)) {
+		return 'FedEx';
+	} else if (upsRegex.test(cleanedTrackingNumber)) {
+		return 'UPS';
+	} else if (uspsRegex.test(cleanedTrackingNumber)) {
+		return 'USPS';
+	} else {
+		return '';
+	}
+}
+
+function formatPhoneNumber(phoneNumber: string): string {
+	// Ensure the input is a 10-digit number
+	if (phoneNumber.length !== 10) {
+		return phoneNumber; // Return as is if not 10 digits
+	}
+
+	// Format as `123-456-7890`
+	return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(
+		3,
+		6
+	)}-${phoneNumber.slice(6)}`;
+}
+
+export function ErrorBoundary() {
+	return <div>Error Boundary Component</div>;
 }
