@@ -121,6 +121,7 @@ export const fetchOrderByName = async (name: string) => {
 						city
 						province
 						zip
+						phone
 					}
 					lineItems(first: 100) {
 						nodes {
