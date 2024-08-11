@@ -307,12 +307,12 @@ export default function NewOrderPage() {
 						<div className="rounded-lg bg-gray-50 p-6 dark:bg-zinc-800">
 							<form ref={shippingAddressForm} id={addressFormId}>
 								<div className="input input--sm">
-									<label htmlFor="ship-to-name">Name</label>
+									<label htmlFor="fullName">Name</label>
 									<input
 										type="text"
 										autoComplete="name"
-										id="ship-to-name"
-										name="name"
+										id="fullName"
+										name="fullName"
 										defaultValue={
 											data.order?.shippingAddress?.name
 												? data.order.shippingAddress
@@ -488,7 +488,7 @@ export default function NewOrderPage() {
 		if (!form) return;
 
 		const address = {
-			line1: form['name'].value || undefined,
+			line1: form['fullName'].value || undefined,
 			line2: form['address1'].value || undefined,
 			line3: form['address2'].value || undefined,
 			city: form['city'].value || undefined,
