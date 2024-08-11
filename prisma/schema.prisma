@@ -95,16 +95,17 @@ model TrackingInfo {
 }
 
 model Order {
-    id           String          @id @default(uuid())
-    name         String?         @unique
-    createdAt    DateTime        @default(now())
-    address      Address         @relation(fields: [addressId], references: [id])
-    addressId    String
-    status       OrderStatus     @default(DRAFT)
-    notes        Note[]
-    items        OrderItem[]
-    lineItems    OrderLineItem[]
-    fulfillments Fulfillment[]
+    id             String          @id @default(uuid())
+    shopifyOrderId String?         @unique
+    name           String?         @unique
+    createdAt      DateTime        @default(now())
+    address        Address         @relation(fields: [addressId], references: [id])
+    addressId      String
+    status         OrderStatus     @default(DRAFT)
+    notes          Note[]
+    items          OrderItem[]
+    lineItems      OrderLineItem[]
+    fulfillments   Fulfillment[]
 }
 
 model OrderItem {
