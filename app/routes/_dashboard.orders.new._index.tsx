@@ -2,7 +2,6 @@ import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
 	Form,
-	Link,
 	useActionData,
 	useFetcher,
 	useLoaderData,
@@ -18,6 +17,18 @@ import { badRequest } from '~/utils/request.server';
 import Button from '~/components/Button';
 import Counter from '~/components/Counter';
 
+function cleanPhoneNumber(phoneNumber: string): string {
+	// Remove all special characters: (, ), +, -, and spaces
+	let cleanedNumber = phoneNumber.replace(/[\s()+-]/g, '');
+
+	// Remove the leading '1' if it exists (for U.S. country code)
+	if (cleanedNumber.startsWith('1') && cleanedNumber.length === 11) {
+		cleanedNumber = cleanedNumber.substring(1);
+	}
+
+	return cleanedNumber;
+}
+
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
 	const query = searchParams.get('query');
@@ -26,8 +37,15 @@ export const loader: LoaderFunction = async ({ request }) => {
 	let errors: { order?: string; searchHint?: string } = {};
 	let order;
 	let searchHint;
+	let cleanedNumber;
+
 	if (query) {
 		order = await fetchOrderByName(query);
+
+		if (order?.shippingAddress?.phone) {
+			cleanedNumber = cleanPhoneNumber(order.shippingAddress.phone);
+			console.log(cleanedNumber);
+		}
 
 		if (order?.lineItems) {
 			let skus = order.lineItems.map((item) => item.sku);
@@ -36,7 +54,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	}
 
 	if (Object.keys(errors).length !== 0) return json({ errors });
-	return json({ order, searchHint });
+	return json({ order, searchHint, cleanedNumber });
 };
 
 export const action: ActionFunction = async ({ request }) => {
@@ -274,7 +292,7 @@ export default function NewOrderPage() {
 					</section>
 
 					<aside className="foobar-sidebar sample-cart">
-						<div className="shipping-info">
+						<div className="rounded-lg bg-gray-50 p-6 dark:bg-zinc-800">
 							<form ref={shippingAddressForm} id={addressFormId}>
 								<div className="input input--sm">
 									<label htmlFor="ship-to-name">Name</label>
@@ -379,6 +397,25 @@ export default function NewOrderPage() {
 										}
 									/>
 								</div>
+
+								<div>
+									<label
+										htmlFor="phoneNumber"
+										className="text-sm font-semibold leading-4 text-gray-900 dark:text-white"
+									>
+										Phone number
+									</label>
+									<input
+										defaultValue={
+											data.cleanedNumber
+												? data.cleanedNumber
+												: ''
+										}
+										name="phoneNumber"
+										id="phoneNumber"
+										className="rounded-md bg-white text-gray-900 dark:bg-zinc-950 dark:text-white dark:ring-0"
+									/>
+								</div>
 							</form>
 						</div>
 
@@ -445,6 +482,7 @@ export default function NewOrderPage() {
 			city: form['city'].value || undefined,
 			state: form['province'].value || undefined,
 			postalCode: form['zip'].value || undefined,
+			phoneNumber: form['phoneNumber'].value || undefined,
 		};
 
 		const orderName = form['orderName'].value;
