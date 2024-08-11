@@ -113,6 +113,7 @@ export const fetchOrderByName = async (name: string) => {
 		query fetchOrderByName {
 			orders(first: 1, query: "name:${name}") {
 				nodes {
+					id
 					name
 					shippingAddress {
 						name

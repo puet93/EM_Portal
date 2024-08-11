@@ -44,7 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 		if (order?.shippingAddress?.phone) {
 			cleanedNumber = cleanPhoneNumber(order.shippingAddress.phone);
-			console.log(cleanedNumber);
 		}
 
 		if (order?.lineItems) {
@@ -62,6 +61,7 @@ export const action: ActionFunction = async ({ request }) => {
 	const cart = formData.get('cart');
 	const address = formData.get('address');
 	const orderName = formData.get('orderName');
+	const shopifyOrderId = formData.get('shopifyOrderId');
 
 	if (typeof cart !== 'string' || cart.length === 0) {
 		return json({ error: 'Unable to get cart.' });
@@ -73,6 +73,10 @@ export const action: ActionFunction = async ({ request }) => {
 
 	if (typeof orderName !== 'string' || orderName.length === 0) {
 		return json({ error: 'Unable to get order name.' });
+	}
+
+	if (typeof shopifyOrderId !== 'string' || shopifyOrderId.length === 0) {
+		return json({ error: 'Unable to get order id.' });
 	}
 
 	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
@@ -93,6 +97,7 @@ export const action: ActionFunction = async ({ request }) => {
 			const order = await prisma.order.create({
 				data: {
 					name: orderName,
+					shopifyOrderId: shopifyOrderId,
 					lineItems: {
 						create: parsedCart.map((item) => ({
 							sampleId: item.id,
@@ -152,7 +157,7 @@ export default function NewOrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const search = useFetcher();
-	const shippingAddressForm = useRef(null);
+	const shippingAddressForm = useRef<HTMLFormElement>(null);
 	const submit = useSubmit();
 	const [cart, setCart] = useState([]);
 	const addressFormId = 'address-form';
@@ -177,6 +182,13 @@ export default function NewOrderPage() {
 									defaultValue={data.order?.name}
 								/>
 							</div>
+
+							<input
+								form={addressFormId}
+								type="hidden"
+								name="shopifyOrderId"
+								defaultValue={data.order?.id}
+							/>
 
 							<div className="flex gap-x-4">
 								<Button to="..">Discard</Button>
@@ -486,15 +498,18 @@ export default function NewOrderPage() {
 		};
 
 		const orderName = form['orderName'].value;
+		const shopifyOrderId = form['shopifyOrderId'].value;
 
 		let fields: {
 			cart: string;
 			address: string;
 			orderName: string;
+			shopifyOrderId: string;
 		} = {
 			cart: JSON.stringify(cart),
 			address: JSON.stringify(address),
 			orderName: orderName,
+			shopifyOrderId: shopifyOrderId,
 		};
 
 		submit(fields, {

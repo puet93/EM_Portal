@@ -6,8 +6,10 @@ import { EditIcon, TrashIcon } from '~/components/Icons';
 import Input from '~/components/Input';
 import { requireSuperAdmin } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
-import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import DropdownMultiSelect from '~/components/DropdownMultiSelect';
+import { Indicator } from '~/components/Indicator';
+import type { Order, Address } from '@prisma/client';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	await requireSuperAdmin(request);
@@ -177,7 +179,7 @@ export default function OrdersPage() {
 				</div>
 			</div>
 
-			{data.orders ? <Orders data={data} /> : null}
+			{data.orders ? <Orders data={data} orders={data.orders} /> : null}
 		</>
 	);
 }
@@ -212,7 +214,13 @@ function FulfillmentStatusBadge({ status }) {
 	return <span className={className}>{toCapitalCase(status)}</span>;
 }
 
-function Orders({ data }) {
+function Orders({
+	data,
+	orders,
+}: {
+	data: any;
+	orders: (Order & { address: Address | null })[];
+}) {
 	return (
 		<section className="page-section">
 			<div className="page-section-header">
@@ -254,20 +262,28 @@ function Orders({ data }) {
 				</Form>
 			</div>
 
-			<table>
+			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
 				<thead>
 					<tr>
-						<th>Name</th>
-						<th>Created</th>
-						<th>Order No.</th>
-						<th>Status</th>
-						<th>
+						<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+							Order No.
+						</th>
+						<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+							Name
+						</th>
+						<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+							Created
+						</th>
+						<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+							Status
+						</th>
+						<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
 							<span className="visually-hidden">Actions</span>
 						</th>
 					</tr>
 				</thead>
-				<tbody>
-					{data.orders.map((order) => {
+				<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+					{orders.map((order) => {
 						const address = order.address;
 						const { city, state, postalCode } = address;
 						const date = new Date(order.createdAt).toLocaleString(
@@ -276,29 +292,43 @@ function Orders({ data }) {
 
 						return (
 							<tr key={order.id}>
-								<td>
-									<Link to={order.id}>
-										<div className="title">
-											{order.address.line1}
+								<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-0">
+									<Link to={`/orders/drafts/${order.id}`}>
+										{order.name ? order.name : order.id}
+									</Link>
+								</td>
+
+								<td className="whitespace-nowrap px-3 py-4 text-sm">
+									<Link to={`/orders/drafts/${order.id}`}>
+										<div className="flex items-center gap-x-3">
+											<Indicator
+												color={
+													order.shopifyOrderId
+														? 'emerald'
+														: 'gray'
+												}
+											/>
+											<span className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
+												{order.address?.line1}
+											</span>
 										</div>
 										{city && state && postalCode ? (
-											<div className="caption">{`${city}, ${state} ${postalCode}`}</div>
+											<div className="mt-1 text-xs font-light leading-5 text-gray-500 dark:text-zinc-400">{`${city}, ${state} ${postalCode}`}</div>
 										) : null}
 									</Link>
 								</td>
-								<td>{date}</td>
 
-								<td className="caption">
-									{order.name ? order.name : order.id}
+								<td className="whitespace-nowrap px-3 py-4 text-sm">
+									{date}
 								</td>
 
-								<td>
+								<td className="whitespace-nowrap px-3 py-4 text-sm">
 									<FulfillmentStatusBadge
 										status={order.status}
 									/>
 								</td>
 
-								<td>
+								<td className="whitespace-nowrap px-3 py-4 text-sm">
 									<div className="table-row-actions">
 										<Link
 											className="circle-button"
@@ -338,7 +368,10 @@ function Orders({ data }) {
 	);
 }
 
-async function getOrders(name: string, orderStatuses: OrderStatus[]) {
+async function getOrders(
+	name: string,
+	orderStatuses: OrderStatus[]
+): Promise<(Order & { address: Address | null })[] | null> {
 	const addresses = await prisma.address.findMany({
 		where: {
 			line1: {
@@ -347,10 +380,8 @@ async function getOrders(name: string, orderStatuses: OrderStatus[]) {
 			},
 		},
 	});
-
-	// const page = Number(url.searchParams.get('page')) || 1;
-	// const pageSize = Number(url.searchParams.get('pageSize')) || 10;
-	// const skip = (page - 1) * pageSize;
+	const offset = 0;
+	const pageSize = 50;
 
 	return await prisma.order.findMany({
 		where: {
@@ -366,6 +397,8 @@ async function getOrders(name: string, orderStatuses: OrderStatus[]) {
 				},
 			],
 		},
+		skip: offset,
+		take: pageSize,
 		include: {
 			address: true,
 		},
