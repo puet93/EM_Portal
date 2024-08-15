@@ -8,4 +8,5 @@ node_modules
 /cypress/videos
 /postgres-data
 
+gcloud/service-account-key.json
 /gcloud/service-account-key.json
