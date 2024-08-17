@@ -8,7 +8,7 @@ import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
 import { graphqlClient } from '~/utils/shopify.server';
 import { ClipboardCheckmarkIcon, ClipboardPinIcon } from '~/components/Icons';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);

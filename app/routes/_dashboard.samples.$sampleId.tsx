@@ -11,7 +11,7 @@ import { prisma } from '~/db.server';
 import { requireSuperAdmin, requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import Dropdown from '~/components/Dropdown';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 import { graphqlClient } from '~/utils/shopify.server';
 
 export const loader: LoaderFunction = async ({ params, request }) => {

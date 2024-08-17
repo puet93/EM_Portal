@@ -3,7 +3,7 @@ import { Form, Link, useLoaderData } from '@remix-run/react';
 import { OrderStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 import { EditIcon, TrashIcon } from '~/components/Icons';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 import { requireSuperAdmin } from '~/session.server';
 import { toCapitalCase } from '~/utils/helpers';
 import DropdownMultiSelect from '~/components/DropdownMultiSelect';

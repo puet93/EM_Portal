@@ -4,7 +4,7 @@ import { Link, Form, useActionData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	await requireUserId(request);

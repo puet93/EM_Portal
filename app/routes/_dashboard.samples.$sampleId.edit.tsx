@@ -4,7 +4,7 @@ import { Form, useLoaderData } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { badRequest } from '~/utils/request.server';
 import { prisma } from '~/db.server';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 import Dropdown from '~/components/Dropdown';
 
 export const loader: LoaderFunction = async ({ params, request }) => {

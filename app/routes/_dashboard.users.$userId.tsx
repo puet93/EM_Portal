@@ -5,7 +5,7 @@ import { requireSuperAdmin, requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { Role } from '@prisma/client';
 import Dropdown from '~/components/Dropdown';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);

@@ -5,7 +5,7 @@ import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
 
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	await requireUserId(request);
