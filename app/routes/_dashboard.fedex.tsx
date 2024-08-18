@@ -9,8 +9,13 @@ import { uploadFileToGCS } from '~/utils/google-cloud-storage.server';
 import { badRequest } from '~/utils/request.server';
 import { normalizeStateInput } from '~/utils/us-states';
 
-import type { ActionFunction } from '@remix-run/node';
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import type { ShipmentData } from '~/utils/fedex.server';
+import { requireSuperAdmin } from '~/session.server';
+
+export const loader: LoaderFunction = async ({ request }) => {
+	await requireSuperAdmin(request);
+};
 
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
