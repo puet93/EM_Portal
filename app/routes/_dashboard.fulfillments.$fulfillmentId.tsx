@@ -10,7 +10,10 @@ import {
 } from '@remix-run/react';
 import { useEffect, useRef, useState } from 'react';
 import { prisma } from '~/db.server';
+
 import Dropdown from '~/components/Dropdown';
+import { ShippingLabelForm } from '~/components/ShippingForms';
+
 import { badRequest } from '~/utils/request.server';
 import type { FulfillmentStatus } from '@prisma/client';
 import { requireUser } from '~/session.server';
@@ -46,6 +49,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			},
 			order: {
 				select: {
+					name: true,
 					address: true,
 				},
 			},
@@ -208,7 +212,9 @@ export default function OrderPage() {
 			!data.fulfillment.trackingInfo?.company
 	);
 
-	const address = data.fulfillment.order?.address;
+	const fulfillment = data.fulfillment;
+	const order = fulfillment.order;
+	const address = order.address;
 
 	useEffect(() => {
 		if (
@@ -356,7 +362,7 @@ export default function OrderPage() {
 								<Comment
 									key={comment.id}
 									comment={comment}
-									isEnd={data.comments.length - 1 === index}
+									isEnd={index === data.comments!.length - 1}
 								/>
 							))}
 						</ul>
@@ -499,6 +505,20 @@ export default function OrderPage() {
 						</Form>
 					) : null}
 				</div>
+			</div>
+
+			<div className="mt-12 border-t border-gray-900/10 pt-12 dark:border-white/10">
+				<ShippingLabelForm
+					fullName={address?.line1 || undefined}
+					addressLine1={address?.line2 || undefined}
+					addressLine2={address?.line3 || undefined}
+					city={address?.city || undefined}
+					state={address?.state || undefined}
+					zip={address?.postalCode || undefined}
+					phone={address?.phoneNumber || undefined}
+					orderNo={order.name || undefined}
+					vendorName={fulfillment.vendor?.name || undefined}
+				/>
 			</div>
 		</>
 	);
@@ -658,7 +678,7 @@ function CommentAvatar() {
 
 function CommentForm() {
 	const fetcher = useFetcher();
-	const formRef = useRef(null);
+	const formRef = useRef<HTMLFormElement>(null);
 	const isPosting = fetcher.state === 'submitting';
 
 	useEffect(() => {
@@ -709,7 +729,7 @@ function CommentForm() {
 }
 
 function Toggle() {
-	const [enabled, setEnabled] = useState(false);
+	// const [enabled, setEnabled] = useState(false);
 
 	return (
 		<Field className="flex items-center justify-between gap-x-5">
