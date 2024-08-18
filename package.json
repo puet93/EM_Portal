@@ -42,6 +42,7 @@
 		"@remix-run/react": "2.9.1",
 		"@shopify/shopify-api": "^9.5.1",
 		"@shopify/shopify-app-remix": "^2.7.0",
+		"axios": "^1.7.4",
 		"bcryptjs": "^2.4.3",
 		"clsx": "^2.0.0",
 		"compression": "^1.7.4",
