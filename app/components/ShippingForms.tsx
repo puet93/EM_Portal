@@ -2,7 +2,7 @@ import { Link, useFetcher } from '@remix-run/react';
 
 import { cleanPhoneNumber, stripHashtag } from '~/utils/helpers';
 import { normalizeStateInput } from '~/utils/us-states';
-import { Button } from '~/components/Button';
+import { Button } from '~/components/Buttons';
 import { Input, InputLabel } from '~/components/Input';
 
 interface ShippingLabelFormProps {
