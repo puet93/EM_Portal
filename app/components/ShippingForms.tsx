@@ -1,8 +1,9 @@
 import { Link, useFetcher } from '@remix-run/react';
 
-import Button from '~/components/Button';
-import { Input, InputLabel } from '~/components/Input';
 import { cleanPhoneNumber, stripHashtag } from '~/utils/helpers';
+import { normalizeStateInput } from '~/utils/us-states';
+import { Button } from '~/components/Button';
+import { Input, InputLabel } from '~/components/Input';
 
 interface ShippingLabelFormProps {
 	phone?: string;
@@ -28,6 +29,7 @@ export function ShippingLabelForm({
 	vendorName = 'fulfillment',
 }: ShippingLabelFormProps) {
 	const fetcher = useFetcher();
+	const normalizedState = normalizeStateInput(state) || 'Invalid State';
 
 	return (
 		<fetcher.Form method="post" action="/api/fedex">
@@ -63,7 +65,7 @@ export function ShippingLabelForm({
 						{/* Address Line 1 */}
 						<div className="col-span-full">
 							<InputLabel htmlFor="addressLine1">
-								Street Address
+								Street address
 							</InputLabel>
 							<div className="mt-2">
 								<Input
@@ -114,7 +116,7 @@ export function ShippingLabelForm({
 									type="text"
 									name="state"
 									placeholder="NY"
-									defaultValue={state}
+									defaultValue={normalizedState}
 									required
 								/>
 							</div>
@@ -252,12 +254,14 @@ export function ShippingLabelForm({
 				<div className="mt-10">
 					<div className="flex items-center gap-x-4 rounded-t-xl bg-black/20 py-4 pl-6 pr-5 leading-5">
 						<Link
-							to={fetcher?.data?.labelUrl}
+							to={fetcher.data.labelUrl}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-sm font-semibold transition-colors hover:text-sky-400"
 						>
-							Download PDF
+							{fetcher.data.trackingNumber
+								? fetcher.data.trackingNumber
+								: 'Download PDF'}
 						</Link>
 					</div>
 				</div>

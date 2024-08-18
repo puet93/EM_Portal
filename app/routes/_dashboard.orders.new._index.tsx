@@ -14,7 +14,7 @@ import { TrashIcon } from '~/components/Icons';
 import { badRequest } from '~/utils/request.server';
 
 // Custom components
-import Button from '~/components/Button';
+import { Button } from '~/components/Button';
 import Counter from '~/components/Counter';
 
 function cleanPhoneNumber(phoneNumber: string): string {

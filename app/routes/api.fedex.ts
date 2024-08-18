@@ -116,6 +116,7 @@ export const action: ActionFunction = async ({ request }) => {
 		// Create FedEx shipment
 		const response = await createFedExShipment(shipmentData);
 		const transactionShipments = response?.output?.transactionShipments;
+		const trackingNumber = response?.trackingNumber;
 
 		if (!transactionShipments || transactionShipments.length === 0) {
 			return json({
@@ -138,7 +139,7 @@ export const action: ActionFunction = async ({ request }) => {
 		const labelUrl = await uploadFileToGCS(labelBuffer, filename + '.pdf');
 
 		// Return the label URL and encoded label
-		return json({ encodedLabel, labelUrl });
+		return json({ encodedLabel, labelUrl, trackingNumber });
 	} catch (error) {
 		console.log('ERROR CLIENT', error);
 		return json({ error });

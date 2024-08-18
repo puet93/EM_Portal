@@ -21,7 +21,7 @@ import {
 	PopoverPanel,
 } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
-import Button from '~/components/Button';
+import { Button } from '~/components/Button';
 import MultiSelectMenu from '~/components/MultiSelectMenu';
 import type { SyntheticEvent } from 'react';
 import type { Option } from '~/components/MultiSelectMenu';

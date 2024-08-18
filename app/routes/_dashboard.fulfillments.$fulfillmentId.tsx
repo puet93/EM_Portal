@@ -1,4 +1,3 @@
-import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import {
 	Form,
@@ -15,11 +14,11 @@ import Dropdown from '~/components/Dropdown';
 import { ShippingLabelForm } from '~/components/ShippingForms';
 
 import { badRequest } from '~/utils/request.server';
-import type { FulfillmentStatus } from '@prisma/client';
+import { normalizeStateInput } from '~/utils/us-states';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
-import Button from '~/components/Button';
+import { Button } from '~/components/Button';
 import {
 	Description,
 	Field,
@@ -28,6 +27,9 @@ import {
 	PopoverButton,
 	PopoverPanel,
 } from '@headlessui/react';
+
+import type { FulfillmentStatus } from '@prisma/client';
+import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	const user = await requireUser(request);

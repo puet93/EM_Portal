@@ -151,7 +151,15 @@ export async function createFedExShipment(
 			}
 		);
 
-		return response.data as FedExResponse;
+		// Extract the tracking number from the response
+		const trackingNumber =
+			response.data.output?.transactionShipments?.[0]
+				?.masterTrackingNumber;
+
+		return {
+			...response.data,
+			trackingNumber, // Include the tracking number in the return value
+		};
 	} catch (error: any) {
 		// Extract specific error details if available
 		const fedexErrors = error.response?.data?.errors;

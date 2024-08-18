@@ -34,7 +34,7 @@ interface ButtonProps {
 	children: ReactNode;
 }
 
-export default function Button({
+export function Button({
 	as = 'button',
 	color = 'secondary',
 	fullWidth = false,
