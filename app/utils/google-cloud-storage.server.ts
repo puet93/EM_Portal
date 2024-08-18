@@ -1,9 +1,18 @@
 import { Storage } from '@google-cloud/storage';
 
+if (
+	!process.env.GOOGLE_CLOUD_CREDENTIALS ||
+	typeof process.env.GOOGLE_CLOUD_CREDENTIALS !== 'string'
+) {
+	throw new Error('Invalid Google Cloud Storage credentials');
+}
+
+const credentials = JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS);
+
 // Initialize Google Cloud Storage
 const storage = new Storage({
 	projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-	keyFilename: process.env.GOOGLE_CLOUD_KEYFILE,
+	credentials: credentials,
 });
 
 if (
