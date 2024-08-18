@@ -21,8 +21,20 @@ export const action: ActionFunction = async ({ request }) => {
 	const city = formData.get('city') as string | null;
 	const state = formData.get('state') as string | null;
 	const zip = formData.get('zip') as string | null;
+	const phone = formData.get('phone') as string | null;
 
-	if (!fullName || !filename || !addressLine1 || !state || !city || !zip) {
+	const orderNo = formData.get('orderNo') as string | null;
+
+	if (
+		!fullName ||
+		!filename ||
+		!addressLine1 ||
+		!state ||
+		!city ||
+		!zip ||
+		!phone ||
+		!orderNo
+	) {
 		return badRequest({ error: 'All fields are required' });
 	}
 
@@ -51,7 +63,7 @@ export const action: ActionFunction = async ({ request }) => {
 					residential: true,
 				},
 				contact: {
-					companyName: 'Edward Martin',
+					companyName: 'Edward Martin, LLC',
 					phoneNumber: '5557773281',
 				},
 			},
@@ -67,7 +79,7 @@ export const action: ActionFunction = async ({ request }) => {
 					},
 					contact: {
 						personName: fullName,
-						phoneNumber: '5559876543',
+						phoneNumber: phone,
 					},
 				},
 			],
@@ -78,12 +90,24 @@ export const action: ActionFunction = async ({ request }) => {
 			shippingChargesPayment: {
 				paymentType: 'SENDER',
 			},
+			shipmentSpecialServices: {
+				specialServiceTypes: ['FEDEX_ONE_RATE'],
+			},
 			labelSpecification: {
 				labelStockType: 'STOCK_4X6',
 				imageType: 'PDF',
 			},
 			requestedPackageLineItems: [
-				{ sequenceNumber: '1', weight: { units: 'LB', value: 5.0 } },
+				{
+					sequenceNumber: '1',
+					weight: { units: 'LB', value: 5.0 },
+					customerReferences: [
+						{
+							customerReferenceType: 'P_O_NUMBER',
+							value: orderNo,
+						},
+					],
+				},
 			],
 		},
 		labelResponseOptions: 'LABEL',
@@ -229,6 +253,21 @@ export default function FedEx() {
 									/>
 								</div>
 							</div>
+
+							<div className="col-span-2">
+								<InputLabel htmlFor="phone">
+									Phone number
+								</InputLabel>
+								<div className="mt-2">
+									<Input
+										id="phone"
+										type="tel"
+										name="phone"
+										placeholder="5555555555"
+										required
+									/>
+								</div>
+							</div>
 						</div>
 					</div>
 
@@ -264,16 +303,15 @@ export default function FedEx() {
 							</div>
 
 							<div className="col-span-2">
-								<InputLabel htmlFor="referenceNo">
-									Reference No.
+								<InputLabel htmlFor="orderNo">
+									Order No.
 								</InputLabel>
 								<div className="mt-2">
 									<Input
-										id="referenceNo"
-										name="referenceNo"
+										id="orderNo"
+										name="orderNo"
 										type="text"
 										defaultValue="#5400"
-										readOnly
 									/>
 								</div>
 							</div>
