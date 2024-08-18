@@ -53,6 +53,11 @@ export interface ShipmentData {
 		shippingChargesPayment: {
 			paymentType: string;
 		};
+		shipmentSpecialServices: {
+			specialServiceTypes: Array<
+				'FEDEX_ONE_RATE' | 'SATURDAY_DELIVERY' | 'SATURDAY_PICKUP'
+			>;
+		};
 		labelSpecification: {
 			labelStockType: string;
 			imageType: string;
@@ -63,12 +68,13 @@ export interface ShipmentData {
 				units: string;
 				value: number;
 			};
+			customerReferences?: Array<{
+				customerReferenceType: 'P_O_NUMBER' | 'INVOICE_NUMBER';
+				value: string;
+			}>;
 		}>;
 	};
 	labelResponseOptions: string;
-	// accountNumber: {
-	// 	value: string;
-	// };
 }
 
 if (!process.env.FEDEX_CLIENT_ID || !process.env.FEDEX_CLIENT_SECRET) {
