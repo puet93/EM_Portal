@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { cleanPhoneNumber } from './helpers';
 
 interface FedExAuthError {
 	code: string;
@@ -122,6 +123,20 @@ export async function createFedExShipment(
 	const token = await getFedExAccessToken();
 	const url = 'https://apis-sandbox.fedex.com/ship/v1/shipments';
 	const accountNumber = { value: process.env.FEDEX_ACCOUNT_NUMBER };
+
+	shipmentData.requestedShipment.shipper.contact.phoneNumber =
+		cleanPhoneNumber(
+			shipmentData.requestedShipment.shipper.contact.phoneNumber
+		);
+
+	shipmentData.requestedShipment.recipients =
+		shipmentData.requestedShipment.recipients.map((recipient) => ({
+			...recipient,
+			contact: {
+				...recipient.contact,
+				phoneNumber: cleanPhoneNumber(recipient.contact.phoneNumber),
+			},
+		}));
 
 	try {
 		const response = await axios.post(
