@@ -76,7 +76,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	const comments =
 		fulfillment?.comments && fulfillment.comments.length > 0
 			? fulfillment.comments
-			: null;
+			: [];
 
 	return json({ fulfillment, comments, user });
 };
@@ -356,13 +356,13 @@ export default function OrderPage() {
 						<CommentForm />
 					</div>
 
-					{data.comments && data.comments.length > 0 ? (
+					{data.comments.length > 0 ? (
 						<ul className="space-y-6">
 							{data.comments.map((comment, index) => (
 								<Comment
 									key={comment.id}
 									comment={comment}
-									isEnd={index === data.comments!.length - 1}
+									isEnd={index === data.comments.length - 1}
 								/>
 							))}
 						</ul>
