@@ -2,7 +2,7 @@ import { Link, useFetcher } from '@remix-run/react';
 
 import { cleanPhoneNumber, stripHashtag } from '~/utils/helpers';
 import { normalizeStateInput } from '~/utils/us-states';
-import { Button } from '~/components/Buttons';
+import { Button, CopyButton } from '~/components/Buttons';
 import { Input, InputLabel } from '~/components/Input';
 
 interface ShippingLabelFormProps {
@@ -243,29 +243,30 @@ export function ShippingLabelForm({
 			</div>
 
 			<div className="mt-6 flex items-center justify-end gap-x-6">
+				{fetcher?.data?.labelUrl && fetcher?.data?.trackingNumber ? (
+					<div className="flex items-center gap-x-2 rounded-md bg-gray-100 py-1 pl-1 pr-3 dark:bg-zinc-950">
+						<CopyButton
+							text={fetcher.data.trackingNumber}
+							successLabel="Copied tracking"
+						/>
+
+						<Link
+							to={fetcher.data.labelUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-sm font-semibold transition-colors hover:text-sky-600 dark:hover:text-sky-400"
+						>
+							{fetcher.data.trackingNumber}
+						</Link>
+					</div>
+				) : null}
+
 				<Button color="primary" type="submit">
 					{fetcher.state === 'idle' && 'Create Label'}
 					{fetcher.state === 'submitting' && 'Creating Label...'}
 					{fetcher.state === 'loading' && 'Loading...'}
 				</Button>
 			</div>
-
-			{fetcher?.data?.labelUrl ? (
-				<div className="mt-10">
-					<div className="flex items-center gap-x-4 rounded-t-xl bg-black/20 py-4 pl-6 pr-5 leading-5">
-						<Link
-							to={fetcher.data.labelUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-sm font-semibold transition-colors hover:text-sky-400"
-						>
-							{fetcher.data.trackingNumber
-								? fetcher.data.trackingNumber
-								: 'Download PDF'}
-						</Link>
-					</div>
-				</div>
-			) : null}
 		</fetcher.Form>
 	);
 }
