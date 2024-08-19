@@ -3,8 +3,8 @@ import type { RefObject, SyntheticEvent } from 'react';
 import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { useEffect, useRef } from 'react';
+import { Button } from '~/components/Buttons';
 import DropdownMultiSelect from '~/components/DropdownMultiSelect';
-import { SearchIcon } from '~/components/Icons';
 import { prisma } from '~/db.server';
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -118,19 +118,16 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
+		<div className="mx-auto max-w-7xl">
 			{/* Page Header */}
 			<div className="mt-2 md:flex md:items-center md:justify-between">
 				<div className="min-w-0 flex-1">
 					<h1 className="text-4xl font-bold">Products</h1>
 				</div>
 				<div className="mt-4 flex md:ml-4 md:mt-0">
-					<Link
-						className="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-						to="import"
-					>
+					<Button as="link" color="primary" size="lg" to="import">
 						Import
-					</Link>
+					</Button>
 				</div>
 			</div>
 

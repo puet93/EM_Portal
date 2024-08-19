@@ -357,31 +357,28 @@ export default function SamplesPage() {
 
 	return (
 		<>
-			<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+			<div className="mx-auto max-w-7xl pb-10">
 				<div className="md:flex md:items-center md:justify-between">
 					<div className="min-w-0 flex-1">
-						<h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+						<h2 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white">
 							Samples
 						</h2>
 					</div>
 					<div className="mt-4 flex gap-x-4 md:ml-4 md:mt-0">
 						<Form method="post" id="publish">
-							<button
-								className="button"
+							<Button
+								size="lg"
 								type="submit"
 								name="_action"
 								value="publish"
 							>
 								Publish
-							</button>
+							</Button>
 						</Form>
 
-						<Link
-							className="button transition-colors hover:bg-blue-500 dark:bg-blue-600"
-							to="new"
-						>
+						<Button as="link" color="primary" size="lg" to="new">
 							Create New Sample
-						</Link>
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -439,7 +436,7 @@ export default function SamplesPage() {
 			) : null} */}
 
 			{/* Search Form */}
-			<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+			<div className="mx-auto max-w-7xl py-10">
 				<Form className="flex items-end gap-x-6" method="get" replace>
 					<div className="grow">
 						<Input
@@ -487,10 +484,10 @@ export default function SamplesPage() {
 			</div>
 
 			{data.samples ? (
-				<div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+				<div className="mx-auto max-w-7xl py-10">
 					<div>Displaying {data.samples.length} samples</div>
 
-					<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+					<table className="w-full table-fixed divide-y divide-gray-300 dark:divide-zinc-700">
 						<thead>
 							<tr>
 								<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">
