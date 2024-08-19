@@ -1,5 +1,8 @@
 import React from 'react';
 
+const commonClasses =
+	'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:focus:ring-sky-500 sm:text-sm sm:leading-6';
+
 interface InputProps {
 	id: string;
 	name: string;
@@ -25,9 +28,6 @@ export function Input({
 	readOnly = false,
 	required = false,
 }: InputProps) {
-	const commonClasses =
-		'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:focus:ring-sky-500 sm:text-sm sm:leading-6';
-
 	const disabledClasses = 'disabled:cursor-not-allowed';
 
 	const inputClasses = `${commonClasses} ${
@@ -52,7 +52,7 @@ export function Input({
 	if (label) {
 		return (
 			<>
-				<InputLabel htmlFor={id}>{label}</InputLabel>
+				<Label htmlFor={id}>{label}</Label>
 				<div className="mt-2">{input}</div>
 			</>
 		);
@@ -61,12 +61,12 @@ export function Input({
 	return input;
 }
 
-interface InputLabelProps {
+interface LabelProps {
 	htmlFor: string;
 	children: React.ReactNode;
 }
 
-export function InputLabel({ htmlFor, children }: InputLabelProps) {
+export function Label({ htmlFor, children }: LabelProps) {
 	return (
 		<label
 			htmlFor={htmlFor}
@@ -74,5 +74,34 @@ export function InputLabel({ htmlFor, children }: InputLabelProps) {
 		>
 			{children}
 		</label>
+	);
+}
+
+interface Option {
+	value: string;
+	label: string;
+}
+
+interface SelectProps {
+	id: string;
+	name: string;
+	options: Option[];
+	defaultValue?: string;
+}
+
+export function Select({ id, name, options, defaultValue }: SelectProps) {
+	return (
+		<select
+			id={id}
+			name={name}
+			className={commonClasses}
+			defaultValue={defaultValue}
+		>
+			{options.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
 	);
 }

@@ -121,6 +121,10 @@ export async function createFedExShipment(
 	shipmentData: ShipmentData
 ): Promise<FedExResponse> {
 	const token = await getFedExAccessToken();
+	// const url =
+	// 	process.env.NODE_ENV === 'production'
+	// 		? 'https://apis.fedex.com'
+	// 		: 'https://apis-sandbox.fedex.com/ship/v1/shipments';
 	const url = 'https://apis-sandbox.fedex.com/ship/v1/shipments';
 	const accountNumber = { value: process.env.FEDEX_ACCOUNT_NUMBER };
 
@@ -169,7 +173,11 @@ export async function createFedExShipment(
 					.join(', ')}`
 			: 'Failed to create shipment';
 
-		console.log('Error creating shipment', error.response?.data);
+		console.log(
+			'Error creating shipment:',
+			error.response?.data || error.message
+		);
+		console.log('JWT used:', token); // Log the JWT for inspection
 
 		// Throw a new Error with a detailed message
 		throw new Error(errorMessage);

@@ -3,7 +3,7 @@ import { Link, useFetcher } from '@remix-run/react';
 import { cleanPhoneNumber, stripHashtag } from '~/utils/helpers';
 import { normalizeStateInput } from '~/utils/us-states';
 import { Button, CopyButton } from '~/components/Buttons';
-import { Input, InputLabel } from '~/components/Input';
+import { Input, Label, Select } from '~/components/Input';
 
 interface ShippingLabelFormProps {
 	phone?: string;
@@ -50,7 +50,7 @@ export function ShippingLabelForm({
 					<div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 md:col-span-2">
 						{/* Name */}
 						<div className="col-span-full">
-							<InputLabel htmlFor="fullName">Name</InputLabel>
+							<Label htmlFor="fullName">Name</Label>
 							<div className="mt-2">
 								<Input
 									id="fullName"
@@ -64,9 +64,7 @@ export function ShippingLabelForm({
 
 						{/* Address Line 1 */}
 						<div className="col-span-full">
-							<InputLabel htmlFor="addressLine1">
-								Street address
-							</InputLabel>
+							<Label htmlFor="addressLine1">Street address</Label>
 							<div className="mt-2">
 								<Input
 									id="addressLine1"
@@ -80,9 +78,9 @@ export function ShippingLabelForm({
 
 						{/* Address Line 2 */}
 						<div className="col-span-full">
-							<InputLabel htmlFor="addressLine2">
+							<Label htmlFor="addressLine2">
 								Apartment, suite, unit, etc.
-							</InputLabel>
+							</Label>
 							<div className="mt-2">
 								<Input
 									id="addressLine2"
@@ -95,7 +93,7 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<InputLabel htmlFor="city">City</InputLabel>
+							<Label htmlFor="city">City</Label>
 							<div className="mt-2">
 								<Input
 									id="city"
@@ -109,7 +107,7 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-1">
-							<InputLabel htmlFor="state">State</InputLabel>
+							<Label htmlFor="state">State</Label>
 							<div className="mt-2">
 								<Input
 									id="state"
@@ -123,7 +121,7 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-2">
-							<InputLabel htmlFor="zip">ZIP code</InputLabel>
+							<Label htmlFor="zip">ZIP code</Label>
 							<div className="mt-2">
 								<Input
 									id="zip"
@@ -137,9 +135,7 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-2">
-							<InputLabel htmlFor="phone">
-								Phone number
-							</InputLabel>
+							<Label htmlFor="phone">Phone number</Label>
 							<div className="mt-2">
 								<Input
 									id="phone"
@@ -172,7 +168,7 @@ export function ShippingLabelForm({
 					{/* Input Group */}
 					<div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 md:col-span-2">
 						<div className="sm:col-span-4">
-							<InputLabel htmlFor="filename">Filename</InputLabel>
+							<Label htmlFor="filename">Filename</Label>
 							<div className="relative mt-2">
 								<Input
 									id="filename"
@@ -191,7 +187,7 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-2">
-							<InputLabel htmlFor="orderNo">Order No.</InputLabel>
+							<Label htmlFor="orderNo">Order No.</Label>
 							<div className="mt-2">
 								<Input
 									id="orderNo"
@@ -203,22 +199,28 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<InputLabel htmlFor="packaging">
-								Packaging
-							</InputLabel>
+							<Label htmlFor="packaging">Packaging</Label>
 							<div className="mt-2">
-								<Input
+								<Select
 									id="packaging"
 									name="packaging"
-									type="text"
-									defaultValue="FedEx Pak"
-									readOnly
-								/>
+									defaultValue="FEDEX_PAK"
+									options={[
+										{
+											label: 'Your packaging',
+											value: 'YOUR_PACKAGING',
+										},
+										{
+											label: 'FedEx Pak',
+											value: 'FEDEX_PAK',
+										},
+									]}
+								></Select>
 							</div>
 						</div>
 
 						<div className="col-span-3">
-							<InputLabel htmlFor="weight">Weight</InputLabel>
+							<Label htmlFor="weight">Weight</Label>
 							<div className="relative mt-2">
 								<Input
 									id="weight"
