@@ -1,4 +1,3 @@
-import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
 	Form,
@@ -7,15 +6,17 @@ import {
 	useLoaderData,
 	useSubmit,
 } from '@remix-run/react';
-import { fetchOrderByName } from '~/utils/shopify.server';
-import { prisma } from '~/db.server';
 import { useRef, useState } from 'react';
+
+import { prisma } from '~/db.server';
+import { fetchOrderByName } from '~/utils/shopify.server';
 import { TrashIcon } from '~/components/Icons';
 import { badRequest } from '~/utils/request.server';
-
-// Custom components
 import { Button } from '~/components/Buttons';
 import Counter from '~/components/Counter';
+import { Input, Label } from '~/components/Input';
+
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 
 function cleanPhoneNumber(phoneNumber: string): string {
 	// Remove all special characters: (, ), +, -, and spaces
@@ -172,14 +173,15 @@ export default function NewOrderPage() {
 						</h1>
 
 						<div className="ml-auto mt-1 flex items-center gap-x-4">
-							<div className="input">
-								<input
+							<div>
+								<Input
 									form={addressFormId}
-									placeholder="Order Name"
+									placeholder="Order name"
 									type="text"
 									id="order-name"
 									name="orderName"
 									defaultValue={data.order?.name}
+									readOnly
 								/>
 							</div>
 
@@ -305,7 +307,11 @@ export default function NewOrderPage() {
 
 					<aside className="foobar-sidebar sample-cart">
 						<div className="rounded-lg bg-gray-50 p-6 dark:bg-zinc-800">
-							<form ref={shippingAddressForm} id={addressFormId}>
+							<form
+								ref={shippingAddressForm}
+								id={addressFormId}
+								className="space-y-2"
+							>
 								<div className="input input--sm">
 									<label htmlFor="fullName">Name</label>
 									<input
@@ -393,13 +399,10 @@ export default function NewOrderPage() {
 									/>
 								</div>
 
-								<div className="input input--sm">
-									<label htmlFor="ship-to-zip">
-										ZIP Code
-									</label>
-									<input
+								<div>
+									<Input
+										label="Zip Code"
 										type="text"
-										autoComplete="postal-code"
 										id="ship-to-zip"
 										name="zip"
 										defaultValue={
@@ -411,22 +414,20 @@ export default function NewOrderPage() {
 								</div>
 
 								<div>
-									<label
-										htmlFor="phoneNumber"
-										className="text-sm font-semibold leading-4 text-gray-900 dark:text-white"
-									>
+									<Label htmlFor="phoneNumber">
 										Phone number
-									</label>
-									<input
-										defaultValue={
-											data.cleanedNumber
-												? data.cleanedNumber
-												: ''
-										}
-										name="phoneNumber"
-										id="phoneNumber"
-										className="rounded-md bg-white text-gray-900 dark:bg-zinc-950 dark:text-white dark:ring-0"
-									/>
+									</Label>
+									<div className="mt-2">
+										<Input
+											id="phoneNumber"
+											name="phoneNumber"
+											defaultValue={
+												data.cleanedNumber
+													? data.cleanedNumber
+													: ''
+											}
+										/>
+									</div>
 								</div>
 							</form>
 						</div>

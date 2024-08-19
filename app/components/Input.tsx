@@ -6,6 +6,7 @@ const commonClasses =
 interface InputProps {
 	id: string;
 	name: string;
+	form?: string;
 	label?: string;
 	type?: string;
 	autoFocus?: boolean;
@@ -19,6 +20,7 @@ interface InputProps {
 export function Input({
 	id,
 	name,
+	form,
 	label = '',
 	type = 'text',
 	autoFocus = false,
@@ -39,6 +41,7 @@ export function Input({
 			id={id}
 			name={name}
 			type={type}
+			form={form || undefined}
 			defaultValue={defaultValue}
 			autoFocus={autoFocus}
 			className={inputClasses}
