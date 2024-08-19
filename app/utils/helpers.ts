@@ -48,3 +48,11 @@ export function calculatePricePerCarton(
 	const price = (cost / (1 - margin)) * factor * measurementValue;
 	return Number(price.toFixed(2));
 }
+
+export function cleanPhoneNumber(phone: string): string {
+	return phone.replace(/[\+\-\(\)\s]/g, '').replace(/^1/, '');
+}
+
+export function stripHashtag(str: string): string {
+	return str.replace(/^#/, '');
+}

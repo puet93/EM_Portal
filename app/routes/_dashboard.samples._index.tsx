@@ -17,7 +17,7 @@ import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { graphqlClient, publishProduct } from '~/utils/shopify.server';
 import Dropdown from '~/components/Dropdown';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 const FILE = 'file';
 

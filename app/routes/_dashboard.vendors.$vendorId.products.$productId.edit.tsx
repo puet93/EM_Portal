@@ -5,7 +5,7 @@ import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
 
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 function removeEmptyValues(obj) {
 	const filtered = Object.keys(obj)

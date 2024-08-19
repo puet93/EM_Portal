@@ -3,7 +3,7 @@ import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 import { badRequest } from '~/utils/request.server';
 import { graphqlClient } from '~/utils/shopify.server';
 

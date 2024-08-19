@@ -11,7 +11,7 @@ import { parseCSV } from '~/utils/csv';
 import { combineArrays, standardizeQueryString } from '~/utils/helpers';
 import { badRequest } from '~/utils/request.server';
 
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);

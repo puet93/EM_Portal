@@ -3,7 +3,7 @@ import { redirect } from '@remix-run/node';
 import { Form } from '@remix-run/react';
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
-import Input from '~/components/Input';
+import { Input } from '~/components/Input';
 
 export const action: ActionFunction = async ({ request }) => {
 	await requireUserId(request);
