@@ -16,8 +16,8 @@ import {
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
 import { graphqlClient, publishProduct } from '~/utils/shopify.server';
-import Dropdown from '~/components/Dropdown';
-import { Input } from '~/components/Input';
+import { Button } from '~/components/Buttons';
+import { Input, Label, Select } from '~/components/Input';
 
 const FILE = 'file';
 
@@ -30,7 +30,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	const vendors = await prisma.vendor.findMany({});
 	const vendorFilterOptions = [
-		{ value: '', label: '' },
+		{ value: '', label: 'All vendors' },
 		{ value: 'no vendor', label: 'No vendor' },
 	];
 	const vendorOptions = [];
@@ -468,20 +468,21 @@ export default function SamplesPage() {
 						/>
 					</div>
 
-					<div className="mb-5 grow">
-						<Dropdown
-							name="vendorId"
-							options={data.vendorFilterOptions}
-							defaultValue={data.fields.vendorId}
-						/>
+					<div className="grow">
+						<Label htmlFor="vendorId">Vendors</Label>
+
+						<div className="mt-2">
+							<Select
+								id="vendorId"
+								name="vendorId"
+								options={data.vendorFilterOptions}
+							/>
+						</div>
 					</div>
 
-					<button
-						className="button mb-5 transition-colors hover:bg-blue-500 dark:bg-blue-600 "
-						type="submit"
-					>
+					<Button color="primary" type="submit">
 						Search
-					</button>
+					</Button>
 				</Form>
 			</div>
 
