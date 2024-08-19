@@ -40,10 +40,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export default function VendorsPage() {
 	return (
-		<main className="content">
-			<div className="wrapper">
-				<Outlet />
-			</div>
-		</main>
+		<div className="mx-auto max-w-7xl">
+			<Outlet />
+		</div>
 	);
 }

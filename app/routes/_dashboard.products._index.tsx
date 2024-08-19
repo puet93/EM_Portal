@@ -120,11 +120,13 @@ export default function ProductsPage() {
 	return (
 		<div className="mx-auto max-w-7xl">
 			{/* Page Header */}
-			<div className="mt-2 md:flex md:items-center md:justify-between">
+			<div className="md:flex md:items-center md:justify-between">
 				<div className="min-w-0 flex-1">
-					<h1 className="text-4xl font-bold">Products</h1>
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
+						Products
+					</h1>
 				</div>
-				<div className="mt-4 flex md:ml-4 md:mt-0">
+				<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
 					<Button as="link" color="primary" size="lg" to="import">
 						Import
 					</Button>

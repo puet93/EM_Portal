@@ -295,14 +295,14 @@ export default function OrdersIndex() {
 			{/* Page Header */}
 			<div className="md:flex md:items-center md:justify-between">
 				<div className="min-w-0 flex-1">
-					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
 						Orders
 					</h1>
 				</div>
 
 				{data.userRole === 'SUPERADMIN' ? (
 					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
-						<Button as="link" to="new" color="primary">
+						<Button as="link" color="primary" size="lg" to="new">
 							Create Order
 						</Button>
 					</div>
