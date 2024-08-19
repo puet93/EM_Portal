@@ -501,19 +501,21 @@ export default function OrderPage() {
 				</div>
 			</div>
 
-			<div className="mt-12 border-t border-gray-900/10 pt-12 dark:border-white/10">
-				<ShippingLabelForm
-					fullName={address?.line1 || undefined}
-					addressLine1={address?.line2 || undefined}
-					addressLine2={address?.line3 || undefined}
-					city={address?.city || undefined}
-					state={address?.state || undefined}
-					zip={address?.postalCode || undefined}
-					phone={address?.phoneNumber || undefined}
-					orderNo={order.name || undefined}
-					vendorName={fulfillment.vendor?.name || undefined}
-				/>
-			</div>
+			{data.user.role === 'SUPERADMIN' ? (
+				<div className="mt-12 border-t border-gray-900/10 pt-12 dark:border-white/10">
+					<ShippingLabelForm
+						fullName={address?.line1 || undefined}
+						addressLine1={address?.line2 || undefined}
+						addressLine2={address?.line3 || undefined}
+						city={address?.city || undefined}
+						state={address?.state || undefined}
+						zip={address?.postalCode || undefined}
+						phone={address?.phoneNumber || undefined}
+						orderNo={order.name || undefined}
+						vendorName={fulfillment.vendor?.name || undefined}
+					/>
+				</div>
+			) : null}
 		</>
 	);
 }
