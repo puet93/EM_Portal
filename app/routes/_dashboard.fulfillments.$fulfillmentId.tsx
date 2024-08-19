@@ -10,15 +10,15 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { prisma } from '~/db.server';
 
-import Dropdown from '~/components/Dropdown';
-import { ShippingLabelForm } from '~/components/ShippingForms';
+import { Description, Field, Label } from '@headlessui/react';
 
 import { badRequest } from '~/utils/request.server';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
 import { Button, CopyButton } from '~/components/Buttons';
-import { Description, Field, Label } from '@headlessui/react';
+import { Select } from '~/components/Input';
+import { ShippingLabelForm } from '~/components/ShippingForms';
 
 import type { FulfillmentStatus } from '@prisma/client';
 import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
@@ -224,17 +224,38 @@ export default function OrderPage() {
 	};
 
 	return (
-		<>
+		<div className="mx-auto max-w-7xl">
+			{/* <div className="md:flex md:items-center md:justify-between">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
+						Orders
+					</h1>
+				</div>
+
+				{data.userRole === 'SUPERADMIN' ? (
+					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
+						<Button as="link" color="primary" size="lg" to="new">
+							Create Order
+						</Button>
+					</div>
+				) : null}
+			</div> */}
+
 			<header className="page-header">
 				<div className="page-header__row">
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
 						{data?.fulfillment?.name
 							? data.fulfillment.name
 							: 'Sample Order'}
 					</h1>
-					<div className="page-header__actions">
-						<Form method="post" className="inline-form">
-							<Dropdown
+
+					<div className="ml-auto">
+						<Form
+							method="post"
+							className="gap-x flex items-center gap-x-4"
+						>
+							<Select
+								id="status"
 								name="status"
 								options={[
 									{ label: 'New', value: 'NEW' },
@@ -248,28 +269,31 @@ export default function OrderPage() {
 								]}
 								defaultValue={data.fulfillment?.status}
 							/>
-							<button
-								className="button"
+							<Button
+								size="lg"
 								type="submit"
 								name="_action"
 								value="update status"
 							>
 								Save
-							</button>
-						</Form>
+							</Button>
 
-						<Link
-							className="primary button"
-							to="labels"
-							target="_blank"
-							reloadDocument
-						>
-							Print Labels
-						</Link>
+							<Button
+								as="link"
+								color="primary"
+								size="lg"
+								rel="noopener noreferrer"
+								to="labels"
+								target="_blank"
+								reloadDocument
+							>
+								Print Labels
+							</Button>
+						</Form>
 					</div>
 				</div>
 
-				<div>
+				<div className="mt-1">
 					<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
 						{data?.fulfillment?.vendor?.name}
 					</span>
@@ -516,7 +540,7 @@ export default function OrderPage() {
 					/>
 				</div>
 			) : null}
-		</>
+		</div>
 	);
 }
 

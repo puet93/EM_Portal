@@ -29,7 +29,10 @@ interface ButtonProps {
 	fullWidth?: boolean;
 	name?: string;
 	onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+	rel?: string;
+	reloadDocument?: boolean;
 	size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+	target?: '_blank';
 	to?: string;
 	type?: ButtonType;
 	value?: string;
@@ -42,7 +45,10 @@ export function Button({
 	fullWidth = false,
 	onClick,
 	name,
+	rel,
+	reloadDocument,
 	size = 'lg',
+	target,
 	to = '',
 	type = 'button',
 	value,
@@ -58,7 +64,13 @@ export function Button({
 
 	if (as === 'link') {
 		return (
-			<Link to={to} className={commonClasses}>
+			<Link
+				to={to}
+				className={commonClasses + ' whitespace-nowrap'}
+				rel={rel}
+				target={target}
+				reloadDocument={reloadDocument}
+			>
 				{children}
 			</Link>
 		);
