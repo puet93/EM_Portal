@@ -312,7 +312,7 @@ export default function SampleDetailPage() {
 	}
 
 	return (
-		<>
+		<div className="mx-auto max-w-7xl">
 			<header className="page-header">
 				<div className="page-header__row">
 					<h1 className="headline-h5">Sample Swatch</h1>
@@ -538,7 +538,7 @@ export default function SampleDetailPage() {
 					<Outlet />
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
 

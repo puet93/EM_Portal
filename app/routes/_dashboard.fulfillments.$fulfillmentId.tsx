@@ -618,9 +618,9 @@ function Comment({ comment, isEnd }: { comment: any; isEnd: boolean }) {
 
 function CommentAvatar() {
 	return (
-		<span className="inline-block h-6 w-6 overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-700">
+		<span className="inline-block h-6 w-6 overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-800">
 			<svg
-				className="h-full w-full text-gray-300 dark:text-zinc-800"
+				className="h-full w-full text-gray-300 dark:text-zinc-600"
 				fill="currentColor"
 				viewBox="0 0 24 24"
 			>
