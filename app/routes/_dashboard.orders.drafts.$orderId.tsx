@@ -6,17 +6,19 @@ import {
 	useFetcher,
 	useLoaderData,
 	useNavigation,
-	useSubmit,
 } from '@remix-run/react';
+import { OrderStatus } from '@prisma/client';
 import { useEffect, useRef, useState } from 'react';
+
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
+import { Button } from '~/components/Buttons';
 import { TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
-import Dropdown from '~/components/Dropdown';
+import { Select } from '~/components/Input';
+
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import type { RefObject, SyntheticEvent } from 'react';
-import { OrderStatus } from '@prisma/client';
 
 export const loader: LoaderFunction = async ({ params, request }) => {
 	const orderId = params.orderId;
@@ -126,7 +128,49 @@ export const action: ActionFunction = async ({ params, request }) => {
 			return json({});
 		}
 		case 'delete': {
-			return json({ errors: { form: 'Not yet implemented.' } });
+			try {
+				const orderId = params.orderId;
+				await prisma.$transaction(async (tx) => {
+					const fulfillments = await prisma.fulfillment.findMany({
+						where: { orderId: orderId },
+					});
+
+					fulfillments.map(async (fulfillment) => {
+						await prisma.fulfillment.update({
+							where: { id: fulfillment.id },
+							data: {
+								lineItems: {
+									deleteMany: {},
+								},
+							},
+						});
+					});
+
+					await prisma.order.update({
+						where: { id: orderId },
+						data: {
+							items: {
+								deleteMany: {},
+							},
+							lineItems: {
+								deleteMany: {},
+							},
+							fulfillments: {
+								deleteMany: {},
+							},
+						},
+					});
+
+					await prisma.order.delete({
+						where: { id: orderId },
+					});
+				});
+				return redirect('/orders/all');
+			} catch (e) {
+				return json({
+					errors: { form: e.message || 'Unable to delete order.' },
+				});
+			}
 		}
 		default: {
 			const cart = String(formData.get('cart'));
@@ -233,7 +277,6 @@ export default function NewOrderDetailsPage() {
 	const navigation = useNavigation();
 	const address = useFetcher();
 	const search = useFetcher();
-	const submit = useSubmit();
 	const initialCart = data.order.items ?? [];
 	const [cart, setCart] = useState(initialCart);
 	const [isEditing, setIsEditing] = useState(false);
@@ -262,34 +305,50 @@ export default function NewOrderDetailsPage() {
 
 					<div className="page-header__actions">
 						<Form
-							method="post"
-							className="inline-form"
 							id={orderFormId}
+							method="post"
+							className="flex items-end gap-x-3"
 						>
-							<Dropdown
+							<Select
+								id="status"
 								name="status"
 								options={data.statusOptions}
 								defaultValue={data.order.status}
 							/>
 
-							<Link className="button" to="/orders">
-								Discard
-							</Link>
+							<div className="flex flex-row-reverse items-end gap-x-3">
+								<Button
+									color="primary"
+									name="_action"
+									value="save"
+								>
+									{navigation.state === 'submitting'
+										? 'Saving...'
+										: 'Save'}
+								</Button>
 
-							<button
-								className="primary button"
-								disabled={navigation.state === 'submitting'}
-								name="_action"
-								value="save"
-							>
-								{navigation.state === 'submitting'
-									? 'Saving...'
-									: 'Save'}
-							</button>
+								<Button as="link" to="/orders">
+									Discard
+								</Button>
+
+								<Button
+									type="submit"
+									name="_action"
+									value="delete"
+								>
+									Delete
+								</Button>
+							</div>
 						</Form>
 					</div>
 				</div>
 			</header>
+
+			{actionData?.errors?.form ? (
+				<div className="my-10 rounded-lg bg-red-950/30 px-4 py-3 text-red-400">
+					{actionData.errors.form}
+				</div>
+			) : null}
 
 			<div className="foobar">
 				<section className="foobar-main-content">
