@@ -31,6 +31,7 @@ interface ButtonProps {
 	onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 	rel?: string;
 	reloadDocument?: boolean;
+	replace?: boolean;
 	size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 	target?: '_blank';
 	to?: string;
@@ -47,6 +48,7 @@ export function Button({
 	name,
 	rel,
 	reloadDocument,
+	replace,
 	size = 'lg',
 	target,
 	to = '',
@@ -70,6 +72,7 @@ export function Button({
 				rel={rel}
 				target={target}
 				reloadDocument={reloadDocument}
+				replace={replace}
 			>
 				{children}
 			</Link>

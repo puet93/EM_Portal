@@ -6,7 +6,7 @@ import {
 	useLoaderData,
 	useSubmit,
 } from '@remix-run/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { prisma } from '~/db.server';
 import { badRequest } from '~/utils/request.server';
@@ -342,21 +342,14 @@ export default function NewOrderPage() {
 								</Button>
 
 								<div className="grow">
-									<label
-										htmlFor="query"
-										className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
-									>
-										Search
-									</label>
+									<Label htmlFor="query">Search</Label>
 
 									<div className="mt-2">
-										<input
-											className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-											type="text"
-											name="query"
+										<Input
 											id="query"
+											name="query"
+											type="text"
 											placeholder="Search"
-											autoComplete="off"
 											defaultValue={data.searchHint}
 										/>
 									</div>

@@ -386,13 +386,9 @@ export default function OrdersIndex() {
 						Search
 					</Button>
 
-					<Link
-						className="rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-						to="/orders"
-						replace
-					>
+					<Button as="link" to="/orders" replace>
 						Reset
-					</Link>
+					</Button>
 				</div>
 			</Form>
 
