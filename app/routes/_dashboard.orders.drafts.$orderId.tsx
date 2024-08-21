@@ -165,7 +165,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 						where: { id: orderId },
 					});
 				});
-				return redirect('/orders/all');
+				return redirect('/orders');
 			} catch (e) {
 				return json({
 					errors: { form: e.message || 'Unable to delete order.' },
@@ -318,9 +318,10 @@ export default function NewOrderDetailsPage() {
 
 							<div className="flex flex-row-reverse items-end gap-x-3">
 								<Button
-									color="primary"
+									type="submit"
 									name="_action"
 									value="save"
+									color="primary"
 								>
 									{navigation.state === 'submitting'
 										? 'Saving...'
