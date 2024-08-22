@@ -10,9 +10,19 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { prisma } from '~/db.server';
 
-import { Description, Field, Label } from '@headlessui/react';
+import {
+	Description,
+	Field,
+	Label,
+	Menu,
+	MenuButton,
+	MenuItem,
+	MenuItems,
+} from '@headlessui/react';
+import { ChevronDownIcon } from '@heroicons/react/20/solid';
 
 import { badRequest } from '~/utils/request.server';
+import { normalizeStateInput } from '~/utils/us-states';
 import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
@@ -22,6 +32,12 @@ import { ShippingLabelForm } from '~/components/ShippingForms';
 
 import type { FulfillmentStatus } from '@prisma/client';
 import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
+
+const menuItemButtonStyle =
+	'block w-full px-4 py-2 text-left text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 dark:text-white dark:data-[focus]:bg-sky-600';
+
+const menuItemsStyle =
+	'absolute right-0 z-10 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in dark:divide-white/5 dark:bg-zinc-800';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	const user = await requireUser(request);
@@ -223,24 +239,62 @@ export default function OrderPage() {
 		setIsEditing(false);
 	};
 
+	const formatOrderDetails = (): string => {
+		const orderNo = `Order No. ${data.fulfillment.order.name}\n\n`;
+
+		const items = data.fulfillment.lineItems
+			.map((item) => {
+				const sample = item.orderLineItem.sample;
+				const vendorProductDescription =
+					sample.vendorTitle ||
+					`${sample.seriesName} ${sample.finish} ${sample.color}`;
+				const productDescription =
+					sample.title ||
+					`${sample.seriesAlias} ${sample.finish} ${sample.colorAlias}`;
+				return `- ${item.orderLineItem.quantity} qty. ${vendorProductDescription} : ${productDescription}`.trim();
+			})
+			.join('\n');
+
+		const abbreviatedState = address.state
+			? normalizeStateInput(address.state)
+			: '';
+
+		const addressString = [
+			address.line1 || '',
+			address.line2 || '',
+			address.line3 || '',
+			address.line4 || '',
+			`${address.city || ''}${
+				address.city && abbreviatedState ? ', ' : ''
+			}${address.state || ''} ${address.postalCode || ''}`,
+		]
+			.filter((line) => line.trim() !== '') // Remove any empty lines
+			.join('\n');
+
+		const trackingInfo = [
+			data.fulfillment.trackingInfo?.number || '',
+			data.fulfillment.trackingInfo?.company || '',
+		]
+			.filter((line) => line.trim() !== '') // Remove any empty lines
+			.join('\n');
+
+		return `${orderNo}${items}\n\nShip to\n\n${addressString}\n\n${trackingInfo}`.trim();
+	};
+
+	const handleCopyToClipboard = (): void => {
+		const text = formatOrderDetails();
+		navigator.clipboard.writeText(text).then(
+			() => {
+				alert('Order details copied to clipboard!');
+			},
+			(err) => {
+				console.error('Failed to copy: ', err);
+			}
+		);
+	};
+
 	return (
 		<div className="mx-auto max-w-7xl">
-			{/* <div className="md:flex md:items-center md:justify-between">
-				<div className="min-w-0 flex-1">
-					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
-						Orders
-					</h1>
-				</div>
-
-				{data.userRole === 'SUPERADMIN' ? (
-					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
-						<Button as="link" color="primary" size="lg" to="new">
-							Create Order
-						</Button>
-					</div>
-				) : null}
-			</div> */}
-
 			<header className="page-header">
 				<div className="page-header__row">
 					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
@@ -249,47 +303,120 @@ export default function OrderPage() {
 							: 'Sample Order'}
 					</h1>
 
-					<div className="ml-auto">
-						<Form
-							method="post"
-							className="gap-x flex items-center gap-x-4"
-						>
-							<Select
-								id="status"
-								name="status"
-								options={[
-									{ label: 'New', value: 'NEW' },
-									{
-										label: 'Processing',
-										value: 'PROCESSING',
-									},
-									{ label: 'Complete', value: 'COMPLETE' },
-									{ label: 'Cancelled', value: 'CANCELLED' },
-									{ label: 'Error', value: 'ERROR' },
-								]}
-								defaultValue={data.fulfillment?.status}
-							/>
-							<Button
-								size="lg"
-								type="submit"
-								name="_action"
-								value="update status"
+					<div className="gap-x ml-auto flex items-center gap-x-4">
+						{/* Experimental Menu */}
+						{data.user.role === 'SUPERADMIN' && (
+							<Menu
+								as="div"
+								className="relative inline-block text-left"
 							>
-								Save
-							</Button>
+								<div>
+									<MenuButton className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-zinc-900 dark:text-white dark:ring-white/10 dark:hover:bg-white/20">
+										Menu
+										<ChevronDownIcon
+											aria-hidden="true"
+											className="-mr-1 h-5 w-5 text-gray-400"
+										/>
+									</MenuButton>
+								</div>
 
-							<Button
-								as="link"
-								color="primary"
-								size="lg"
-								rel="noopener noreferrer"
+								<MenuItems
+									transition
+									className={menuItemsStyle}
+								>
+									<div className="py-1">
+										<MenuItem>
+											<button
+												type="button"
+												className={menuItemButtonStyle}
+											>
+												Print shipping label
+											</button>
+										</MenuItem>
+									</div>
+									<div className="py-1">
+										<MenuItem>
+											<a
+												href="/orders/new"
+												type="button"
+												className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 dark:text-white dark:data-[focus]:bg-sky-600"
+											>
+												Create new order
+											</a>
+										</MenuItem>
+									</div>
+									<div className="py-1">
+										<MenuItem>
+											<button
+												type="button"
+												className={menuItemButtonStyle}
+											>
+												Archive
+											</button>
+										</MenuItem>
+										<MenuItem>
+											<button
+												type="button"
+												className={menuItemButtonStyle}
+											>
+												Delete
+											</button>
+										</MenuItem>
+									</div>
+								</MenuItems>
+							</Menu>
+						)}
+
+						<div className="inline-flex rounded-md shadow-sm">
+							<Link
 								to="labels"
 								target="_blank"
-								reloadDocument
+								rel="noopener noreferrer"
+								className="relative inline-flex items-center rounded-l-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-sky-700 hover:bg-sky-500 focus:z-10 dark:bg-sky-500 dark:ring-sky-600 dark:hover:bg-sky-400"
 							>
 								Print Labels
-							</Button>
-						</Form>
+							</Link>
+							<Menu as="div" className="relative -ml-px block">
+								<MenuButton className="relative inline-flex items-center rounded-r-md bg-sky-600 px-2 py-2 text-sky-200 ring-1 ring-inset ring-sky-700 hover:bg-sky-500 focus:z-10 dark:bg-sky-500 dark:text-sky-700 dark:ring-sky-600 dark:hover:bg-sky-400">
+									<span className="sr-only">
+										Open options
+									</span>
+									<ChevronDownIcon
+										aria-hidden="true"
+										className="h-5 w-5"
+									/>
+								</MenuButton>
+								<MenuItems
+									transition
+									className="absolute right-0 z-10 -mr-1 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+								>
+									<div className="py-1">
+										<MenuItem>
+											<Link
+												to="pick-ticket"
+												target="_blank"
+												rel="noopener noreferrer"
+												className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900"
+											>
+												Print pick ticket
+											</Link>
+										</MenuItem>
+
+										{/* <MenuItem>
+											<Link
+												to="labels"
+												target="_blank"
+												rel="noopener noreferrer"
+												className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900"
+												reloadDocument
+											>
+												Print labels
+											</Link>
+										</MenuItem> */}
+									</div>
+								</MenuItems>
+							</Menu>
+						</div>
 					</div>
 				</div>
 
@@ -324,7 +451,7 @@ export default function OrderPage() {
 								</tr>
 							</thead>
 
-							<tbody className="divide-y divide-zinc-800">
+							<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
 								{data.fulfillment?.lineItems.map((item) => {
 									const sample = item.orderLineItem.sample;
 									return (
@@ -391,8 +518,65 @@ export default function OrderPage() {
 					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
 						<div>
 							<h3 className="text-sm font-semibold leading-4 text-gray-900 dark:text-white">
-								Ship To
+								Order Status
 							</h3>
+
+							<Form
+								method="post"
+								className="gap-x mt-2 flex items-center gap-x-4"
+							>
+								<Select
+									id="status"
+									name="status"
+									options={[
+										{ label: 'New', value: 'NEW' },
+										{
+											label: 'Processing',
+											value: 'PROCESSING',
+										},
+										{
+											label: 'Complete',
+											value: 'COMPLETE',
+										},
+										{
+											label: 'Cancelled',
+											value: 'CANCELLED',
+										},
+										{ label: 'Error', value: 'ERROR' },
+									]}
+									defaultValue={data.fulfillment?.status}
+								/>
+
+								<Button
+									type="submit"
+									name="_action"
+									value="update status"
+								>
+									{navigation.state === 'submitting'
+										? 'Saving...'
+										: 'Save'}
+								</Button>
+							</Form>
+						</div>
+					</section>
+
+					<section className="rounded-lg bg-gray-100 p-6 dark:bg-zinc-800">
+						<div>
+							<div className="flex items-baseline justify-between gap-x-3">
+								<h3 className="text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+									Ship To
+								</h3>
+
+								{data.user.role === 'SUPERADMIN' && (
+									<button
+										type="button"
+										className="text-sm font-normal leading-4 text-sky-600"
+										onClick={handleCopyToClipboard}
+									>
+										Copy
+									</button>
+								)}
+							</div>
 
 							{address ? (
 								<>
@@ -425,8 +609,8 @@ export default function OrderPage() {
 						</div>
 
 						<div className="mt-6">
-							<div className="item-center flex gap-x-3">
-								<h3 className="grow text-sm font-semibold leading-4 text-gray-900 dark:text-white">
+							<div className="flex items-baseline justify-between gap-x-3">
+								<h3 className="text-sm font-semibold leading-4 text-gray-900 dark:text-white">
 									Tracking Info
 								</h3>
 
