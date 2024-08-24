@@ -80,7 +80,7 @@ export function Label({ htmlFor, children }: LabelProps) {
 	);
 }
 
-interface Option {
+export interface Option {
 	value: string;
 	label: string;
 }
@@ -90,9 +90,18 @@ interface SelectProps {
 	name: string;
 	options: Option[];
 	defaultValue?: string;
+	hasBlankOption?: boolean;
+	blankOptionLabel?: string;
 }
 
-export function Select({ id, name, options, defaultValue }: SelectProps) {
+export function Select({
+	id,
+	name,
+	options,
+	defaultValue,
+	hasBlankOption = false,
+	blankOptionLabel = '',
+}: SelectProps) {
 	return (
 		<select
 			id={id}
@@ -100,6 +109,7 @@ export function Select({ id, name, options, defaultValue }: SelectProps) {
 			className={commonClasses}
 			defaultValue={defaultValue}
 		>
+			{hasBlankOption && <option value="">{blankOptionLabel}</option>}
 			{options.map((option) => (
 				<option key={option.value} value={option.value}>
 					{option.label}

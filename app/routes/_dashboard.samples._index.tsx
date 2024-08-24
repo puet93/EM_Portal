@@ -1,11 +1,5 @@
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
-import type { RefObject, SyntheticEvent } from 'react';
-import { useEffect, useRef } from 'react';
-import {
-	json,
-	unstable_createMemoryUploadHandler,
-	unstable_parseMultipartFormData,
-} from '@remix-run/node';
+import { json } from '@remix-run/node';
 import {
 	Form,
 	Link,
@@ -13,13 +7,15 @@ import {
 	useFetcher,
 	useLoaderData,
 } from '@remix-run/react';
+import { PhotoIcon } from '@heroicons/react/24/solid';
+
 import { prisma } from '~/db.server';
 import { requireUserId } from '~/session.server';
-import { graphqlClient, publishProduct } from '~/utils/shopify.server';
+import { publishProduct } from '~/utils/shopify.server';
 import { Button } from '~/components/Buttons';
 import { Input, Label, Select } from '~/components/Input';
 
-const FILE = 'file';
+import type { Option } from '~/components/Input';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -156,103 +152,6 @@ export const action: ActionFunction = async ({ request }) => {
 	}
 
 	return json({});
-
-	// TODO: Move bulk uploader to another route
-	// const handler = unstable_createMemoryUploadHandler();
-	// const formData = await unstable_parseMultipartFormData(request, handler);
-	// const _action = formData.get('_action');
-
-	// switch (_action) {
-	// 	case 'upsert': {
-	// 		const file = formData.get(FILE) as File;
-	// 		const data = await parseCSV(file);
-
-	// 		// const exists = await prisma.$transaction(
-	// 		// 	data.map((sample) => {
-	// 		// 		return prisma.sample.findUnique({
-	// 		// 			where: { materialNo: sample.materialNo },
-	// 		// 		});
-	// 		// 	})
-	// 		// );
-
-	// 		// console.log('EXISTS?', exists); // returns null if it doesn't exist
-
-	// 		const upsertedSamples = await prisma.$transaction(
-	// 			data.map((sample) => {
-	// 				return prisma.sample.upsert({
-	// 					where: { materialNo: sample.materialNo },
-	// 					update: {
-	// 						seriesName: sample.seriesName, // Vendor's series name
-	// 						color: sample.color,
-	// 						finish: sample.finish || undefined,
-	// 						seriesAlias: sample.seriesAlias || undefined,
-	// 						colorAlias: sample.colorAlias || undefined,
-	// 					},
-	// 					create: {
-	// 						materialNo: sample.materialNo,
-	// 						seriesName: sample.seriesName,
-	// 						color: sample.color,
-	// 						finish: sample.finish || undefined,
-	// 						seriesAlias: sample.seriesAlias || undefined,
-	// 						colorAlias: sample.colorAlias || undefined,
-	// 					},
-	// 				});
-	// 			})
-	// 		);
-
-	// 		return json({ upsertedSamples });
-	// 	}
-	// 	case 'update': {
-	// 		const file = formData.get(FILE) as File;
-	// 		const data = await parseCSV(file);
-
-	// 		const updatedSamples = await prisma.$transaction(
-	// 			data.map((sample) => {
-	// 				return prisma.sample.update({
-	// 					where: { materialNo: sample.materialNo },
-	// 					data: { finish: sample.finish },
-	// 				});
-	// 			})
-	// 		);
-
-	// 		console.log('UPDATED:', updatedSamples);
-
-	// 		return json({ data: updatedSamples });
-	// 	}
-	// 	case 'metafields': {
-	// 		const metafieldQuery = formData.get('metafieldQuery');
-
-	// 		const response = await graphqlClient.query({
-	// 			data: `{
-	// 				products(first: 250, query: "title:${metafieldQuery}* AND status:ACTIVE AND tag_not:sample") {
-	// 					edges {
-	// 						node {
-	// 						id
-	// 						title
-	// 							metafield(namespace: "pdp", key: "sample") {
-	// 								id
-	// 								value
-	// 							}
-	// 						}
-	// 					}
-	// 				}
-	// 			}`,
-	// 		});
-
-	// 		const productCount = response.body.data.products.edges.length;
-	// 		const products = response.body.data.products.edges.map(
-	// 			(product) => product.node
-	// 		);
-
-	// 		const needToConnect = products.filter(
-	// 			(product) => product.metafield === null
-	// 		);
-
-	// 		return json({ empty: needToConnect, productCount });
-	// 	}
-	// 	default:
-	// 		return badRequest({ message: 'Invalid action' });
-	// }
 };
 
 function SampleVendorItem({
@@ -260,100 +159,26 @@ function SampleVendorItem({
 	vendorOptions,
 }: {
 	sampleId: string;
-	vendorOptions: { value: string; label: string }[];
+	vendorOptions: Option[];
 }) {
 	let fetcher = useFetcher();
 	let isSaving = fetcher.submission?.formData?.get('sampleId') === sampleId;
 
 	return (
-		<fetcher.Form method="post">
+		<fetcher.Form method="post" className="flex items-end gap-x-2">
 			<input type="hidden" name="sampleId" value={sampleId} />
 
-			<select name="vendorId">
-				{vendorOptions.map(({ value, label }) => (
-					<option key={value} value={value}>
-						{label}
-					</option>
-				))}
-			</select>
+			<Select id="vendorId" name="vendorId" options={vendorOptions} />
 
-			<button type="submit" name="_action" value="vendor">
+			<Button type="submit" name="_action" value="vendor">
 				{isSaving ? 'Saving...' : 'Save'}
-			</button>
+			</Button>
 		</fetcher.Form>
 	);
 }
 
 export default function SamplesPage() {
 	const data = useLoaderData<typeof loader>();
-	const actionData = useActionData<typeof action>();
-
-	const masterCheckboxRef = useRef(null) as RefObject<HTMLInputElement>;
-	const tableBodyRef = useRef(null) as RefObject<HTMLTableSectionElement>;
-
-	useEffect(() => {
-		if (!masterCheckboxRef.current) return;
-		masterCheckboxRef.current.indeterminate = false;
-		masterCheckboxRef.current.checked = false;
-
-		const checkboxes = getCheckboxes();
-		if (!checkboxes) return;
-		for (let i = 0; i < checkboxes.length; i++) {
-			checkboxes[i].checked = false;
-		}
-	}, [data]);
-
-	function getCheckboxes() {
-		if (!tableBodyRef.current) return;
-		const checkboxes: NodeListOf<HTMLInputElement> =
-			tableBodyRef.current.querySelectorAll('input[type="checkbox"]');
-		return checkboxes;
-	}
-
-	function handleChange() {
-		const checkboxes = getCheckboxes();
-		if (!checkboxes || !masterCheckboxRef.current) return;
-
-		const count = checkboxes.length;
-		let checkedCount = 0;
-		for (let i = 0; i < count; i++) {
-			if (checkboxes[i].checked) {
-				++checkedCount;
-			}
-		}
-
-		// if no checkboxes are checked, set master checkbox checked to false
-		if (checkedCount === 0) {
-			masterCheckboxRef.current.indeterminate = false;
-			masterCheckboxRef.current.checked = false;
-			return;
-		}
-
-		// if all checkboxes are checked, set master checkbox checked to true
-		if (checkedCount / count === 1) {
-			masterCheckboxRef.current.indeterminate = false;
-			masterCheckboxRef.current.checked = true;
-			return;
-		}
-
-		// if some checkboxes are checked, set master checkbox indeterminate to true
-		if (checkedCount / count !== 1) {
-			masterCheckboxRef.current.indeterminate = true;
-			return;
-		}
-	}
-
-	function handleMasterCheckboxChange(e: SyntheticEvent<HTMLInputElement>) {
-		const checkboxes = getCheckboxes();
-		if (!checkboxes) return;
-		for (let i = 0; i < checkboxes.length; i++) {
-			if (e.currentTarget.checked) {
-				checkboxes[i].checked = true;
-			} else {
-				checkboxes[i].checked = false;
-			}
-		}
-	}
 
 	return (
 		<>
@@ -382,58 +207,6 @@ export default function SamplesPage() {
 					</div>
 				</div>
 			</div>
-
-			{/* Bulk Upload Form */}
-			{/* TODO: Move to own component */}
-			{/* <Form method="post" encType="multipart/form-data">
-				<FileDropInput id="file" name={FILE} accept=".csv" />
-				<button
-					className="button"
-					type="submit"
-					name="_action"
-					value="upsert"
-				>
-					Upload
-				</button>
-			</Form> */}
-
-			{/* <div className="table-toolbar">
-				<Form method="post" className="inline-form">
-					<Input
-						label="Series"
-						id="metafield-query"
-						name="metafieldQuery"
-						defaultValue={data.fields.series}
-					/>
-
-					<button
-						className="button"
-						type="submit"
-						name="_action"
-						value="metafields"
-					>
-						Check Series
-					</button>
-				</Form>
-			</div> */}
-
-			{/* {actionData && actionData.empty?.length === 0 ? (
-				<div className="success message">
-					Contgrats! {actionData.empty.length} out of{' '}
-					{actionData.productCount} products without samples.
-				</div>
-			) : null}
-
-			{actionData && actionData.empty?.length >= 1 ? (
-				<div className="warning message">
-					{actionData.empty.length} out of {actionData.productCount}{' '}
-					products with samples.
-				</div>
-			) : null}
-
-			{actionData && actionData.upsertedSamples ? (
-				<div className="success message">UPDATED!</div>
-			) : null} */}
 
 			{/* Search Form */}
 			<div className="mx-auto max-w-7xl py-10">
@@ -490,15 +263,6 @@ export default function SamplesPage() {
 					<table className="w-full table-fixed divide-y divide-gray-300 dark:divide-zinc-700">
 						<thead>
 							<tr>
-								<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">
-									<input
-										ref={masterCheckboxRef}
-										id="master-checkbox"
-										type="checkbox"
-										onChange={handleMasterCheckboxChange}
-									/>
-								</th>
-
 								<th className="px-3 py-3.5 text-left text-sm font-semibold text-white">
 									Vendor
 								</th>
@@ -520,22 +284,9 @@ export default function SamplesPage() {
 								</th>
 							</tr>
 						</thead>
-						<tbody
-							ref={tableBodyRef}
-							className="divide-y divide-gray-200 dark:divide-zinc-800"
-						>
+						<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
 							{data.samples.map((sample) => (
 								<tr key={sample.id}>
-									<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium dark:text-white sm:pl-0">
-										<input
-											type="checkbox"
-											name="sampleId"
-											value={sample.id}
-											onChange={handleChange}
-											form="publish"
-										/>
-									</td>
-
 									<td className="whitespace-nowrap px-3 py-4 text-sm dark:text-zinc-300">
 										{sample.vendor?.name ? (
 											<div>
@@ -605,5 +356,44 @@ export default function SamplesPage() {
 				</div>
 			) : null}
 		</>
+	);
+}
+
+export function FileDrop() {
+	return (
+		<div className="col-span-full">
+			<label
+				htmlFor="cover-photo"
+				className="block text-sm font-medium leading-6 text-gray-900"
+			>
+				Cover photo
+			</label>
+			<div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+				<div className="text-center">
+					<PhotoIcon
+						aria-hidden="true"
+						className="mx-auto h-12 w-12 text-gray-300"
+					/>
+					<div className="mt-4 flex text-sm leading-6 text-gray-600">
+						<label
+							htmlFor="file-upload"
+							className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+						>
+							<span>Upload a file</span>
+							<input
+								id="file-upload"
+								name="file-upload"
+								type="file"
+								className="sr-only"
+							/>
+						</label>
+						<p className="pl-1">or drag and drop</p>
+					</div>
+					<p className="text-xs leading-5 text-gray-600">
+						PNG, JPG, GIF up to 10MB
+					</p>
+				</div>
+			</div>
+		</div>
 	);
 }
