@@ -366,15 +366,59 @@ export const action: ActionFunction = async ({ params, request }) => {
 				}
 				return json({
 					error: {
-						vendor: 'Sample successfully updated',
+						vendor: 'Unable to update sample',
 					},
 				});
 			}
 
-			return json({ success: { vendor: 'Not yet implemented' } });
+			return json({ success: { vendor: 'Sample successfully updated' } });
 		}
 		case 'update sample edwardmartin': {
-			return json({ success: { edwardmartin: 'Not yet implemented' } });
+			const title = formData.get('title');
+			const seriesAlias = formData.get('seriesAlias');
+			const colorAlias = formData.get('colorAlias');
+
+			if (typeof title !== 'string' || title.length === 0) {
+				return json({
+					error: { vendor: 'The title field must not be blank' },
+				});
+			}
+
+			if (typeof seriesAlias !== 'string' || seriesAlias.length === 0) {
+				return json({
+					error: { vendor: 'The collection name must not be blank' },
+				});
+			}
+
+			if (typeof colorAlias !== 'string' || colorAlias.length === 0) {
+				return json({
+					error: { vendor: 'The color must not be blank' },
+				});
+			}
+
+			try {
+				await prisma.sample.update({
+					where: { id: params.sampleId },
+					data: { title, seriesAlias, colorAlias },
+				});
+			} catch (e) {
+				if (e instanceof Error) {
+					return json({
+						error: {
+							vendor: e.message || 'Unable to update sample',
+						},
+					});
+				}
+				return json({
+					error: {
+						vendor: 'Unable to update sample',
+					},
+				});
+			}
+
+			return json({
+				success: { edwardmartin: 'Sample successfully updated' },
+			});
 		}
 		default:
 			return badRequest({ message: 'Invalid action' });
