@@ -199,11 +199,11 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<Label htmlFor="packaging">Packaging</Label>
+							<Label htmlFor="packagingType">Packaging</Label>
 							<div className="mt-2">
 								<Select
-									id="packaging"
-									name="packaging"
+									id="packagingType"
+									name="packagingType"
 									defaultValue="FEDEX_PAK"
 									options={[
 										{
@@ -220,14 +220,13 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<Label htmlFor="weight">Weight</Label>
+							<Label htmlFor="packageWeight">Weight</Label>
 							<div className="relative mt-2">
 								<Input
-									id="weight"
-									name="weight"
+									id="packageWeight"
+									name="packageWeight"
 									type="text"
 									defaultValue="5.0"
-									readOnly
 								/>
 								<div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 									<span className="text-gray-500 dark:text-zinc-400 sm:text-sm">
