@@ -35,6 +35,7 @@ type ButtonType = 'button' | 'submit' | 'reset';
 interface ButtonProps {
 	as?: 'button' | 'link';
 	color?: 'primary' | 'secondary' | 'soft';
+	form?: string;
 	fullWidth?: boolean;
 	name?: string;
 	onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -52,6 +53,7 @@ interface ButtonProps {
 export function Button({
 	as = 'button',
 	color = 'secondary',
+	form,
 	fullWidth = false,
 	onClick,
 	name,
@@ -95,6 +97,7 @@ export function Button({
 			type={type}
 			className={commonClasses}
 			onClick={onClick}
+			form={form}
 		>
 			{children}
 		</button>
