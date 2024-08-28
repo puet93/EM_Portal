@@ -160,6 +160,31 @@ export const action: ActionFunction = async ({ params, request }) => {
 				success: { location: 'Inventory location updated.' },
 			});
 		}
+		case 'search': {
+			const query = formData.get('query');
+
+			if (typeof query !== 'string' || query.length === 0) {
+				return json({ error: { search: 'Nothing to search' } });
+			}
+
+			try {
+				const results = await prisma.vendorProduct.findMany({
+					where: {
+						retailerProduct: {
+							sku: {
+								search: query,
+							},
+						},
+					},
+					include: {
+						retailerProduct: true,
+					},
+				});
+				return json({ results });
+			} catch (e) {
+				return json({ error: { search: 'Unable to fetch results' } });
+			}
+		}
 		case 'sync':
 			const sample = await prisma.sample.findUnique({
 				where: { id: params.sampleId },
@@ -308,17 +333,56 @@ export const action: ActionFunction = async ({ params, request }) => {
 				},
 			});
 		}
+		case 'connect_product': {
+			const vendorProductId = formData.get('vendorProductId');
+
+			if (
+				typeof vendorProductId !== 'string' ||
+				vendorProductId.length === 0
+			) {
+				return json({
+					error: { connectProduct: 'Unable to connect product' },
+				});
+			}
+
+			try {
+				await prisma.sample.update({
+					where: { id: params.sampleId },
+					data: {
+						vendorProducts: { connect: { id: vendorProductId } },
+					},
+				});
+
+				return json({});
+			} catch (e) {
+				return json({
+					error: {
+						connectProduct:
+							e.message || 'Unable to connect product',
+					},
+				});
+			}
+		}
 		case 'metafield': {
 			const skus = formData.getAll('connected');
 			const sampleGID = formData.get('sampleGID');
 
 			const metafields = [];
-			for (const sku of skus) {
-				const metafield = await upsertSampleToProductMetafield(
-					sku,
-					sampleGID
-				);
-				metafields.push(metafield);
+
+			try {
+				for (const sku of skus) {
+					const metafield = await upsertSampleToProductMetafield(
+						sku,
+						sampleGID
+					);
+					metafields.push(metafield);
+				}
+			} catch (e) {
+				return json({
+					error: {
+						metafields: 'Unable to sample to products on Shopify',
+					},
+				});
 			}
 
 			return json({
@@ -326,6 +390,39 @@ export const action: ActionFunction = async ({ params, request }) => {
 					metafields: 'Sample added to product sample metafield(s).',
 				},
 				metafields,
+			});
+		}
+		case 'update_shopify_product_title': {
+			const gid = formData.get('sampleGID');
+			const shopifyTitle = formData.get('shopifyTitle');
+
+			if (typeof gid !== 'string' || gid.length === 0) {
+				return json({
+					error: {
+						shopifyTitle: 'Sample is not connected to Shopify',
+					},
+				});
+			}
+
+			if (typeof shopifyTitle !== 'string' || shopifyTitle.length === 0) {
+				return json({
+					error: {
+						shopifyTitle: 'Shopify title is required',
+					},
+				});
+			}
+
+			try {
+				await updateShopifyProductTitle(gid, shopifyTitle);
+			} catch (e) {
+				return json({
+					error: { shopifyTitle: 'Unable to update title' },
+				});
+			}
+			return json({
+				success: {
+					shopifyTitle: 'Title on Shopify successfully updated',
+				},
 			});
 		}
 		case 'update sample vendor': {
@@ -472,208 +569,347 @@ export default function SampleDetailPage() {
 			<div className="mx-auto mt-10 max-w-7xl">
 				<div className="grid grid-cols-4 grid-rows-1 items-start gap-x-8 gap-y-8">
 					<div className="col-span-full rounded-lg p-6 ring-1 dark:ring-white/5">
-						<h3 className="text-base font-semibold leading-7 text-gray-900 dark:text-white">
-							Sync with Shopify
-						</h3>
+						<div className="space-y-12">
+							<div className="border-b border-gray-900/10 pb-12 dark:border-white/10">
+								<h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+									Sync with Shopify
+								</h3>
 
-						<p className="mt-1 max-w-lg text-sm font-light leading-6 text-gray-600 dark:text-zinc-400">
-							Looks for a product on Shopify matching the sample's
-							material number. If the product exists, it will be
-							updated. If the product does not exist, a new
-							product will be created with the sample's
-							information.
-						</p>
+								<p className="mt-2 max-w-lg text-sm font-light leading-6 text-gray-700 dark:text-zinc-300">
+									Looks for a product on Shopify matching the
+									sample's material number. If the product
+									exists, it will be updated. If the product
+									does not exist, a new product will be
+									created with the sample's information.
+								</p>
 
-						{data.sample.gid ? (
-							<div className="mt-6 rounded-md bg-zinc-950 px-3 py-2">
-								<code className="">{data.sample.gid}</code>
-							</div>
-						) : null}
+								{data.sample.gid ? (
+									<div className="mt-6 rounded-md bg-zinc-950 px-3 py-2">
+										<code className="">
+											{data.sample.gid}
+										</code>
+									</div>
+								) : null}
 
-						<Form
-							method="post"
-							className="mt-6 flex items-end gap-x-3"
-							replace
-						>
-							{/* <div>
-								<Input
-									id="title"
-									name="title"
-									label={
-										data.sample.title
-											? 'Title'
-											: 'Suggested title'
-									}
-									defaultValue={
-										data.sample.title
-											? data.sample.title
-											: suggestedTitle
-									}
-								/>
-							</div> */}
-
-							<Button type="submit" name="_action" value="sync">
-								Map to Shopify
-							</Button>
-						</Form>
-
-						{data.locationOptions && (
-							<>
 								<Form
 									method="post"
 									className="mt-6 flex items-end gap-x-3"
 									replace
 								>
-									<div>
-										<Label htmlFor="locationId">
-											Inventory location
-										</Label>
-
-										<div className="mt-2">
-											<Select
-												id="locationId"
-												name="locationId"
-												options={data.locationOptions}
-												defaultValue={
-													data.inventoryLocation?.id
-												}
-												hasBlankOption={true}
-											/>
-										</div>
-									</div>
-
 									<Button
 										type="submit"
 										name="_action"
-										value="location"
+										value="sync"
 									>
-										Update Inventory Location
+										Upsert Swatch
 									</Button>
-
-									{actionData?.success?.location ? (
-										<div className={successMessageClasses}>
-											{actionData.success.location}
-										</div>
-									) : null}
 								</Form>
 
-								{actionData?.error?.location ? (
-									<div className={errorMessageClasses}>
-										{actionData.error.location}
-									</div>
-								) : null}
-							</>
-						)}
-
-						{data.connected && data.connected.length !== 0 ? (
-							<div style={{ marginTop: 48, marginBottom: 48 }}>
-								<Form method="post">
+								{/* Shopify Title */}
+								<Form method="post" className="mt-6" replace>
 									<input
 										type="hidden"
 										name="sampleGID"
 										value={data.sample.gid}
 									/>
-									<div>
-										<h3 className="text-base font-semibold leading-7 text-gray-900 dark:text-white">
-											Products using this swatch
-										</h3>
+									<div className="flex items-end gap-x-3">
+										<div className="grow">
+											<Label htmlFor="shopifyTitle">
+												Shopify Title
+											</Label>
+											<div className="mt-2">
+												<Input
+													id="shopifyTitle"
+													name="shopifyTitle"
+													defaultValue={
+														data.shopifyProduct
+															?.title
+													}
+												/>
+											</div>
+										</div>
 
-										<p className="mt-1 max-w-lg text-sm font-light leading-6 text-gray-600 dark:text-zinc-400">
-											Add this sample swatch to the
-											Shopify products' sample metafields.
-										</p>
+										<Button
+											color="primary"
+											name="_action"
+											value="update_shopify_product_title"
+											type="submit"
+										>
+											Update Title
+										</Button>
+									</div>
 
-										<ul className="divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 dark:divide-zinc-800 dark:bg-zinc-900 dark:ring-white/5">
-											{data.connected.map(
-												(vendorProduct) => (
-													<li
-														key={vendorProduct.id}
-														className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-zinc-950 sm:px-6"
-													>
-														<div className="flex min-w-0 gap-x-4">
-															<input
-																type="hidden"
-																name="connected"
-																value={
-																	vendorProduct
-																		.retailerProduct
-																		.sku
-																}
-															/>
+									{actionData?.success?.shopifyTitle ? (
+										<div className={successMessageClasses}>
+											{actionData.success.shopifyTitle}
+										</div>
+									) : null}
 
-															<div>
-																<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-																	{
-																		vendorProduct
-																			.retailerProduct
-																			.title
-																	}
-																</p>
+									{actionData?.error?.shopifyTitle ? (
+										<div className={errorMessageClasses}>
+											{actionData.error.shopifyTitle}
+										</div>
+									) : null}
+								</Form>
 
-																<p className="mt-1 text-xs leading-5 text-gray-500 dark:text-zinc-400">
-																	{
+								{data.locationOptions && (
+									<Form
+										method="post"
+										className="mt-6 flex items-end gap-x-3"
+										replace
+									>
+										<div>
+											<Label htmlFor="locationId">
+												Inventory location
+											</Label>
+
+											<div className="mt-2">
+												<Select
+													id="locationId"
+													name="locationId"
+													options={
+														data.locationOptions
+													}
+													defaultValue={
+														data.inventoryLocation
+															?.id
+													}
+													hasBlankOption={true}
+												/>
+											</div>
+										</div>
+
+										<Button
+											type="submit"
+											name="_action"
+											value="location"
+										>
+											Update Inventory Location
+										</Button>
+
+										{actionData?.success?.location ? (
+											<div
+												className={
+													successMessageClasses
+												}
+											>
+												{actionData.success.location}
+											</div>
+										) : null}
+
+										{actionData?.error?.location ? (
+											<div
+												className={errorMessageClasses}
+											>
+												{actionData.error.location}
+											</div>
+										) : null}
+									</Form>
+								)}
+							</div>
+
+							<div>
+								{data.connected &&
+								data.connected.length !== 0 ? (
+									<Form method="post">
+										<input
+											type="hidden"
+											name="sampleGID"
+											value={data.sample.gid}
+										/>
+										<div>
+											<h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+												Products using this swatch
+											</h3>
+
+											<p className="mt-2 max-w-lg text-sm font-light leading-6 text-gray-700 dark:text-zinc-300">
+												Add this sample swatch to the
+												Shopify products' sample
+												metafields.
+											</p>
+
+											<div className="mt-10 flex items-end gap-x-3">
+												<div>
+													<Input
+														id="query"
+														name="query"
+														label="Search for product"
+													/>
+												</div>
+
+												<Button
+													type="submit"
+													name="_action"
+													value="search"
+												>
+													Search
+												</Button>
+											</div>
+
+											<ul className="mt-10 divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 dark:divide-zinc-800 dark:bg-zinc-900 dark:ring-white/5">
+												{data.connected.map(
+													(vendorProduct) => (
+														<li
+															key={
+																vendorProduct.id
+															}
+														>
+															<Link
+																to={`/products/${vendorProduct.retailerProduct.id}`}
+																className="flex h-full w-full min-w-0 gap-x-4 px-6 py-5 hover:bg-gray-50 dark:hover:bg-zinc-950"
+															>
+																<input
+																	type="hidden"
+																	name="connected"
+																	value={
 																		vendorProduct
 																			.retailerProduct
 																			.sku
 																	}
-																</p>
-															</div>
-														</div>
-													</li>
-												)
-											)}
-										</ul>
+																/>
 
-										<div className="mt-6">
-											<Button
-												color="primary"
-												name="_action"
-												value="metafield"
+																<div>
+																	<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
+																		{
+																			vendorProduct
+																				.retailerProduct
+																				.title
+																		}
+																	</p>
+
+																	<p className="mt-1 text-xs leading-5 text-gray-500 dark:text-zinc-400">
+																		{
+																			vendorProduct
+																				.retailerProduct
+																				.sku
+																		}
+																	</p>
+																</div>
+															</Link>
+														</li>
+													)
+												)}
+											</ul>
+
+											{/* Metafields */}
+											<div className="mt-6">
+												<Button
+													color="primary"
+													name="_action"
+													value="metafield"
+													type="submit"
+												>
+													Add Swatch to Shopify
+													Product(s)
+												</Button>
+
+												{actionData?.success
+													?.metafields ? (
+													<div
+														className={
+															successMessageClasses
+														}
+													>
+														{
+															actionData.success
+																.metafields
+														}
+													</div>
+												) : null}
+
+												{actionData?.error
+													?.metafields ? (
+													<div
+														className={
+															errorMessageClasses
+														}
+													>
+														{
+															actionData.error
+																.metafields
+														}
+													</div>
+												) : null}
+											</div>
+										</div>
+
+										{actionData?.success?.connect ? (
+											<div
+												className={
+													successMessageClasses
+												}
 											>
-												Add
+												{actionData.success.connect}
+											</div>
+										) : null}
+									</Form>
+								) : null}
+
+								{actionData?.results &&
+									actionData.results.map((vendorProduct) => (
+										<Form
+											key={vendorProduct.id}
+											method="post"
+											replace
+										>
+											<div>
+												<div className="text-sm text-gray-900 dark:text-white">
+													{
+														vendorProduct
+															.retailerProduct
+															.title
+													}
+												</div>
+												<div className="text-sm text-gray-600 dark:text-zinc-400">
+													{
+														vendorProduct
+															.retailerProduct.sku
+													}
+												</div>
+											</div>
+
+											<input
+												type="hidden"
+												value={vendorProduct.id}
+												name="vendorProductId"
+											/>
+
+											<Button
+												type="submit"
+												name="_action"
+												value="connect_product"
+											>
+												Connect Product
 											</Button>
-										</div>
+										</Form>
+									))}
+
+								{actionData?.success?.message ? (
+									<div
+										className={successMessageClasses}
+										style={{ marginTop: 12 }}
+									>
+										{actionData.success.message}
 									</div>
+								) : null}
 
-									{actionData?.success?.connect ? (
-										<div className={successMessageClasses}>
-											{actionData.success.connect}
-										</div>
-									) : null}
+								{actionData?.error?.message ? (
+									<div className={errorMessageClasses}>
+										{actionData.error.message}
+									</div>
+								) : null}
 
-									{actionData?.success?.metafields ? (
-										<div className={successMessageClasses}>
-											{actionData.success.metafields}
-										</div>
-									) : null}
-								</Form>
+								{actionData?.success?.responseBody ? (
+									<code>
+										{JSON.stringify(
+											actionData.success.responseBody,
+											null,
+											4
+										)}
+									</code>
+								) : null}
 							</div>
-						) : null}
-
-						{actionData?.success?.message ? (
-							<div
-								className={successMessageClasses}
-								style={{ marginTop: 12 }}
-							>
-								{actionData.success.message}
-							</div>
-						) : null}
-
-						{actionData?.error?.message ? (
-							<div className={errorMessageClasses}>
-								{actionData.error.message}
-							</div>
-						) : null}
-
-						{actionData?.success?.responseBody ? (
-							<code>
-								{JSON.stringify(
-									actionData.success.responseBody,
-									null,
-									4
-								)}
-							</code>
-						) : null}
+						</div>
 					</div>
 
 					<div className="col-span-2 rounded-lg p-6 ring-1 dark:ring-white/5">
@@ -923,7 +1159,7 @@ async function getProductFromSKU(sku: string) {
 	return product;
 }
 
-async function upsertSampleToProductMetafield(sku, sampleGID) {
+async function upsertSampleToProductMetafield(sku: string, sampleGID: string) {
 	// TODO: Remove this
 	console.log(`upsertSampleToProductMetafield(${sku}, ${sampleGID})`);
 
@@ -1121,6 +1357,26 @@ async function createShopifyProduct(title: string) {
 	});
 
 	return response?.body?.data?.productCreate.product;
+}
+
+async function updateShopifyProductTitle(gid: string, title: string) {
+	const response = await graphqlClient.query({
+		data: `
+			mutation productUpdate {
+				productUpdate(input: {
+					id: "${gid}",
+					title: "${title}",
+				}) {
+					product {
+						id
+						title
+					}
+				}
+			}
+		`,
+	});
+
+	return response?.body?.data?.productVariantUpdate;
 }
 
 async function updateShopifyProductVariant({
