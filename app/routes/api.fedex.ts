@@ -103,7 +103,7 @@ export const action: ActionFunction = async ({ request }) => {
 				},
 			}),
 			labelSpecification: {
-				labelStockType: 'PAPER_85X11_TOP_HALF_LABEL', // 'PAPER_85X11_TOP_HALF_LABEL', 'STOCK_4X6'
+				labelStockType: 'STOCK_4X6', // TODO: Add options for users: 'PAPER_85X11_TOP_HALF_LABEL', 'PAPER_85X11_TOP_HALF_LABEL', 'STOCK_4X6'
 				imageType: 'PDF',
 			},
 			requestedPackageLineItems: [

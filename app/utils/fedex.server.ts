@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { cleanPhoneNumber } from './helpers';
 
+// const baseUrl =
+// 	process.env.NODE_ENV === 'production'
+// 		? 'https://apis.fedex.com'
+// 		: 'https://apis-sandbox.fedex.com';
+const baseUrl = 'https://apis.fedex.com';
+
 interface FedExAuthError {
 	code: string;
 	message: string;
@@ -94,7 +100,7 @@ if (!process.env.FEDEX_CLIENT_ID || !process.env.FEDEX_CLIENT_SECRET) {
 export async function fetchFedExAccessToken(): Promise<
 	string | FedExAuthError[]
 > {
-	const url = 'https://apis-sandbox.fedex.com/oauth/token';
+	const url = baseUrl + '/oauth/token';
 	const data = new URLSearchParams({
 		grant_type: 'client_credentials',
 		client_id: process.env.FEDEX_CLIENT_ID as string,
@@ -129,7 +135,7 @@ export async function fetchFedExAccessToken(): Promise<
 export async function fetchFedExTrackingAPIToken(): Promise<
 	string | FedExAuthError[]
 > {
-	const url = 'https://apis.fedex.com/oauth/token';
+	const url = baseUrl + '/oauth/token';
 	const data = new URLSearchParams({
 		grant_type: 'client_credentials',
 		client_id: 'l7a1ec0134e7c5450ea5ce339bdb9ac18e', // 'l719b45cf31b9843d1a39f3fe7cb1ec559', // process.env.FEDEX_CLIENT_ID as string,
@@ -165,11 +171,7 @@ export async function createFedExShipment(
 	shipmentData: ShipmentData
 ): Promise<FedExResponse> {
 	const token = await fetchFedExAccessToken();
-	// const url =
-	// 	process.env.NODE_ENV === 'production'
-	// 		? 'https://apis.fedex.com'
-	// 		: 'https://apis-sandbox.fedex.com/ship/v1/shipments';
-	const url = 'https://apis-sandbox.fedex.com/ship/v1/shipments';
+	const url = baseUrl + '/ship/v1/shipments';
 	const accountNumber = { value: process.env.FEDEX_ACCOUNT_NUMBER };
 
 	shipmentData.requestedShipment.shipper.contact.phoneNumber =
@@ -232,7 +234,7 @@ export async function fetchTrackingStatus(
 	trackingNumbers: string[]
 ): Promise<string | null> {
 	const token = await fetchFedExTrackingAPIToken();
-	const url = 'https://apis.fedex.com/track/v1/trackingnumbers';
+	const url = baseUrl + '/track/v1/trackingnumbers';
 	const trackingInfo = trackingNumbers.map((trackingNumber) => ({
 		trackingNumberInfo: { trackingNumber },
 	}));
