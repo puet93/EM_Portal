@@ -30,7 +30,7 @@ function App() {
 	const [theme] = useTheme();
 
 	return (
-		<html lang="en" className={clsx(theme)}>
+		<html lang="en" className={`${clsx(theme)} h-full`}>
 			<head>
 				<meta charSet="utf-8" />
 				<meta

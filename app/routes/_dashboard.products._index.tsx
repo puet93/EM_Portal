@@ -1,11 +1,13 @@
-import type { LoaderFunction } from '@remix-run/node';
-import type { RefObject, SyntheticEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import { json } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
-import { useEffect, useRef } from 'react';
-import DropdownMultiSelect from '~/components/DropdownMultiSelect';
-import { SearchIcon } from '~/components/Icons';
 import { prisma } from '~/db.server';
+import { Button } from '~/components/Buttons';
+import { Input, Label } from '~/components/Input';
+import DropdownMultiSelect from '~/components/DropdownMultiSelect';
+
+import type { LoaderFunction } from '@remix-run/node';
+import type { RefObject, SyntheticEvent } from 'react';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -118,19 +120,18 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
+		<div className="mx-auto max-w-7xl">
 			{/* Page Header */}
-			<div className="mt-2 md:flex md:items-center md:justify-between">
+			<div className="md:flex md:items-center md:justify-between">
 				<div className="min-w-0 flex-1">
-					<h1 className="text-4xl font-bold">Products</h1>
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
+						Products
+					</h1>
 				</div>
-				<div className="mt-4 flex md:ml-4 md:mt-0">
-					<Link
-						className="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-						to="import"
-					>
+				<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
+					<Button as="link" color="primary" size="lg" to="import">
 						Import
-					</Link>
+					</Button>
 				</div>
 			</div>
 
@@ -151,30 +152,27 @@ export default function ProductsPage() {
 					</div>
 
 					<div className="shrink-0 grow">
-						<label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
-							Search
-						</label>
+						<Label htmlFor="query">Search</Label>
 
 						<div className="mt-2">
-							<input
+							<Input
 								id="query"
 								name="query"
 								type="text"
-								className="block w-full rounded-md border-0 py-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 sm:text-sm sm:leading-6"
 								placeholder="Search"
 								defaultValue={data.query}
 							/>
 						</div>
 					</div>
 
-					<button
-						className="primary button"
+					<Button
+						color="primary"
 						type="submit"
 						name="_action"
 						value="search"
 					>
 						Search
-					</button>
+					</Button>
 				</Form>
 			</div>
 

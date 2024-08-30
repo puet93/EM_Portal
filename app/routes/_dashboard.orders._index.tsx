@@ -9,7 +9,9 @@ import {
 import { useEffect, useState } from 'react';
 import { FulfillmentStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
+
 import { requireUser } from '~/session.server';
+import { fetchTrackingStatus } from '~/utils/fedex.server';
 import { toCapitalCase } from '~/utils/helpers';
 import {
 	Menu,
@@ -23,6 +25,7 @@ import {
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { Button } from '~/components/Buttons';
 import MultiSelectMenu from '~/components/MultiSelectMenu';
+
 import type { SyntheticEvent } from 'react';
 import type { Option } from '~/components/MultiSelectMenu';
 import type { ActionFunction, LoaderFunction } from '@remix-run/node';
@@ -31,7 +34,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const user = await requireUser(request);
 	const searchParams = new URL(request.url).searchParams;
 	const offset = Number(searchParams.get('offset')) || 0;
-	const pageSize = Number(searchParams.get('pageSize')) || 50;
+	const pageSize = Number(searchParams.get('pageSize')) || 30;
 	const search = searchParams.get('search') || '';
 
 	// Create dropdown options from FulfillmentStatus object
@@ -141,6 +144,31 @@ export const loader: LoaderFunction = async ({ request }) => {
 		}),
 		prisma.fulfillment.count({ where }),
 	]);
+
+	if (fulfillments) {
+		const trackingNumbers = fulfillments
+			.filter((fulfillment) => fulfillment.trackingInfo?.number)
+			.map((fulfillment) => fulfillment.trackingInfo.number);
+
+		if (trackingNumbers.length > 0) {
+			try {
+				const trackingStatuses = await fetchTrackingStatus(
+					trackingNumbers
+				);
+				fulfillments.forEach((fulfillment) => {
+					const trackingNumber = fulfillment.trackingInfo?.number;
+					if (trackingNumber) {
+						fulfillment.trackingInfo.status =
+							trackingStatuses[trackingNumber] ||
+							'Unknown status';
+					}
+				});
+			} catch (e) {
+				console.log('Unable to get tracking numbers');
+				console.log(e);
+			}
+		}
+	}
 
 	return json({
 		count,
@@ -295,14 +323,14 @@ export default function OrdersIndex() {
 			{/* Page Header */}
 			<div className="md:flex md:items-center md:justify-between">
 				<div className="min-w-0 flex-1">
-					<h1 className="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
 						Orders
 					</h1>
 				</div>
 
 				{data.userRole === 'SUPERADMIN' ? (
 					<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
-						<Button as="link" to="new" color="primary">
+						<Button as="link" color="primary" size="lg" to="new">
 							Create Order
 						</Button>
 					</div>
@@ -386,13 +414,9 @@ export default function OrdersIndex() {
 						Search
 					</Button>
 
-					<Link
-						className="rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-						to="/orders"
-						replace
-					>
+					<Button as="link" to="/orders" replace>
 						Reset
-					</Link>
+					</Button>
 				</div>
 			</Form>
 
@@ -720,18 +744,58 @@ function FulFillments({
 								{fulfillment.trackingInfo?.number ? (
 									<div className="flex items-center gap-x-4">
 										<div>
-											<span className="block text-gray-500 dark:text-zinc-300">
-												{
-													fulfillment.trackingInfo
-														.number
-												}
-											</span>
-											<span className="block text-gray-500 dark:text-zinc-300">
-												{
-													fulfillment.trackingInfo
-														.company
-												}
-											</span>
+											<div className="flex items-start gap-x-3">
+												<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
+													{
+														fulfillment.trackingInfo
+															.number
+													}
+												</p>
+
+												{/* {fulfillment.trackingInfo
+													.status === 'Delivered' ? (
+													<p className="mt-0.5 whitespace-nowrap rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+														{
+															fulfillment
+																.trackingInfo
+																.status
+														}
+													</p>
+												) : (
+													<p className="mt-0.5 whitespace-nowrap rounded-md bg-gray-50 px-1.5 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+														{
+															fulfillment
+																.trackingInfo
+																.status
+														}
+													</p>
+												)} */}
+											</div>
+
+											<div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500  dark:text-zinc-400">
+												<p className="whitespace-nowrap">
+													{
+														fulfillment.trackingInfo
+															.company
+													}
+												</p>
+												<svg
+													viewBox="0 0 2 2"
+													className="h-0.5 w-0.5 fill-current"
+												>
+													<circle
+														r={1}
+														cx={1}
+														cy={1}
+													/>
+												</svg>
+												<p className="truncate">
+													{
+														fulfillment.trackingInfo
+															.status
+													}
+												</p>
+											</div>
 										</div>
 
 										<CopyButton

@@ -1,4 +1,3 @@
-import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 import { json, redirect } from '@remix-run/node';
 import {
 	Form,
@@ -7,15 +6,17 @@ import {
 	useLoaderData,
 	useSubmit,
 } from '@remix-run/react';
-import { fetchOrderByName } from '~/utils/shopify.server';
-import { prisma } from '~/db.server';
-import { useRef, useState } from 'react';
-import { TrashIcon } from '~/components/Icons';
-import { badRequest } from '~/utils/request.server';
+import React, { useEffect, useRef, useState } from 'react';
 
-// Custom components
+import { prisma } from '~/db.server';
+import { badRequest } from '~/utils/request.server';
+import { fetchOrderByName } from '~/utils/shopify.server';
 import { Button } from '~/components/Buttons';
 import Counter from '~/components/Counter';
+import { TrashIcon } from '~/components/Icons';
+import { Input, Label } from '~/components/Input';
+
+import type { ActionFunction, LoaderFunction } from '@remix-run/node';
 
 function cleanPhoneNumber(phoneNumber: string): string {
 	// Remove all special characters: (, ), +, -, and spaces
@@ -84,6 +85,7 @@ export const action: ActionFunction = async ({ request }) => {
 	const fulfillments: string[] = [];
 
 	parsedCart.filter((item) => {
+		console.log('SAMPLE ID', item.id);
 		if (!item.vendorId) return; // Seems like a good place to check for no vendors
 
 		if (!fulfillments.includes(item.vendorId)) {
@@ -149,18 +151,93 @@ export const action: ActionFunction = async ({ request }) => {
 
 		return redirect(`/orders/drafts/${response.id}`);
 	} catch (e) {
-		return badRequest({ errors: { form: 'Unable to complete order.' } });
+		return badRequest({ errors: { form: e.message || 'Unknown error.' } });
 	}
 };
+
+interface Item {
+	id: string;
+	materialNo: string;
+	seriesName: string;
+	seriesAlias: string;
+	color: string;
+	colorAlias: string;
+	vendor?: {
+		name: string;
+	};
+}
+
+interface ResultsTableProps {
+	results: Item[];
+	cart: Item[];
+	selectAllRef: React.RefObject<HTMLInputElement>;
+	handleChange: (e: React.ChangeEvent<HTMLInputElement>, item: Item) => void;
+	handleSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
+	isAlreadyInCart: (item: Item, cart: Item[]) => boolean;
+}
 
 export default function NewOrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
+
 	const search = useFetcher();
-	const shippingAddressForm = useRef<HTMLFormElement>(null);
 	const submit = useSubmit();
-	const [cart, setCart] = useState([]);
+
 	const addressFormId = 'address-form';
+	const shippingAddressForm = useRef<HTMLFormElement>(null);
+	const selectAllRef = useRef<HTMLInputElement>(null);
+
+	const [cart, setCart] = useState<Item[]>([]);
+	const results: Item[] = search.data?.results || [];
+
+	// Function to handle "Select All" checkbox
+	function handleSelectAll(e: React.ChangeEvent<HTMLInputElement>) {
+		const isChecked = e.target.checked;
+
+		// Query all checkboxes within the table
+		const checkboxes = document.querySelectorAll<HTMLInputElement>(
+			'tbody input[type="checkbox"]'
+		);
+
+		checkboxes.forEach((checkbox) => {
+			checkbox.checked = isChecked;
+		});
+
+		if (isChecked) {
+			setCart(results.map((result) => ({ ...result, quantity: 1 })));
+		} else {
+			setCart([]);
+		}
+	}
+
+	// Function to handle individual checkbox changes
+	function handleCheckboxChange(
+		e: React.ChangeEvent<HTMLInputElement>,
+		item: Item
+	) {
+		const updatedCart = e.target.checked
+			? [...cart, item]
+			: cart.filter((cartItem) => cartItem.id !== item.id);
+
+		setCart(updatedCart);
+	}
+
+	// Update the "Select All" checkbox indeterminate state
+	useEffect(() => {
+		if (selectAllRef.current) {
+			if (cart.length === 0) {
+				selectAllRef.current.indeterminate = false;
+				selectAllRef.current.checked = false;
+			} else if (cart.length === results.length) {
+				selectAllRef.current.indeterminate = false;
+				selectAllRef.current.checked = true;
+			} else {
+				selectAllRef.current.indeterminate = true;
+			}
+		}
+
+		console.log('CART', cart);
+	}, [cart, results]);
 
 	return (
 		<>
@@ -172,14 +249,15 @@ export default function NewOrderPage() {
 						</h1>
 
 						<div className="ml-auto mt-1 flex items-center gap-x-4">
-							<div className="input">
-								<input
+							<div>
+								<Input
 									form={addressFormId}
-									placeholder="Order Name"
+									placeholder="Order name"
 									type="text"
 									id="order-name"
 									name="orderName"
 									defaultValue={data.order?.name}
+									readOnly
 								/>
 							</div>
 
@@ -202,7 +280,7 @@ export default function NewOrderPage() {
 
 					{actionData?.errors?.form ? (
 						<div className="page-header__row">
-							<div className="error message">
+							<div className="error message mt-4">
 								{actionData.errors.form}
 							</div>
 						</div>
@@ -264,21 +342,14 @@ export default function NewOrderPage() {
 								</Button>
 
 								<div className="grow">
-									<label
-										htmlFor="query"
-										className="block text-sm font-medium leading-6 text-gray-900 dark:text-white"
-									>
-										Search
-									</label>
+									<Label htmlFor="query">Search</Label>
 
 									<div className="mt-2">
-										<input
-											className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-400 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-											type="text"
-											name="query"
+										<Input
 											id="query"
+											name="query"
+											type="text"
 											placeholder="Search"
-											autoComplete="off"
 											defaultValue={data.searchHint}
 										/>
 									</div>
@@ -293,19 +364,25 @@ export default function NewOrderPage() {
 								</div>
 							))}
 
-						{search?.data?.results ? (
+						<div className="mt-10">
 							<ResultsTable
-								results={search.data.results}
+								results={results}
 								cart={cart}
-								handleChange={handleChange}
+								selectAllRef={selectAllRef}
+								handleChange={handleCheckboxChange}
+								handleSelectAll={handleSelectAll}
 								isAlreadyInCart={isAlreadyInCart}
 							/>
-						) : null}
+						</div>
 					</section>
 
 					<aside className="foobar-sidebar sample-cart">
 						<div className="rounded-lg bg-gray-50 p-6 dark:bg-zinc-800">
-							<form ref={shippingAddressForm} id={addressFormId}>
+							<form
+								ref={shippingAddressForm}
+								id={addressFormId}
+								className="space-y-2"
+							>
 								<div className="input input--sm">
 									<label htmlFor="fullName">Name</label>
 									<input
@@ -393,13 +470,10 @@ export default function NewOrderPage() {
 									/>
 								</div>
 
-								<div className="input input--sm">
-									<label htmlFor="ship-to-zip">
-										ZIP Code
-									</label>
-									<input
+								<div>
+									<Input
+										label="Zip Code"
 										type="text"
-										autoComplete="postal-code"
 										id="ship-to-zip"
 										name="zip"
 										defaultValue={
@@ -411,22 +485,20 @@ export default function NewOrderPage() {
 								</div>
 
 								<div>
-									<label
-										htmlFor="phoneNumber"
-										className="text-sm font-semibold leading-4 text-gray-900 dark:text-white"
-									>
+									<Label htmlFor="phoneNumber">
 										Phone number
-									</label>
-									<input
-										defaultValue={
-											data.cleanedNumber
-												? data.cleanedNumber
-												: ''
-										}
-										name="phoneNumber"
-										id="phoneNumber"
-										className="rounded-md bg-white text-gray-900 dark:bg-zinc-950 dark:text-white dark:ring-0"
-									/>
+									</Label>
+									<div className="mt-2">
+										<Input
+											id="phoneNumber"
+											name="phoneNumber"
+											defaultValue={
+												data.cleanedNumber
+													? data.cleanedNumber
+													: ''
+											}
+										/>
+									</div>
 								</div>
 							</form>
 						</div>
@@ -533,16 +605,8 @@ export default function NewOrderPage() {
 		setCart(newCartItems);
 	}
 
-	function handleChange(e, item: { id: string }) {
-		if (e.target.checked) {
-			setCart([...cart, item]);
-		} else {
-			setCart(cart.filter((cartItem) => cartItem.id !== item.id));
-		}
-	}
-
-	function isAlreadyInCart(item: { id: string }, cart: any[]): boolean {
-		return cart.find((cartItem) => cartItem.id === item.id) ? true : false;
+	function isAlreadyInCart(item: Item, cart: Item[]): boolean {
+		return cart.some((cartItem) => cartItem.id === item.id);
 	}
 
 	function removeFromCart(item: { id: string }) {
@@ -553,17 +617,32 @@ export default function NewOrderPage() {
 	}
 }
 
-function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
+const ResultsTable: React.FC<ResultsTableProps> = ({
+	results,
+	cart,
+	selectAllRef,
+	handleChange,
+	handleSelectAll,
+	isAlreadyInCart,
+}) => {
 	return (
-		<table className="new-order-search-results min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+		<table className="min-w-full table-fixed divide-y divide-gray-300 dark:divide-zinc-700">
 			<thead>
 				<tr>
-					<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
-						Vendor Names and No.
+					<th className="relative px-7 sm:w-12 sm:px-6">
+						<input
+							id="select-all"
+							type="checkbox"
+							className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-600"
+							ref={selectAllRef}
+							onChange={handleSelectAll}
+						/>
 					</th>
-					<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-						Edward Martin Names and Color
+
+					<th className="min-w-[12rem] py-3.5 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
+						Item
 					</th>
+
 					<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
 						Vendor
 					</th>
@@ -576,56 +655,49 @@ function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
 
 					return (
 						<tr key={item.id}>
-							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
-								<div className="relative flex items-start">
-									<div className="flex h-6 items-center">
-										<input
-											id={`${item.id}-checkbox`}
-											name="item"
-											type="checkbox"
-											className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-											onChange={(e) => {
-												handleChange(e, item);
-											}}
-											value={item.id}
-											defaultChecked={checked}
-										/>
-									</div>
-									<div className="ml-3 text-sm leading-6">
-										<label
-											htmlFor={`${item.id}-checkbox`}
-											className="bg-blue-300 font-medium text-gray-900 hover:cursor-pointer dark:text-white"
-										>
-											<span className="block">
-												{item.materialNo}
-											</span>
-											<span
-												id="comments-description"
-												className="block text-gray-500 dark:text-zinc-400"
-											>
-												{item.seriesName} {item.color}
-											</span>
-										</label>
-									</div>
-								</div>
+							<td className="relative px-7 sm:w-12 sm:px-6">
+								<input
+									id={`${item.id}-checkbox`}
+									name="item"
+									type="checkbox"
+									className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-600"
+									onChange={(e) => {
+										handleChange(e, item);
+									}}
+									value={item.id}
+									defaultChecked={checked}
+								/>
 							</td>
 
-							<td className="whitespace-nowrap px-3 py-4 text-sm">
+							<td className="whitespace-nowrap py-4 pr-3 text-sm leading-6 text-gray-500 dark:text-zinc-500">
+								<label
+									htmlFor={`${item.id}-checkbox`}
+									className="hover:cursor-pointer"
+								>
+									<span className="block text-gray-900 dark:text-white">
+										{item.seriesAlias} {item.colorAlias}
+									</span>
+									<span
+										id="comments-description"
+										className="block"
+									>
+										{item.materialNo}
+									</span>
+								</label>
+							</td>
+
+							<td className="whitespace-nowrap px-3 py-4 text-sm leading-6 text-gray-500 dark:text-zinc-500">
 								<label
 									className="checkbox-label hover:cursor-pointer"
 									htmlFor={`${item.id}-checkbox`}
 								>
-									<div className="cursor-pointer text-sm font-medium text-gray-900 dark:text-white">
-										{item.seriesAlias}
+									<div className="text-gray-900 dark:text-white">
+										{item.seriesName} {item.color}
 									</div>
-									<div className="cursor-pointer text-sm font-normal text-gray-500 dark:text-zinc-400">
-										{item.colorAlias}
+									<div className="font-light">
+										{item.vendor?.name}
 									</div>
 								</label>
-							</td>
-
-							<td className="whitespace-nowrap px-3 py-4 text-sm">
-								{item.vendor?.name}
 							</td>
 						</tr>
 					);
@@ -633,4 +705,4 @@ function ResultsTable({ results, cart, handleChange, isAlreadyInCart }) {
 			</tbody>
 		</table>
 	);
-}
+};

@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { cleanPhoneNumber } from './helpers';
 
+// const baseUrl =
+// 	process.env.NODE_ENV === 'production'
+// 		? 'https://apis.fedex.com'
+// 		: 'https://apis-sandbox.fedex.com';
+const baseUrl = 'https://apis.fedex.com';
+
 interface FedExAuthError {
 	code: string;
 	message: string;
@@ -54,13 +60,16 @@ export interface ShipmentData {
 		shippingChargesPayment: {
 			paymentType: string;
 		};
-		shipmentSpecialServices: {
+		shipmentSpecialServices?: {
 			specialServiceTypes: Array<
 				'FEDEX_ONE_RATE' | 'SATURDAY_DELIVERY' | 'SATURDAY_PICKUP'
 			>;
 		};
 		labelSpecification: {
-			labelStockType: string;
+			labelStockType:
+				| 'PAPER_85X11_BOTTOM_HALF_LABEL'
+				| 'PAPER_85X11_TOP_HALF_LABEL'
+				| 'STOCK_4X6';
 			imageType: string;
 		};
 		requestedPackageLineItems: Array<{
@@ -68,6 +77,12 @@ export interface ShipmentData {
 			weight: {
 				units: string;
 				value: number;
+			};
+			dimensions?: {
+				length: number;
+				width: number;
+				height: number;
+				units: 'IN' | 'CM';
 			};
 			customerReferences?: Array<{
 				customerReferenceType: 'P_O_NUMBER' | 'INVOICE_NUMBER';
@@ -82,10 +97,10 @@ if (!process.env.FEDEX_CLIENT_ID || !process.env.FEDEX_CLIENT_SECRET) {
 	throw new Error('Missing FedEx API keys');
 }
 
-export async function getFedExAccessToken(): Promise<
+export async function fetchFedExAccessToken(): Promise<
 	string | FedExAuthError[]
 > {
-	const url = 'https://apis-sandbox.fedex.com/oauth/token';
+	const url = baseUrl + '/oauth/token';
 	const data = new URLSearchParams({
 		grant_type: 'client_credentials',
 		client_id: process.env.FEDEX_CLIENT_ID as string,
@@ -117,15 +132,46 @@ export async function getFedExAccessToken(): Promise<
 	}
 }
 
+export async function fetchFedExTrackingAPIToken(): Promise<
+	string | FedExAuthError[]
+> {
+	const url = baseUrl + '/oauth/token';
+	const data = new URLSearchParams({
+		grant_type: 'client_credentials',
+		client_id: 'l7a1ec0134e7c5450ea5ce339bdb9ac18e', // 'l719b45cf31b9843d1a39f3fe7cb1ec559', // process.env.FEDEX_CLIENT_ID as string,
+		client_secret: '0ab421ceb8184480be621445dae52091', // 'e2eb891d0ae6478f89ea941e3e4aeaea', // process.env.FEDEX_CLIENT_SECRET as string,
+	});
+
+	try {
+		const response = await axios.post(url, data, {
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		});
+
+		return response.data.access_token;
+	} catch (error: any) {
+		console.error(
+			'Error fetching FedEx access token:',
+			error.response?.data
+		);
+
+		const errors: FedExAuthError[] = error.response?.data?.errors || [
+			{
+				code: 'UNKNOWN',
+				message: error.message || 'Unknown error occurred',
+			},
+		];
+
+		return errors;
+	}
+}
+
 export async function createFedExShipment(
 	shipmentData: ShipmentData
 ): Promise<FedExResponse> {
-	const token = await getFedExAccessToken();
-	// const url =
-	// 	process.env.NODE_ENV === 'production'
-	// 		? 'https://apis.fedex.com'
-	// 		: 'https://apis-sandbox.fedex.com/ship/v1/shipments';
-	const url = 'https://apis-sandbox.fedex.com/ship/v1/shipments';
+	const token = await fetchFedExAccessToken();
+	const url = baseUrl + '/ship/v1/shipments';
 	const accountNumber = { value: process.env.FEDEX_ACCOUNT_NUMBER };
 
 	shipmentData.requestedShipment.shipper.contact.phoneNumber =
@@ -181,5 +227,52 @@ export async function createFedExShipment(
 
 		// Throw a new Error with a detailed message
 		throw new Error(errorMessage);
+	}
+}
+
+export async function fetchTrackingStatus(
+	trackingNumbers: string[]
+): Promise<string | null> {
+	const token = await fetchFedExTrackingAPIToken();
+	const url = baseUrl + '/track/v1/trackingnumbers';
+	const trackingInfo = trackingNumbers.map((trackingNumber) => ({
+		trackingNumberInfo: { trackingNumber },
+	}));
+
+	const payload = {
+		includeDetailedScans: true,
+		trackingInfo: trackingInfo,
+	};
+
+	try {
+		const response = await axios.post(url, payload, {
+			headers: {
+				'Content-Type': 'application/json',
+				'X-locale': 'en_US',
+				Authorization: `Bearer ${token}`,
+			},
+		});
+
+		if (response?.status !== 200) {
+			return null;
+		}
+
+		// Transform the response into a single object
+		const trackingStatuses =
+			response.data.output.completeTrackResults.reduce((acc, result) => {
+				const trackingNumber =
+					result.trackResults[0].trackingNumberInfo.trackingNumber;
+				const status =
+					result.trackResults[0].latestStatusDetail.description;
+
+				acc[trackingNumber] = status;
+				return acc;
+			}, {});
+
+		return trackingStatuses;
+	} catch (error) {
+		console.log('-------- FEDEX TRACKING ERROR --------');
+		console.log(error);
+		return null;
 	}
 }

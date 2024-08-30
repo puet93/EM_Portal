@@ -3,9 +3,8 @@ import { json } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { requireSuperAdmin, requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
-import { Role } from '@prisma/client';
-import Dropdown from '~/components/Dropdown';
-import { Input } from '~/components/Input';
+import { Button } from '~/components/Buttons';
+import { Input, Select } from '~/components/Input';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
@@ -62,34 +61,42 @@ export default function UserPage() {
 				)}
 			</header>
 
-			<Form method="post" className="flex-form">
-				<Input
-					className="input input--50"
-					name="firstName"
-					id="first-name"
-					label="First Name"
-					defaultValue={data.user?.firstName || undefined}
-				/>
+			<Form method="post" className="grid grid-cols-6 gap-6">
+				<div className="col-span-3">
+					<Input
+						name="firstName"
+						id="first-name"
+						label="First Name"
+						defaultValue={data.user?.firstName || undefined}
+					/>
+				</div>
 
-				<Input
-					className="input input--50"
-					name="lastName"
-					id="last-name"
-					label="Last Name"
-					defaultValue={data.user?.lastName || undefined}
-				/>
+				<div className="col-span-3">
+					<Input
+						name="lastName"
+						id="last-name"
+						label="Last Name"
+						defaultValue={data.user?.lastName || undefined}
+					/>
+				</div>
 
-				<Dropdown
-					name="role"
-					options={options}
-					defaultValue={data.user?.role || undefined}
-				/>
+				<div className="col-span-full">
+					<Select
+						id="role"
+						name="role"
+						options={options}
+						defaultValue={data.user?.role || undefined}
+					/>
+				</div>
 
-				<Dropdown
-					name="vendorId"
-					options={data.vendorOptions}
-					defaultValue={data.user?.vendorId || undefined}
-				/>
+				<div className="col-span-full">
+					<Select
+						id="vendorId"
+						name="vendorId"
+						options={data.vendorOptions}
+						defaultValue={data.user?.vendorId || undefined}
+					/>
+				</div>
 
 				{actionData?.formError ? (
 					<div className="error message">{actionData.formError}</div>
@@ -99,9 +106,9 @@ export default function UserPage() {
 					<div className="success message">{actionData.message}</div>
 				) : null}
 
-				<button type="submit" className="primary button">
+				<Button type="submit" color="primary">
 					Update
-				</button>
+				</Button>
 			</Form>
 		</div>
 	);

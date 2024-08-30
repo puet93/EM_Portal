@@ -23,6 +23,9 @@ export const action: ActionFunction = async ({ request }) => {
 	const phone = formData.get('phone') as string | null;
 
 	const orderNo = formData.get('orderNo') as string | null;
+	const packagingType = formData.get('packagingType') as string | null;
+	const packageWeight = formData.get('packageWeight') as string | null;
+	const totalWeight = packageWeight ? parseFloat(packageWeight) : 0;
 
 	if (
 		!fullName ||
@@ -32,7 +35,9 @@ export const action: ActionFunction = async ({ request }) => {
 		!city ||
 		!zip ||
 		!phone ||
-		!orderNo
+		!orderNo ||
+		!packagingType ||
+		!packageWeight
 	) {
 		return badRequest({ error: 'All fields are required' });
 	}
@@ -63,7 +68,7 @@ export const action: ActionFunction = async ({ request }) => {
 				},
 				contact: {
 					companyName: 'Edward Martin, LLC',
-					phoneNumber: '5557773281',
+					phoneNumber: '9092356728',
 				},
 			},
 			recipients: [
@@ -83,23 +88,47 @@ export const action: ActionFunction = async ({ request }) => {
 				},
 			],
 			pickupType: 'DROPOFF_AT_FEDEX_LOCATION',
-			serviceType: 'FEDEX_2_DAY',
-			packagingType: 'FEDEX_PAK',
-			totalWeight: 5.0,
+			serviceType:
+				packagingType === 'FEDEX_PAK'
+					? 'FEDEX_2_DAY'
+					: 'GROUND_HOME_DELIVERY', // Must be FEDEX_GROUND if not residential
+			packagingType:
+				packagingType === 'FEDEX_PAK' ? 'FEDEX_PAK' : 'YOUR_PACKAGING',
+			totalWeight: totalWeight,
 			shippingChargesPayment: {
 				paymentType: 'SENDER',
 			},
-			shipmentSpecialServices: {
-				specialServiceTypes: ['FEDEX_ONE_RATE'],
-			},
+			...(packagingType === 'FEDEX_PAK' && {
+				shipmentSpecialServices: {
+					specialServiceTypes: ['FEDEX_ONE_RATE'],
+				},
+			}),
 			labelSpecification: {
-				labelStockType: 'STOCK_4X6',
+				labelStockType: 'STOCK_4X6', // TODO: Add options for users: 'PAPER_85X11_TOP_HALF_LABEL', 'PAPER_85X11_TOP_HALF_LABEL', 'STOCK_4X6'
 				imageType: 'PDF',
 			},
 			requestedPackageLineItems: [
 				{
 					sequenceNumber: '1',
-					weight: { units: 'LB', value: 5.0 },
+					weight: { units: 'LB', value: totalWeight },
+					...(packagingType !== 'FEDEX_PAK' && {
+						dimensions:
+							packagingType === 'ROCA_14X14X8'
+								? {
+										length: 14,
+										width: 14,
+										height: 8,
+										units: 'IN',
+								  }
+								: packagingType === 'EPC_9X9X9'
+								? {
+										length: 9,
+										width: 9,
+										height: 9,
+										units: 'IN',
+								  }
+								: undefined,
+					}),
 					customerReferences: [
 						{
 							customerReferenceType: 'P_O_NUMBER',

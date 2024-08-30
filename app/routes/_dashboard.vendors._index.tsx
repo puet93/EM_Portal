@@ -1,9 +1,12 @@
-import type { LoaderFunctionArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
-import { requireUserId } from '~/session.server';
+
 import { prisma } from '~/db.server';
+import { requireUserId } from '~/session.server';
+import { Button } from '~/components/Buttons';
 import { BuildingIcon } from '~/components/Icons';
+
+import type { LoaderFunctionArgs } from '@remix-run/node';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
@@ -30,17 +33,19 @@ export default function VendorsPage() {
 	const data = useLoaderData<typeof loader>();
 	return (
 		<>
-			<header className="page-header align-baseline">
-				<div className="page-header__row">
-					<h1 className="headline-h3">Vendors</h1>
-
-					<div className="page-header__actions">
-						<Link className="primary button" to="new">
-							Create New Vendor
-						</Link>
-					</div>
+			<div className="md:flex md:items-center md:justify-between">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-4xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:tracking-tight">
+						Vendors
+					</h1>
 				</div>
-			</header>
+
+				<div className="mt-4 flex flex-shrink-0 md:ml-4 md:mt-0">
+					<Button as="link" color="primary" size="lg" to="new">
+						Create New Vendor
+					</Button>
+				</div>
+			</div>
 
 			<section className="page-section">
 				<div className="vendor-cards">

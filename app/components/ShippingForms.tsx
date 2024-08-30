@@ -199,20 +199,23 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<Label htmlFor="packaging">Packaging</Label>
+							<Label htmlFor="packagingType">Packaging</Label>
 							<div className="mt-2">
 								<Select
-									id="packaging"
-									name="packaging"
-									defaultValue="FEDEX_PAK"
+									id="packagingType"
+									name="packagingType"
 									options={[
-										{
-											label: 'Your packaging',
-											value: 'YOUR_PACKAGING',
-										},
 										{
 											label: 'FedEx Pak',
 											value: 'FEDEX_PAK',
+										},
+										{
+											label: 'Roca - 14x14x8',
+											value: 'ROCA_14X14X8',
+										},
+										{
+											label: 'EPC - 9x9x9',
+											value: 'EPC_9X9X9',
 										},
 									]}
 								></Select>
@@ -220,14 +223,12 @@ export function ShippingLabelForm({
 						</div>
 
 						<div className="col-span-3">
-							<Label htmlFor="weight">Weight</Label>
+							<Label htmlFor="packageWeight">Weight</Label>
 							<div className="relative mt-2">
 								<Input
-									id="weight"
-									name="weight"
+									id="packageWeight"
+									name="packageWeight"
 									type="text"
-									defaultValue="5.0"
-									readOnly
 								/>
 								<div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 									<span className="text-gray-500 dark:text-zinc-400 sm:text-sm">
@@ -236,10 +237,6 @@ export function ShippingLabelForm({
 								</div>
 							</div>
 						</div>
-
-						{/* Service (e.g. FedEx 2 Day or FedEx Home/Ground) */}
-						{/* Residential address? */}
-						{/* FedEx One Rate */}
 					</div>
 				</div>
 			</div>

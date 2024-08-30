@@ -19,6 +19,7 @@ import {
 	SwatchIcon,
 	UsersIcon,
 } from '~/components/Icons';
+import { Sidebar } from '~/components/Sidebar';
 
 import { Theme, useTheme } from '~/utils/theme-provider';
 import { userPrefs } from '../cookies.server';
@@ -58,6 +59,12 @@ export default function DashboardLayout() {
 			prevTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT
 		);
 	};
+
+	return (
+		<Sidebar toggleTheme={toggleTheme} user={data.user}>
+			<Outlet />
+		</Sidebar>
+	);
 
 	return (
 		<div className={data.sidebarIsOpen ? `dashboard` : `dashboard closed`}>
