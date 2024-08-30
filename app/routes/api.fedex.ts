@@ -92,7 +92,8 @@ export const action: ActionFunction = async ({ request }) => {
 				packagingType === 'FEDEX_PAK'
 					? 'FEDEX_2_DAY'
 					: 'GROUND_HOME_DELIVERY', // Must be FEDEX_GROUND if not residential
-			packagingType: packagingType,
+			packagingType:
+				packagingType === 'FEDEX_PAK' ? 'FEDEX_PAK' : 'YOUR_PACKAGING',
 			totalWeight: totalWeight,
 			shippingChargesPayment: {
 				paymentType: 'SENDER',
@@ -111,12 +112,22 @@ export const action: ActionFunction = async ({ request }) => {
 					sequenceNumber: '1',
 					weight: { units: 'LB', value: totalWeight },
 					...(packagingType !== 'FEDEX_PAK' && {
-						dimensions: {
-							length: 14,
-							width: 14,
-							height: 8,
-							units: 'IN',
-						},
+						dimensions:
+							packagingType === 'ROCA_14X14X8'
+								? {
+										length: 14,
+										width: 14,
+										height: 8,
+										units: 'IN',
+								  }
+								: packagingType === 'EPC_9X9X9'
+								? {
+										length: 9,
+										width: 9,
+										height: 9,
+										units: 'IN',
+								  }
+								: undefined,
 					}),
 					customerReferences: [
 						{
