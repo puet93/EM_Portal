@@ -661,98 +661,100 @@ function FulFillments({
 	count: number;
 }) {
 	return (
-		<>
-			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
-				<thead>
-					<tr>
-						<th
-							scope="col"
-							className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
-						>
-							Order No.
-						</th>
-						<th
-							scope="col"
-							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-						>
-							Ship to
-						</th>
-						<th
-							scope="col"
-							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-						>
-							Tracking Info
-						</th>
-						<th
-							scope="col"
-							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-						>
-							Status
-						</th>
-						<th
-							scope="col"
-							className="relative py-3.5 pl-3 pr-4 sm:pr-0"
-						>
-							<span className="sr-only">Actions</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
-					{fulfillments.map((fulfillment) => (
-						<tr key={fulfillment.id}>
-							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
-								<Link to={`/fulfillments/${fulfillment.id}`}>
-									<div className="text-sm font-bold text-gray-900 dark:text-white">
-										{fulfillment.name}
-									</div>
-									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-										{new Date(
-											fulfillment.order.createdAt
-										).toLocaleString('en-US')}
-									</div>
+		<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+			<thead>
+				<tr>
+					<th
+						scope="col"
+						className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
+					>
+						Order No.
+					</th>
 
-									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-										{fulfillment.vendor?.name}
-									</div>
-								</Link>
-							</td>
-							<td className="whitespace-nowrap px-3 py-4 text-sm">
-								<Link to={`/fulfillments/${fulfillment.id}`}>
-									<address className="not-italic">
-										<span className="block leading-6 text-gray-900 dark:text-white">
-											{fulfillment.order.address.line1}
-										</span>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Ship to
+					</th>
 
-										<span className="leading-5 text-gray-500 dark:text-zinc-300">
-											{fulfillment.order.address.line2 &&
-												`${fulfillment.order.address.line2}\n`}
-											{fulfillment.order.address.line3 &&
-												`${fulfillment.order.address.line3}\n`}
-											{fulfillment.order.address.line4 &&
-												`${fulfillment.order.address.line4}\n`}
-											{fulfillment.order.address.city},{' '}
-											{fulfillment.order.address.state}{' '}
-											{
-												fulfillment.order.address
-													.postalCode
-											}
-										</span>
-									</address>
-								</Link>
-							</td>
-							<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
-								{fulfillment.trackingInfo?.number ? (
-									<div className="flex items-center gap-x-4">
-										<div>
-											<div className="flex items-start gap-x-3">
-												<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-													{
-														fulfillment.trackingInfo
-															.number
-													}
-												</p>
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Tracking Info
+					</th>
 
-												{/* {fulfillment.trackingInfo
+					<th
+						scope="col"
+						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+					>
+						Status
+					</th>
+
+					<th
+						scope="col"
+						className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+					>
+						<span className="sr-only">Actions</span>
+					</th>
+				</tr>
+			</thead>
+			<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+				{fulfillments.map((fulfillment) => (
+					<tr key={fulfillment.id}>
+						<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<div className="text-sm font-bold text-gray-900 dark:text-white">
+									{fulfillment.name}
+								</div>
+								<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+									{new Date(
+										fulfillment.order.createdAt
+									).toLocaleString('en-US')}
+								</div>
+
+								<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+									{fulfillment.vendor?.name}
+								</div>
+							</Link>
+						</td>
+
+						<td className="whitespace-nowrap px-3 py-4 text-sm">
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<address className="not-italic">
+									<span className="block leading-6 text-gray-900 dark:text-white">
+										{fulfillment.order.address.line1}
+									</span>
+
+									<span className="leading-5 text-gray-500 dark:text-zinc-300">
+										{fulfillment.order.address.line2 &&
+											`${fulfillment.order.address.line2}\n`}
+										{fulfillment.order.address.line3 &&
+											`${fulfillment.order.address.line3}\n`}
+										{fulfillment.order.address.line4 &&
+											`${fulfillment.order.address.line4}\n`}
+										{fulfillment.order.address.city},{' '}
+										{fulfillment.order.address.state}{' '}
+										{fulfillment.order.address.postalCode}
+									</span>
+								</address>
+							</Link>
+						</td>
+
+						<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
+							{fulfillment.trackingInfo?.number ? (
+								<div className="flex items-center gap-x-4">
+									<div>
+										<div className="flex items-start gap-x-3">
+											<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
+												{
+													fulfillment.trackingInfo
+														.number
+												}
+											</p>
+
+											{/* {fulfillment.trackingInfo
 													.status === 'Delivered' ? (
 													<p className="mt-0.5 whitespace-nowrap rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
 														{
@@ -770,81 +772,74 @@ function FulFillments({
 														}
 													</p>
 												)} */}
-											</div>
-
-											<div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500  dark:text-zinc-400">
-												<p className="whitespace-nowrap">
-													{
-														fulfillment.trackingInfo
-															.company
-													}
-												</p>
-												<svg
-													viewBox="0 0 2 2"
-													className="h-0.5 w-0.5 fill-current"
-												>
-													<circle
-														r={1}
-														cx={1}
-														cy={1}
-													/>
-												</svg>
-												<p className="truncate">
-													{
-														fulfillment.trackingInfo
-															.status
-													}
-												</p>
-											</div>
 										</div>
 
-										<CopyButton
-											text={
-												fulfillment.trackingInfo.number
-											}
-										/>
+										<div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500  dark:text-zinc-400">
+											<p className="whitespace-nowrap">
+												{
+													fulfillment.trackingInfo
+														.company
+												}
+											</p>
+											<svg
+												viewBox="0 0 2 2"
+												className="h-0.5 w-0.5 fill-current"
+											>
+												<circle r={1} cx={1} cy={1} />
+											</svg>
+											<p className="truncate">
+												{
+													fulfillment.trackingInfo
+														.status
+												}
+											</p>
+										</div>
 									</div>
-								) : (
-									<Link
-										to={`/fulfillments/${fulfillment.id}`}
-									>
-										<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
-											Needs tracking info
-										</span>
-									</Link>
-								)}
-							</td>
-							<td className="whitespace-nowrap px-3 py-4">
-								<Link to={`/fulfillments/${fulfillment.id}`}>
-									<FulfillmentStatusBadge
-										status={fulfillment.status}
-									/>
-								</Link>
-							</td>
-							<td className="py-4 pl-3 pr-4 sm:pr-0">
-								<div className="flex items-center justify-end gap-x-4">
-									<Button
-										as="link"
-										to={`/fulfillments/${fulfillment.id}`}
-										size="sm"
-									>
-										View
-										<span className="sr-only">
-											, {fulfillment.name}
-										</span>
-									</Button>
 
-									<FulfillmentActions
-										id={fulfillment.id}
-										name={fulfillment.name}
+									<CopyButton
+										text={fulfillment.trackingInfo.number}
 									/>
 								</div>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-		</>
+							) : (
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
+										Needs tracking info
+									</span>
+								</Link>
+							)}
+						</td>
+
+						<td className="whitespace-nowrap px-3 py-4">
+							<Link to={`/fulfillments/${fulfillment.id}`}>
+								<FulfillmentStatusBadge
+									status={fulfillment.status}
+								/>
+							</Link>
+						</td>
+
+						<td className="py-4 pl-3 pr-4 sm:pr-0">
+							<div className="flex items-center justify-end gap-x-4">
+								<Button
+									as="link"
+									to={`/fulfillments/${fulfillment.id}`}
+									size="sm"
+								>
+									View
+									<span className="sr-only">
+										, {fulfillment.name}
+									</span>
+								</Button>
+
+								<FulfillmentActions
+									id={fulfillment.id}
+									name={fulfillment.name}
+								/>
+							</div>
+						</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
 	);
 }
 
