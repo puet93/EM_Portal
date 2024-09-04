@@ -6,11 +6,11 @@ import {
 	useLoaderData,
 	useSearchParams,
 } from '@remix-run/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FulfillmentStatus } from '@prisma/client';
 import { prisma } from '~/db.server';
 
-import { requireUser } from '~/session.server';
+import { requireSuperAdmin, requireUser } from '~/session.server';
 import { fetchTrackingStatus } from '~/utils/fedex.server';
 import { toCapitalCase } from '~/utils/helpers';
 import {
@@ -185,46 +185,27 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
+	await requireSuperAdmin(request);
+
 	const formData = await request.formData();
 	const _action = formData.get('_action');
+	const ids = formData.getAll('fulfillmentIds') as string[];
 
 	switch (_action) {
-		case 'complete': {
-			const id = formData.get('id');
-			if (typeof id !== 'string' || id.length === 0) {
-				return json({ error: 'Invalid form data' });
-			}
-			const fulfillment = await prisma.fulfillment.update({
-				where: { id },
-				data: {
-					status: 'COMPLETE',
-				},
-			});
-			return json({ fulfillment });
-		}
-		case 'processing': {
-			const id = formData.get('id');
-			if (typeof id !== 'string' || id.length === 0) {
-				return json({ error: 'Invalid form data' });
-			}
-			const fulfillment = await prisma.fulfillment.update({
-				where: { id },
-				data: {
-					status: 'PROCESSING',
-				},
-			});
-			return json({ fulfillment });
-		}
+		case 'complete':
+		case 'processing':
 		case 'new': {
 			const id = formData.get('id');
 			if (typeof id !== 'string' || id.length === 0) {
 				return json({ error: 'Invalid form data' });
 			}
+			const status = _action.toUpperCase() as
+				| 'COMPLETE'
+				| 'PROCESSING'
+				| 'NEW';
 			const fulfillment = await prisma.fulfillment.update({
 				where: { id },
-				data: {
-					status: 'NEW',
-				},
+				data: { status },
 			});
 			return json({ fulfillment });
 		}
@@ -269,6 +250,29 @@ export const action: ActionFunction = async ({ request }) => {
 				});
 			});
 			return json({ order });
+		}
+		case 'archiveSelected': {
+			const updated = await prisma.fulfillment.updateMany({
+				where: {
+					id: {
+						in: ids,
+					},
+				},
+				data: { isArchived: true },
+			});
+
+			return json({ updated });
+		}
+		case 'markSelectedComplete':
+		case 'markSelectedProcessing': {
+			const status =
+				_action === 'markSelectedComplete' ? 'COMPLETE' : 'PROCESSING';
+			const updated = await prisma.fulfillment.updateMany({
+				where: { id: { in: ids } },
+				data: { status },
+			});
+
+			return json({ updated });
 		}
 		default: {
 			return json({ error: 'Invalid form data' });
@@ -500,7 +504,10 @@ export default function OrdersIndex() {
 				</div>
 
 				{fulfillments && fulfillments.length !== 0 ? (
-					<FulFillments fulfillments={fulfillments} count={count} />
+					<FulFillments
+						fulfillments={fulfillments}
+						userRole={data.userRole}
+					/>
 				) : (
 					<div>No results</div>
 				)}
@@ -654,107 +661,203 @@ function FulfillmentStatusBadge({ status }: { status: FulfillmentStatus }) {
 }
 
 function FulFillments({
+	userRole,
 	fulfillments,
-	count,
 }: {
-	fulfillments: any;
-	count: number;
+	userRole: 'SUPERADMIN' | 'ADMIN' | 'USER';
+	fulfillments: any[];
 }) {
+	const selectAllRef = useRef<HTMLInputElement>(null);
+	const [isShowingActionButtons, setIsShowingActionButtons] = useState(false);
+
+	const handleCheckboxChange = () => {
+		// Find all checkboxes with name="fulfillmentIds"
+		const allCheckboxes = document.querySelectorAll<HTMLInputElement>(
+			'input[name="fulfillmentIds"]'
+		);
+
+		// Determine how many checkboxes are selected
+		let selectedCount = 0;
+		allCheckboxes.forEach((checkbox) => {
+			if (checkbox.checked) selectedCount++;
+		});
+
+		// Set the select all checkbox to indeterminate or checked based on the state of individual checkboxes
+		if (selectAllRef.current) {
+			selectAllRef.current.indeterminate =
+				selectedCount > 0 && selectedCount < allCheckboxes.length;
+			selectAllRef.current.checked =
+				selectedCount === allCheckboxes.length;
+		}
+
+		// Show or hide action buttons based on selection
+		setIsShowingActionButtons(selectedCount > 0);
+	};
+
+	const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const isChecked = e.target.checked;
+
+		const allCheckboxes = document.querySelectorAll<HTMLInputElement>(
+			'input[name="fulfillmentIds"]'
+		);
+		allCheckboxes.forEach((checkbox) => {
+			checkbox.checked = isChecked;
+		});
+
+		setIsShowingActionButtons(isChecked);
+	};
+
 	return (
-		<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
-			<thead>
-				<tr>
-					<th
-						scope="col"
-						className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0"
-					>
-						Order No.
-					</th>
+		<Form method="post">
+			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
+				<thead>
+					<tr>
+						{userRole === 'SUPERADMIN' ? (
+							<th className="relative px-7 sm:w-12 sm:px-6">
+								<input
+									type="checkbox"
+									className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-600"
+									onChange={handleSelectAll}
+									ref={selectAllRef}
+								/>
+							</th>
+						) : null}
 
-					<th
-						scope="col"
-						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-					>
-						Ship to
-					</th>
+						<th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">
+							{isShowingActionButtons ? (
+								<div className="flex gap-x-3">
+									<Button
+										size="xs"
+										type="submit"
+										name="_action"
+										value="markSelectedProcessing"
+									>
+										Processing
+									</Button>
 
-					<th
-						scope="col"
-						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-					>
-						Tracking Info
-					</th>
+									<Button
+										size="xs"
+										type="submit"
+										name="_action"
+										value="markSelectedComplete"
+									>
+										Complete
+									</Button>
 
-					<th
-						scope="col"
-						className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
-					>
-						Status
-					</th>
-
-					<th
-						scope="col"
-						className="relative py-3.5 pl-3 pr-4 sm:pr-0"
-					>
-						<span className="sr-only">Actions</span>
-					</th>
-				</tr>
-			</thead>
-			<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
-				{fulfillments.map((fulfillment) => (
-					<tr key={fulfillment.id}>
-						<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<div className="text-sm font-bold text-gray-900 dark:text-white">
-									{fulfillment.name}
+									<Button
+										size="xs"
+										type="submit"
+										name="_action"
+										value="archiveSelected"
+									>
+										Archive
+									</Button>
 								</div>
-								<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-									{new Date(
-										fulfillment.order.createdAt
-									).toLocaleString('en-US')}
-								</div>
+							) : (
+								'Order No.'
+							)}
+						</th>
 
-								<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-									{fulfillment.vendor?.name}
-								</div>
-							</Link>
-						</td>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Ship to
+						</th>
 
-						<td className="whitespace-nowrap px-3 py-4 text-sm">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<address className="not-italic">
-									<span className="block leading-6 text-gray-900 dark:text-white">
-										{fulfillment.order.address.line1}
-									</span>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Tracking Info
+						</th>
 
-									<span className="leading-5 text-gray-500 dark:text-zinc-300">
-										{fulfillment.order.address.line2 &&
-											`${fulfillment.order.address.line2}\n`}
-										{fulfillment.order.address.line3 &&
-											`${fulfillment.order.address.line3}\n`}
-										{fulfillment.order.address.line4 &&
-											`${fulfillment.order.address.line4}\n`}
-										{fulfillment.order.address.city},{' '}
-										{fulfillment.order.address.state}{' '}
-										{fulfillment.order.address.postalCode}
-									</span>
-								</address>
-							</Link>
-						</td>
+						<th
+							scope="col"
+							className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white"
+						>
+							Status
+						</th>
 
-						<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
-							{fulfillment.trackingInfo?.number ? (
-								<div className="flex items-center gap-x-4">
-									<div>
-										<div className="flex items-start gap-x-3">
-											<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
-												{
-													fulfillment.trackingInfo
-														.number
-												}
-											</p>
+						<th
+							scope="col"
+							className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+						>
+							<span className="sr-only">Actions</span>
+						</th>
+					</tr>
+				</thead>
 
-											{/* {fulfillment.trackingInfo
+				<tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+					{fulfillments.map((fulfillment) => (
+						<tr key={fulfillment.id}>
+							{userRole === 'SUPERADMIN' ? (
+								<th className="relative px-7 sm:w-12 sm:px-6">
+									<input
+										type="checkbox"
+										name="fulfillmentIds"
+										value={fulfillment.id}
+										className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-600"
+										onChange={handleCheckboxChange}
+									/>
+								</th>
+							) : null}
+
+							<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<div className="text-sm font-bold text-gray-900 dark:text-white">
+										{fulfillment.name}
+									</div>
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{new Date(
+											fulfillment.order.createdAt
+										).toLocaleString('en-US')}
+									</div>
+
+									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
+										{fulfillment.vendor?.name}
+									</div>
+								</Link>
+							</td>
+
+							<td className="whitespace-nowrap px-3 py-4 text-sm">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<address className="not-italic">
+										<span className="block leading-6 text-gray-900 dark:text-white">
+											{fulfillment.order.address.line1}
+										</span>
+
+										<span className="leading-5 text-gray-500 dark:text-zinc-300">
+											{fulfillment.order.address.line2 &&
+												`${fulfillment.order.address.line2}\n`}
+											{fulfillment.order.address.line3 &&
+												`${fulfillment.order.address.line3}\n`}
+											{fulfillment.order.address.line4 &&
+												`${fulfillment.order.address.line4}\n`}
+											{fulfillment.order.address.city},{' '}
+											{fulfillment.order.address.state}{' '}
+											{
+												fulfillment.order.address
+													.postalCode
+											}
+										</span>
+									</address>
+								</Link>
+							</td>
+
+							<td className="whitespace-nowrap px-3 py-4 text-sm leading-5">
+								{fulfillment.trackingInfo?.number ? (
+									<div className="flex items-center gap-x-4">
+										<div>
+											<div className="flex items-start gap-x-3">
+												<p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
+													{
+														fulfillment.trackingInfo
+															.number
+													}
+												</p>
+
+												{/* {fulfillment.trackingInfo
 													.status === 'Delivered' ? (
 													<p className="mt-0.5 whitespace-nowrap rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
 														{
@@ -772,74 +875,83 @@ function FulFillments({
 														}
 													</p>
 												)} */}
+											</div>
+
+											<div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500  dark:text-zinc-400">
+												<p className="whitespace-nowrap">
+													{
+														fulfillment.trackingInfo
+															.company
+													}
+												</p>
+												<svg
+													viewBox="0 0 2 2"
+													className="h-0.5 w-0.5 fill-current"
+												>
+													<circle
+														r={1}
+														cx={1}
+														cy={1}
+													/>
+												</svg>
+												<p className="truncate">
+													{
+														fulfillment.trackingInfo
+															.status
+													}
+												</p>
+											</div>
 										</div>
 
-										<div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500  dark:text-zinc-400">
-											<p className="whitespace-nowrap">
-												{
-													fulfillment.trackingInfo
-														.company
-												}
-											</p>
-											<svg
-												viewBox="0 0 2 2"
-												className="h-0.5 w-0.5 fill-current"
-											>
-												<circle r={1} cx={1} cy={1} />
-											</svg>
-											<p className="truncate">
-												{
-													fulfillment.trackingInfo
-														.status
-												}
-											</p>
-										</div>
+										<CopyButton
+											text={
+												fulfillment.trackingInfo.number
+											}
+										/>
 									</div>
+								) : (
+									<Link
+										to={`/fulfillments/${fulfillment.id}`}
+									>
+										<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
+											Needs tracking info
+										</span>
+									</Link>
+								)}
+							</td>
 
-									<CopyButton
-										text={fulfillment.trackingInfo.number}
+							<td className="whitespace-nowrap px-3 py-4">
+								<Link to={`/fulfillments/${fulfillment.id}`}>
+									<FulfillmentStatusBadge
+										status={fulfillment.status}
+									/>
+								</Link>
+							</td>
+
+							<td className="py-4 pl-3 pr-4 sm:pr-0">
+								<div className="flex items-center justify-end gap-x-4">
+									<Button
+										as="link"
+										to={`/fulfillments/${fulfillment.id}`}
+										size="sm"
+									>
+										View
+										<span className="sr-only">
+											, {fulfillment.name}
+										</span>
+									</Button>
+
+									<FulfillmentActions
+										id={fulfillment.id}
+										name={fulfillment.name}
 									/>
 								</div>
-							) : (
-								<Link to={`/fulfillments/${fulfillment.id}`}>
-									<span className="italic text-indigo-600 transition-colors hover:text-indigo-900 dark:text-zinc-500 dark:hover:text-white">
-										Needs tracking info
-									</span>
-								</Link>
-							)}
-						</td>
-
-						<td className="whitespace-nowrap px-3 py-4">
-							<Link to={`/fulfillments/${fulfillment.id}`}>
-								<FulfillmentStatusBadge
-									status={fulfillment.status}
-								/>
-							</Link>
-						</td>
-
-						<td className="py-4 pl-3 pr-4 sm:pr-0">
-							<div className="flex items-center justify-end gap-x-4">
-								<Button
-									as="link"
-									to={`/fulfillments/${fulfillment.id}`}
-									size="sm"
-								>
-									View
-									<span className="sr-only">
-										, {fulfillment.name}
-									</span>
-								</Button>
-
-								<FulfillmentActions
-									id={fulfillment.id}
-									name={fulfillment.name}
-								/>
-							</div>
-						</td>
-					</tr>
-				))}
-			</tbody>
-		</table>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</Form>
 	);
 }
 
