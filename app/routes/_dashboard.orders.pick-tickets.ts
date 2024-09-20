@@ -1,45 +1,12 @@
 import { json } from '@remix-run/node';
 import { prisma } from '~/db.server';
 import { normalizeStateInput } from '~/utils/us-states';
-import type { ActionFunction, LoaderFunction } from '@remix-run/node';
+import type { LoaderFunction } from '@remix-run/node';
+import { PDFDocument } from 'pdf-lib';
 
-export const loader: LoaderFunction = async ({ params }) => {
-	const fulfillmentId = params.fulfillmentId;
-	const fulfillment = await prisma.fulfillment.findUnique({
-		where: { id: fulfillmentId },
-		include: {
-			order: {
-				include: {
-					address: true,
-				},
-			},
-			lineItems: {
-				include: {
-					orderLineItem: { include: { sample: true } },
-				},
-			},
-			trackingInfo: true,
-		},
-	});
-
-	if (!fulfillment) {
-		throw json({ error: 'Fulfillment not found' }, { status: 404 });
-	}
-
-	const orderDetails = formatOrderDetails(fulfillment);
-	const pdfBuffer = await generateFedExLabelPDF(orderDetails);
-
-	return new Response(pdfBuffer, {
-		headers: {
-			'Content-Type': 'application/pdf',
-			'Content-Disposition': 'inline; filename="fedex-label.pdf"',
-		},
-	});
-};
-
-export const action: ActionFunction = async ({ request }) => {
-	const formData = await request.formData();
-	const ids = formData.getAll('fulfillmentIds') as string[];
+export const loader: LoaderFunction = async ({ request }) => {
+	const searchParams = new URL(request.url).searchParams;
+	const ids = searchParams.getAll('ids');
 
 	if (ids.length === 0) {
 		return json({ error: 'No fulfillments selected' });
@@ -69,7 +36,7 @@ export const action: ActionFunction = async ({ request }) => {
 		})
 	);
 
-	const combinedBuffer = combinePDFBuffers(pdfBuffers);
+	const combinedBuffer = await combinePDFBuffers(pdfBuffers);
 
 	return new Response(combinedBuffer, {
 		headers: {
@@ -124,33 +91,6 @@ function formatOrderDetails(data: any): string {
 	return `${orderNo}\n${divider}\n${items}\n\nShip to\n${addressString}\n\n${trackingInfo}`.trim();
 }
 
-async function generateFedExLabelPDF(orderDetails: string): Promise<Buffer> {
-	// Create a new PDF document with a 4x6 inches size (288x432 points)
-	const PDFDocument = require('pdfkit');
-	const doc = new PDFDocument({
-		size: [288, 432], // 4x6 inches in points (72 points per inch)
-		margin: 10, // Small margin to fit the label
-	});
-
-	// Add text to the PDF
-	doc.font('Helvetica-Bold').fontSize(10).text(orderDetails, {
-		align: 'left',
-		lineGap: 5,
-	});
-
-	// Finalize the PDF and return it as a buffer
-	doc.end();
-
-	const buffer = await new Promise<Buffer>((resolve, reject) => {
-		const chunks: Buffer[] = [];
-		doc.on('data', (chunk) => chunks.push(chunk));
-		doc.on('end', () => resolve(Buffer.concat(chunks)));
-		doc.on('error', reject);
-	});
-
-	return buffer;
-}
-
 async function generatePickTicketPDF(orderDetails: string): Promise<Buffer> {
 	const PDFDocument = require('pdfkit');
 	const doc = new PDFDocument({
@@ -177,28 +117,17 @@ async function generatePickTicketPDF(orderDetails: string): Promise<Buffer> {
 }
 
 async function combinePDFBuffers(buffers: Buffer[]): Promise<Buffer> {
-	const PDFDocument = require('pdfkit');
-	const doc = new PDFDocument();
+	const combinedPdf = await PDFDocument.create();
 
-	const combinedBuffer = await new Promise<Buffer>((resolve, reject) => {
-		const chunks: Buffer[] = [];
-		doc.on('data', (chunk) => chunks.push(chunk));
-		doc.on('end', () => resolve(Buffer.concat(chunks)));
-		doc.on('error', reject);
+	for (const buffer of buffers) {
+		const pdf = await PDFDocument.load(buffer);
+		const [copiedPage] = await combinedPdf.copyPages(
+			pdf,
+			pdf.getPageIndices()
+		);
+		combinedPdf.addPage(copiedPage);
+	}
 
-		buffers.forEach((buffer, index) => {
-			if (index > 0) {
-				doc.addPage(); // Add a new page for each order after the first one
-			}
-			doc.image(buffer, {
-				fit: [doc.page.width, doc.page.height],
-				align: 'center',
-				valign: 'center',
-			});
-		});
-
-		doc.end();
-	});
-
-	return combinedBuffer;
+	const combinedPdfBuffer = await combinedPdf.save();
+	return Buffer.from(combinedPdfBuffer);
 }

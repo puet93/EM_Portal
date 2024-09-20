@@ -76,9 +76,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 						},
 					},
 				],
-				isArchived: false,
 		  }
-		: { isArchived: false };
+		: {};
 
 	// Statuses
 	let statuses = searchParams.getAll('statuses') as FulfillmentStatus[];
@@ -347,26 +346,26 @@ export default function OrdersIndex() {
 					<div className="mt-4">
 						<div className="block">
 							<nav className="-mb-px flex space-x-8">
-								<div
-									className="whitespace-nowrap border-b-2 border-sky-500 px-1 pb-4 text-sm font-medium text-sky-600 dark:text-sky-400"
-									aria-current="page"
+								<Link
+									to=".."
+									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white"
 								>
 									Fulfillments
-								</div>
+								</Link>
 
 								<Link
-									to="all"
+									to="../all"
 									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white"
 								>
 									Order Admin
 								</Link>
 
-								<Link
-									to="archive"
-									className="whitespace-nowrap border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white"
+								<div
+									className="whitespace-nowrap border-b-2 border-sky-500 px-1 pb-4 text-sm font-medium text-sky-600 dark:text-sky-400"
+									aria-current="page"
 								>
 									Archive
-								</Link>
+								</div>
 							</nav>
 						</div>
 					</div>
