@@ -2,6 +2,15 @@ import '@shopify/shopify-api/adapters/node';
 import { shopifyApi, LATEST_API_VERSION, Session } from '@shopify/shopify-api';
 import { restResources } from '@shopify/shopify-api/rest/admin/2024-04';
 
+interface ErrorResult {
+	error: true;
+	message: string;
+}
+
+interface ShopifyProduct {
+	title: string;
+}
+
 const {
 	SHOPIFY_ACCESS_TOKEN,
 	SHOPIFY_API_KEY,
@@ -106,7 +115,7 @@ export const getMetafields = () => {
 	return metafieldKeys;
 };
 
-export const fetchOrderByName = async (name: string) => {
+export async function fetchOrderByName(name: string) {
 	// In Shopify, the name refers to the order number (e.g. #2002)
 
 	let queryString = `
@@ -159,7 +168,7 @@ export const fetchOrderByName = async (name: string) => {
 	} else {
 		return;
 	}
-};
+}
 
 export async function createShopifyProductFromSample(
 	title: String,
@@ -206,15 +215,6 @@ export async function createShopifyProductFromSample(
 	});
 
 	return response.body.data.productCreate.product;
-}
-
-interface ErrorResult {
-	error: true;
-	message: string;
-}
-
-interface ShopifyProduct {
-	title: string;
 }
 
 export async function fetchProductBySku(
@@ -312,3 +312,81 @@ export async function publishProduct(gid: string) {
 	const shopifyResponse = await graphqlClient.query({ data: queryString });
 	return shopifyResponse;
 }
+
+export async function createFulfillment() {
+	const fulfillmentOrderId = 'your_fulfillment_order_id'; // Replace with actual fulfillment order ID
+	const locationId = 'your_location_id'; // Replace with actual location ID
+
+	const response = await fetch(
+		`https://your-store.myshopify.com/admin/api/2023-07/fulfillments.json`,
+		{
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Shopify-Access-Token': 'your-access-token', // Replace with actual access token
+			},
+			body: JSON.stringify({
+				fulfillment: {
+					line_items_by_fulfillment_order: [
+						{
+							fulfillment_order_id: fulfillmentOrderId,
+						},
+					],
+					location_id: locationId,
+					tracking_info: {
+						number: '123456789',
+						company: 'FedEx',
+						url: 'https://www.fedex.com/fedextrack/?tracknumbers=123456789',
+					},
+				},
+			}),
+		}
+	);
+
+	const fulfillment = await response.json();
+	console.log(fulfillment);
+}
+
+export async function fetchLocations() {
+	const queryString = `{
+		locations(first: 10) {
+		  	edges {
+				node {
+			  		id
+			  		name
+				}
+		  	}
+		}
+	}`;
+
+	try {
+		const shopifyResponse = await graphqlClient.query({
+			data: queryString,
+		});
+
+		return shopifyResponse.body?.data.locations.edges.map(
+			(location: { node: { id: string; name: string } }) => location.node
+		);
+	} catch (e) {
+		console.log(e);
+		return;
+	}
+}
+
+// I.	CREATE ADMIN ORDER
+
+// 		A. 	PULL IN SHOPIFY ORDER FROM SHOPIFY
+
+//		B. 	ADD SHOPIFY ORDER ID TO ADMIN ORDER ID
+
+//		C.	ADD SHOPIFY FULFILLMENTORDERID TO ADMIN FULFILLMENTORDERID
+
+//		D. 	FOR EACH FULFILLMENTORDER, LOOP THROUGH THE LINE ITEMS
+
+// 			1. SEARCH FOR CORRESPONDING SAMPLE
+
+//			2. ADD SAMPLE TO ADMIN FULFILLMENT
+
+//			3. ADD QUANTITY OF SHOPIFY FULFILLMENT ORDER LINE ITEM TO ADMIN FULFILLMENT LINE ITEM
+
+// UPDATE SHOPIFY FULFILLMENT ORDER WHEN TRACKING NUMBER IS ENTERED
