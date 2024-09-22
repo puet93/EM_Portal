@@ -170,12 +170,13 @@ model Tile {
 }
 
 model Vendor {
-    id           String          @id @default(cuid())
-    name         String          @unique
-    fulfillments Fulfillment[]
-    products     VendorProduct[]
-    sample       Sample[]
-    users        User[]
+    id                String          @id @default(cuid())
+    name              String          @unique
+    shopifyLocationId String?
+    fulfillments      Fulfillment[]
+    products          VendorProduct[]
+    sample            Sample[]
+    users             User[]
 }
 
 model VendorProduct {
