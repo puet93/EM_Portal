@@ -138,21 +138,20 @@ model RetailerProduct {
 }
 
 model Sample {
-    id                 String          @id @default(cuid())
-    gid                String?         @unique
-    materialNo         String          @unique
-    title              String?
-    vendorTitle        String?
-    seriesName         String
-    seriesAlias        String?
-    color              String
-    colorAlias         String?
-    finish             String?
-    fulfillmentOrderId String?
-    orderLineItems     OrderLineItem[]
-    vendor             Vendor?         @relation(fields: [vendorId], references: [id])
-    vendorId           String?
-    vendorProducts     VendorProduct[]
+    id             String          @id @default(cuid())
+    gid            String?         @unique
+    materialNo     String          @unique
+    title          String?
+    vendorTitle    String?
+    seriesName     String
+    seriesAlias    String?
+    color          String
+    colorAlias     String?
+    finish         String?
+    orderLineItems OrderLineItem[]
+    vendor         Vendor?         @relation(fields: [vendorId], references: [id])
+    vendorId       String?
+    vendorProducts VendorProduct[]
 }
 
 model Tile {
