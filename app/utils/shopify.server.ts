@@ -313,40 +313,6 @@ export async function publishProduct(gid: string) {
 	return shopifyResponse;
 }
 
-export async function createFulfillment() {
-	const fulfillmentOrderId = 'your_fulfillment_order_id'; // Replace with actual fulfillment order ID
-	const locationId = 'your_location_id'; // Replace with actual location ID
-
-	const response = await fetch(
-		`https://your-store.myshopify.com/admin/api/2023-07/fulfillments.json`,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Shopify-Access-Token': 'your-access-token', // Replace with actual access token
-			},
-			body: JSON.stringify({
-				fulfillment: {
-					line_items_by_fulfillment_order: [
-						{
-							fulfillment_order_id: fulfillmentOrderId,
-						},
-					],
-					location_id: locationId,
-					tracking_info: {
-						number: '123456789',
-						company: 'FedEx',
-						url: 'https://www.fedex.com/fedextrack/?tracknumbers=123456789',
-					},
-				},
-			}),
-		}
-	);
-
-	const fulfillment = await response.json();
-	console.log(fulfillment);
-}
-
 export async function fetchLocations() {
 	const queryString = `{
 		locations(first: 10) {
@@ -373,20 +339,91 @@ export async function fetchLocations() {
 	}
 }
 
-// I.	CREATE ADMIN ORDER
+export async function addTag({ id, tag }: { id: string; tag: string }) {
+	// Define the mutation with variables
+	const mutation = `#graphql mutation tagsAdd($id: ID!, $tags: [String!]!) {
+    	tagsAdd(id: $id, tags: $tags) {
+      		node {
+        		id
+      		}
+			userErrors {
+				field
+				message
+      		}
+    	}
+  	}`;
 
-// 		A. 	PULL IN SHOPIFY ORDER FROM SHOPIFY
+	const variables = {
+		id: id,
+		tags: [tag],
+	};
 
-//		B. 	ADD SHOPIFY ORDER ID TO ADMIN ORDER ID
+	try {
+		const response = await graphqlClient.query({
+			data: {
+				query: mutation,
+				variables: variables,
+			},
+		});
+		console.log('Tags added successfully:', response.body.data);
+	} catch (error) {
+		console.error('Error updating tags:', error);
+	}
+}
 
-//		C.	ADD SHOPIFY FULFILLMENTORDERID TO ADMIN FULFILLMENTORDERID
+interface TrackingInfo {
+	company: 'FedEx' | 'UPS' | 'USPS';
+	number: string;
+	url: string;
+}
 
-//		D. 	FOR EACH FULFILLMENTORDER, LOOP THROUGH THE LINE ITEMS
+export async function createFulfillment(
+	fulfillmentOrderId: string,
+	notifyCustomer: boolean,
+	trackingInfo: TrackingInfo
+) {
+	const createFulfillmentMutation = `mutation fulfillmentCreateV2($fulfillment: FulfillmentV2Input!) {
+      	fulfillmentCreateV2(fulfillment: $fulfillment) {
+			fulfillment {
+				id
+				status
+				trackingInfo {
+					number
+					company
+					url
+				}
+			}
+        	userErrors {
+				field
+				message
+        	}
+      	}
+    }`;
 
-// 			1. SEARCH FOR CORRESPONDING SAMPLE
+	const fulfillmentVariables = {
+		fulfillment: {
+			lineItemsByFulfillmentOrder: {
+				fulfillmentOrderId: fulfillmentOrderId,
+			},
+			notifyCustomer: notifyCustomer,
+			trackingInfo: trackingInfo,
+		},
+	};
 
-//			2. ADD SAMPLE TO ADMIN FULFILLMENT
+	const response = await graphqlClient.query({
+		data: {
+			query: createFulfillmentMutation,
+			variables: fulfillmentVariables,
+		},
+	});
 
-//			3. ADD QUANTITY OF SHOPIFY FULFILLMENT ORDER LINE ITEM TO ADMIN FULFILLMENT LINE ITEM
+	const { fulfillmentCreateV2 } = response.body.data;
+	if (fulfillmentCreateV2.userErrors.length > 0) {
+		throw new Error(
+			`Failed to create Fulfillment: ${fulfillmentCreateV2.userErrors[0].message}`
+		);
+	}
 
-// UPDATE SHOPIFY FULFILLMENT ORDER WHEN TRACKING NUMBER IS ENTERED
+	console.log('Fulfillment created:', fulfillmentCreateV2.fulfillment.id);
+	return fulfillmentCreateV2.fulfillment;
+}

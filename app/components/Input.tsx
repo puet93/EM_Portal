@@ -92,6 +92,8 @@ interface SelectProps {
 	defaultValue?: string;
 	hasBlankOption?: boolean;
 	blankOptionLabel?: string;
+	value?: string;
+	onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 export function Select({
@@ -101,13 +103,15 @@ export function Select({
 	defaultValue,
 	hasBlankOption = false,
 	blankOptionLabel = '',
+	value,
+	onChange,
 }: SelectProps) {
 	return (
 		<select
 			id={id}
 			name={name}
 			className={commonClasses}
-			defaultValue={defaultValue}
+			{...(value !== undefined ? { value, onChange } : { defaultValue })}
 		>
 			{hasBlankOption && <option value="">{blankOptionLabel}</option>}
 			{options.map((option) => (
