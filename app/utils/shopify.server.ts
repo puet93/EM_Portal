@@ -341,7 +341,7 @@ export async function fetchLocations() {
 
 export async function addTag({ id, tag }: { id: string; tag: string }) {
 	// Define the mutation with variables
-	const mutation = `#graphql mutation tagsAdd($id: ID!, $tags: [String!]!) {
+	const mutation = `mutation tagsAdd($id: ID!, $tags: [String!]!) {
     	tagsAdd(id: $id, tags: $tags) {
       		node {
         		id
