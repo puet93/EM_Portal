@@ -43,8 +43,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	}`;
 
 	// TODO: Add warning for duplicate SKUs
-	const res = await graphqlClient.query({ data: query }).then((res) => {
-		const edges = res.body?.data.productVariants.edges;
+	const res = await graphqlClient.request(query).then((res) => {
+		const edges = res.data.productVariants.edges;
 		if (edges.length === 0) return null;
 		return edges[0].node;
 	});

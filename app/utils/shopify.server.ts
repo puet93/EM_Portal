@@ -35,6 +35,7 @@ const shopify = shopifyApi({
 	hostName: process.env.NODE_ENV == 'development' ? '127.0.0.1:3000' : shop,
 	restResources,
 	isEmbeddedApp: false,
+	future: { v10_lineItemBilling: true },
 });
 const sessionId = shopify.session.getOfflineId(shop);
 const session = new Session({
