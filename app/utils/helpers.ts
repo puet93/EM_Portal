@@ -49,8 +49,20 @@ export function calculatePricePerCarton(
 	return Number(price.toFixed(2));
 }
 
-export function cleanPhoneNumber(phone: string): string {
-	return phone.replace(/[\+\-\(\)\s]/g, '').replace(/^1/, '');
+// export function cleanPhoneNumber(phone: string): string {
+// 	return phone.replace(/[\+\-\(\)\s]/g, '').replace(/^1/, '');
+// }
+
+export function cleanPhoneNumber(phoneNumber: string): string {
+	// Remove all special characters: (, ), +, -, and spaces
+	let cleanedNumber = phoneNumber.replace(/[\s()+-]/g, '');
+
+	// Remove the leading '1' if it exists (for U.S. country code)
+	if (cleanedNumber.startsWith('1') && cleanedNumber.length === 11) {
+		cleanedNumber = cleanedNumber.substring(1);
+	}
+
+	return cleanedNumber;
 }
 
 export function stripHashtag(str: string): string {

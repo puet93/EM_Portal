@@ -6,8 +6,9 @@ import {
 	useNavigation,
 	useSubmit,
 } from '@remix-run/react';
-import { prisma } from '~/db.server';
 import { useEffect, useState } from 'react';
+import { prisma } from '~/db.server';
+import { requireSuperAdmin } from '~/session.server';
 import { EditIcon, SearchIcon, TrashIcon } from '~/components/Icons';
 import Counter from '~/components/Counter';
 
@@ -41,6 +42,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 };
 
 export const action: ActionFunction = async ({ params, request }) => {
+	await requireSuperAdmin(request);
+
 	const formData = await request.formData();
 	const _action = formData.get('_action');
 

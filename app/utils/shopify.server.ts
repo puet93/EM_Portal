@@ -2,6 +2,15 @@ import '@shopify/shopify-api/adapters/node';
 import { shopifyApi, LATEST_API_VERSION, Session } from '@shopify/shopify-api';
 import { restResources } from '@shopify/shopify-api/rest/admin/2024-04';
 
+interface ErrorResult {
+	error: true;
+	message: string;
+}
+
+interface ShopifyProduct {
+	title: string;
+}
+
 const {
 	SHOPIFY_ACCESS_TOKEN,
 	SHOPIFY_API_KEY,
@@ -26,6 +35,7 @@ const shopify = shopifyApi({
 	hostName: process.env.NODE_ENV == 'development' ? '127.0.0.1:3000' : shop,
 	restResources,
 	isEmbeddedApp: false,
+	future: { v10_lineItemBilling: true },
 });
 const sessionId = shopify.session.getOfflineId(shop);
 const session = new Session({
@@ -106,7 +116,7 @@ export const getMetafields = () => {
 	return metafieldKeys;
 };
 
-export const fetchOrderByName = async (name: string) => {
+export async function fetchOrderByName(name: string) {
 	// In Shopify, the name refers to the order number (e.g. #2002)
 
 	let queryString = `
@@ -159,7 +169,7 @@ export const fetchOrderByName = async (name: string) => {
 	} else {
 		return;
 	}
-};
+}
 
 export async function createShopifyProductFromSample(
 	title: String,
@@ -206,15 +216,6 @@ export async function createShopifyProductFromSample(
 	});
 
 	return response.body.data.productCreate.product;
-}
-
-interface ErrorResult {
-	error: true;
-	message: string;
-}
-
-interface ShopifyProduct {
-	title: string;
 }
 
 export async function fetchProductBySku(
@@ -311,4 +312,119 @@ export async function publishProduct(gid: string) {
 
 	const shopifyResponse = await graphqlClient.query({ data: queryString });
 	return shopifyResponse;
+}
+
+export async function fetchLocations() {
+	const queryString = `{
+		locations(first: 10) {
+		  	edges {
+				node {
+			  		id
+			  		name
+				}
+		  	}
+		}
+	}`;
+
+	try {
+		const shopifyResponse = await graphqlClient.query({
+			data: queryString,
+		});
+
+		return shopifyResponse.body?.data.locations.edges.map(
+			(location: { node: { id: string; name: string } }) => location.node
+		);
+	} catch (e) {
+		console.log(e);
+		return;
+	}
+}
+
+export async function addTag({ id, tag }: { id: string; tag: string }) {
+	// Define the mutation with variables
+	const mutation = `mutation tagsAdd($id: ID!, $tags: [String!]!) {
+    	tagsAdd(id: $id, tags: $tags) {
+      		node {
+        		id
+      		}
+			userErrors {
+				field
+				message
+      		}
+    	}
+  	}`;
+
+	const variables = {
+		id: id,
+		tags: [tag],
+	};
+
+	try {
+		const response = await graphqlClient.query({
+			data: {
+				query: mutation,
+				variables: variables,
+			},
+		});
+		console.log('Tags added successfully:', response.body.data);
+	} catch (error) {
+		console.error('Error updating tags:', error);
+	}
+}
+
+interface TrackingInfo {
+	company: 'FedEx' | 'UPS' | 'USPS';
+	number: string;
+	url: string;
+}
+
+export async function createFulfillment(
+	fulfillmentOrderId: string,
+	notifyCustomer: boolean,
+	trackingInfo: TrackingInfo
+) {
+	const createFulfillmentMutation = `mutation fulfillmentCreateV2($fulfillment: FulfillmentV2Input!) {
+      	fulfillmentCreateV2(fulfillment: $fulfillment) {
+			fulfillment {
+				id
+				status
+				trackingInfo {
+					number
+					company
+					url
+				}
+			}
+        	userErrors {
+				field
+				message
+        	}
+      	}
+    }`;
+
+	const fulfillmentVariables = {
+		fulfillment: {
+			lineItemsByFulfillmentOrder: {
+				fulfillmentOrderId: fulfillmentOrderId,
+			},
+			notifyCustomer: notifyCustomer,
+			trackingInfo: trackingInfo,
+		},
+	};
+
+	const response = await graphqlClient.query({
+		data: {
+			query: createFulfillmentMutation,
+			variables: fulfillmentVariables,
+		},
+	});
+
+	const { fulfillmentCreateV2 } = response.body.data;
+	if (fulfillmentCreateV2.userErrors.length > 0) {
+		throw new Error(
+			`Failed to create Fulfillment: ${fulfillmentCreateV2.userErrors[0].message}`
+		);
+	}
+
+	console.log('Fulfillment created:', fulfillmentCreateV2.fulfillment.id);
+	return fulfillmentCreateV2.fulfillment;
 }

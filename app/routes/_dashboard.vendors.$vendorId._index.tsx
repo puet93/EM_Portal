@@ -10,11 +10,20 @@ import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
 import { combineArrays, standardizeQueryString } from '~/utils/helpers';
 import { badRequest } from '~/utils/request.server';
+import { fetchLocations } from '~/utils/shopify.server';
 
-import { Input } from '~/components/Input';
+import { Button } from '~/components/Buttons';
+import { Input, Label, Select } from '~/components/Input';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 	await requireUserId(request);
+
+	let locations = [];
+	try {
+		locations = await fetchLocations();
+	} catch (e) {
+		console.log(e);
+	}
 
 	const vendor = await prisma.vendor.findUnique({
 		where: { id: params.vendorId },
@@ -60,7 +69,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 		},
 	});
 
-	return json({ vendor, products });
+	return json({ vendor, products, locations });
 };
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
@@ -192,6 +201,13 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
 			return badRequest({ formError: 'Not yet implemented.' });
 		}
+		case 'update_location': {
+			const locationId = formData.get('locationId');
+			await prisma.vendor.update({
+				where: { id: params.vendorId },
+				data: { shopifyLocationId: locationId },
+			});
+		}
 		default:
 			return badRequest({ formError: 'Unsupported action.' });
 	}
@@ -216,6 +232,47 @@ export default function VendorProductsPage() {
 			</header>
 
 			<div className="page-layout">
+				{data.locations.length > 0 ? (
+					<Form
+						method="post"
+						className="flex items-end gap-x-3"
+						replace
+					>
+						<div>
+							<Label htmlFor="locationId">Shopify location</Label>
+
+							<div className="mt-2">
+								<Select
+									id="locationId"
+									name="locationId"
+									options={data.locations.map(
+										(location: {
+											id: string;
+											name: string;
+										}) => ({
+											value: location.id,
+											label: location.name,
+										})
+									)}
+									hasBlankOption
+									defaultValue={
+										data.vendor.shopifyLocationId || ''
+									}
+								/>
+							</div>
+						</div>
+
+						<Button
+							type="submit"
+							name="_action"
+							value="update_location"
+							color="primary"
+						>
+							Update Location
+						</Button>
+					</Form>
+				) : null}
+
 				<Form method="get" replace>
 					<div
 						style={{

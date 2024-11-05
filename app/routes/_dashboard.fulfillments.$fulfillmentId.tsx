@@ -27,11 +27,12 @@ import { requireUser } from '~/session.server';
 import { TrashIcon } from '~/components/Icons';
 import { parseISO, format } from 'date-fns';
 import { Button, CopyButton } from '~/components/Buttons';
-import { Select } from '~/components/Input';
+import { Input, Select } from '~/components/Input';
 import { ShippingLabelForm } from '~/components/ShippingForms';
 
 import type { FulfillmentStatus } from '@prisma/client';
 import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
+import { createFulfillment } from '~/utils/shopify.server';
 
 const menuItemButtonStyle =
 	'block w-full px-4 py-2 text-left text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 dark:text-white dark:data-[focus]:bg-sky-600';
@@ -151,6 +152,7 @@ export const action: ActionFunction = async ({ params, request }) => {
 
 			const trackingNumber = formData.get('trackingNumber');
 			const shippingCarrier = formData.get('shippingCarrier');
+
 			if (
 				typeof trackingNumber !== 'string' ||
 				trackingNumber.length == 0
@@ -187,6 +189,36 @@ export const action: ActionFunction = async ({ params, request }) => {
 					},
 				},
 			});
+
+			if (fulfillment.shopifyFulfillmentOrderId) {
+				// TODO: Check to see if fulfillmentOrder is closed
+
+				let trackingUrl = '';
+
+				if (shippingCarrier.toLowerCase() === 'fedex') {
+					trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+				} else if (shippingCarrier.toLowerCase() === 'ups') {
+					trackingUrl = `https://www.ups.com/WebTracking?loc=en_US&requester=ST&trackNums=${trackingNumber}`;
+				} else {
+					trackingUrl = '';
+				}
+
+				try {
+					await createFulfillment(
+						fulfillment.shopifyFulfillmentOrderId,
+						false,
+						{
+							company: shippingCarrier,
+							number: trackingNumber,
+							url: trackingUrl,
+						}
+					);
+				} catch (error) {
+					console.log('Unable to update tracking info on Shopify.');
+					console.log(error);
+				}
+			}
+
 			return json({ success: 'Saved!' });
 		}
 		case 'complete': {
@@ -945,19 +977,22 @@ function TrackingForm({
 					placeholder="Tracking number"
 					value={trackingNumber}
 					onChange={handleTrackingNumberChange}
-					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+					className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:placeholder:text-zinc-600 dark:focus:ring-sky-500 sm:text-sm sm:leading-6"
 				/>
 			</div>
 
-			<div className="">
+			<div>
 				<label className="sr-only">Shipping carrier</label>
-				<input
-					type="text"
+				<Select
+					id="shippingCarrier"
 					name="shippingCarrier"
-					placeholder="Shipping carrier"
+					hasBlankOption
 					value={carrier}
 					onChange={(e) => setCarrier(e.target.value)}
-					className="block w-full rounded-md border-0 px-2 py-1 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-zinc-950 dark:text-white dark:ring-0 dark:placeholder:text-zinc-600 sm:text-sm sm:leading-6"
+					options={[
+						{ value: 'FedEx', label: 'FedEx' },
+						{ value: 'UPS', label: 'UPS' },
+					]}
 				/>
 			</div>
 

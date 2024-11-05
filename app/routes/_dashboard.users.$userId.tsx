@@ -26,13 +26,26 @@ export const action: ActionFunction = async ({ params, request }) => {
 	await requireSuperAdmin(request);
 
 	const formData = await request.formData();
-	const { ...values } = Object.fromEntries(formData);
+	let { role, vendorId, ...values } = Object.fromEntries(formData);
+
+	const updateData = { ...values };
+	updateData.role = role;
+
+	if (role === 'SUPERADMIN' || !vendorId) {
+		updateData.vendor = {
+			disconnect: true, // Always disconnect vendor if role is SUPERADMIN
+		};
+	} else {
+		updateData.vendor = {
+			connect: { id: vendorId },
+		};
+	}
 
 	await prisma.user.update({
 		where: {
 			id: params.userId,
 		},
-		data: values,
+		data: updateData,
 	});
 
 	return json({ success: true, message: 'User role updated!' });
@@ -95,6 +108,7 @@ export default function UserPage() {
 						name="vendorId"
 						options={data.vendorOptions}
 						defaultValue={data.user?.vendorId || undefined}
+						hasBlankOption
 					/>
 				</div>
 

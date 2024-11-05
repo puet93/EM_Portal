@@ -66,17 +66,19 @@ model Comment {
 }
 
 model Fulfillment {
-    id           String                @id @default(cuid())
-    name         String                @unique
-    comments     Comment[]
-    lineItems    FulfillmentLineItem[]
-    order        Order                 @relation(fields: [orderId], references: [id])
-    orderId      String
-    status       FulfillmentStatus     @default(NEW)
-    trackingInfo TrackingInfo?
-    vendor       Vendor?               @relation(fields: [vendorId], references: [id])
-    vendorId     String?
-    isArchived   Boolean?              @default(false)
+    id                        String                @id @default(cuid())
+    name                      String                @unique
+    comments                  Comment[]
+    lineItems                 FulfillmentLineItem[]
+    order                     Order                 @relation(fields: [orderId], references: [id])
+    orderId                   String
+    status                    FulfillmentStatus     @default(NEW)
+    trackingInfo              TrackingInfo?
+    vendor                    Vendor?               @relation(fields: [vendorId], references: [id])
+    vendorId                  String?
+    isArchived                Boolean?              @default(false)
+    shopifyFulfillmentId      String?
+    shopifyFulfillmentOrderId String?
 }
 
 model FulfillmentLineItem {
@@ -170,12 +172,13 @@ model Tile {
 }
 
 model Vendor {
-    id           String          @id @default(cuid())
-    name         String          @unique
-    fulfillments Fulfillment[]
-    products     VendorProduct[]
-    sample       Sample[]
-    users        User[]
+    id                String          @id @default(cuid())
+    name              String          @unique
+    shopifyLocationId String?         @unique
+    fulfillments      Fulfillment[]
+    products          VendorProduct[]
+    sample            Sample[]
+    users             User[]
 }
 
 model VendorProduct {
