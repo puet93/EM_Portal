@@ -1,6 +1,9 @@
 import type { ActionFunctionArgs } from '@remix-run/node';
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
+
+	console.log('SHOPIY ORDER CREATION');
+
 	try {
 		if (request.method !== 'POST') {
 			console.error('Invalid request method:', request.method);
