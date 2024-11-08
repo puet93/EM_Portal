@@ -46,7 +46,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 	const generateLabelsForLineItem = (label, title, orderName, materialNo) => {
 		for (let j = 0; j < label.quantity; j++) {
 			if(!isFirstPage || j > 0) {
-				doc.addPage(pageOptions);
+				doc.addPage();
 			}
 			generateLabelDetails(doc, title, orderName, materialNo);
 		}
