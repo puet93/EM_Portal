@@ -38,8 +38,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 			.text(materialNo)
 			.fontSize(11)
 			.text('www.edwardmartin.com', 24, 158, { width: 168, align: 'left' })
-			.fontSize(11)
-			.text(orderName, 192, 158, { width: 168, align: 'right' })
+			// .fontSize(11)
+			// .text(orderName, 192, 158, { width: 168, align: 'right' })
 	}
 
 	// Generate labels for a line item
