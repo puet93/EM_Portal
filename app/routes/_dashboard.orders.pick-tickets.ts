@@ -1,8 +1,8 @@
 import { json } from '@remix-run/node';
 import { prisma } from '~/db.server';
+import { combinePDFBuffers } from '~/utils/helpers';
 import { normalizeStateInput } from '~/utils/us-states';
 import type { LoaderFunction } from '@remix-run/node';
-import { PDFDocument } from 'pdf-lib';
 
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
@@ -114,20 +114,4 @@ async function generatePickTicketPDF(orderDetails: string): Promise<Buffer> {
 	});
 
 	return buffer;
-}
-
-async function combinePDFBuffers(buffers: Buffer[]): Promise<Buffer> {
-	const combinedPdf = await PDFDocument.create();
-
-	for (const buffer of buffers) {
-		const pdf = await PDFDocument.load(buffer);
-		const [copiedPage] = await combinedPdf.copyPages(
-			pdf,
-			pdf.getPageIndices()
-		);
-		combinedPdf.addPage(copiedPage);
-	}
-
-	const combinedPdfBuffer = await combinedPdf.save();
-	return Buffer.from(combinedPdfBuffer);
 }

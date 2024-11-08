@@ -1,3 +1,5 @@
+import { PDFDocument } from 'pdf-lib';
+
 export function combineArrays(arrays: any[]): any[] {
 	const combined = [];
 	for (let i = 0; i < arrays.length; i++) {
@@ -49,10 +51,6 @@ export function calculatePricePerCarton(
 	return Number(price.toFixed(2));
 }
 
-// export function cleanPhoneNumber(phone: string): string {
-// 	return phone.replace(/[\+\-\(\)\s]/g, '').replace(/^1/, '');
-// }
-
 export function cleanPhoneNumber(phoneNumber: string): string {
 	// Remove all special characters: (, ), +, -, and spaces
 	let cleanedNumber = phoneNumber.replace(/[\s()+-]/g, '');
@@ -67,4 +65,22 @@ export function cleanPhoneNumber(phoneNumber: string): string {
 
 export function stripHashtag(str: string): string {
 	return str.replace(/^#/, '');
+}
+
+// PDF Helpers
+
+export async function combinePDFBuffers(buffers: Buffer[]): Promise<Buffer> {
+	const combinedPdf = await PDFDocument.create();
+
+	for (const buffer of buffers) {
+		const pdf = await PDFDocument.load(buffer);
+		const [copiedPage] = await combinedPdf.copyPages(
+			pdf,
+			pdf.getPageIndices()
+		);
+		combinedPdf.addPage(copiedPage);
+	}
+
+	const combinedPdfBuffer = await combinedPdf.save();
+	return Buffer.from(combinedPdfBuffer);
 }
