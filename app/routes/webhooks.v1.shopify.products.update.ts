@@ -1,8 +1,9 @@
 import type { ActionFunctionArgs } from '@remix-run/node';
+import { graphqlClient } from '~/utils/shopify.server';
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
 
-	console.log('SHOPIY ORDER UPDATE');
+	console.log('SHOPIY PRODUCT UPDATED');
 
 	try {
 		if (request.method !== 'POST') {
@@ -11,15 +12,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 		}
 
 		// Extract and parse the request body
-		const requestBody = await request.json(); // Use await for asynchronous body parsing
-		// console.log('Request received:', requestBody);
-		console.log(JSON.stringify(requestBody));
-
-		if (requestBody?.company) {
-			console.log("COMPANY OBJECT", requestBody?.company)
-		} else {
-			console.log("NO COMPANY")
-		}
+		const requestBody = await request.json();
 
 		// Validate the structure of the webhook payload
 		if (!requestBody || typeof requestBody !== 'object') {
@@ -27,11 +20,10 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 			return new Response('Bad Request: Invalid JSON', { status: 400 });
 		}
 
-		// Process the request
-		console.log('Processing webhook for order:', requestBody.order_number);
+		console.log(requestBody)
 
-		return new Response('Order updated webhook received successfully', {
-			status: 201,
+		return new Response('Product update webhook received successfully', {
+			status: 200,
 		});
 	} catch (error) {
 		console.error('Error processing request:', error);

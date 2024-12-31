@@ -79,6 +79,8 @@ model Fulfillment {
     isArchived                Boolean?              @default(false)
     shopifyFulfillmentId      String?
     shopifyFulfillmentOrderId String?
+    shopifyLocationId         String?
+    shopifyLocationName         String?
 }
 
 model FulfillmentLineItem {
@@ -127,6 +129,8 @@ model OrderLineItem {
     sampleId            String
     quantity            Int                  @default(1)
     fulfillmentLineItem FulfillmentLineItem?
+    shopifyLocationId   String?
+    shopifyLocationName String?
 }
 
 model RetailerProduct {
@@ -174,7 +178,7 @@ model Tile {
 model Vendor {
     id                String          @id @default(cuid())
     name              String          @unique
-    shopifyLocationId String?         @unique
+    shopifyLocationId String?
     fulfillments      Fulfillment[]
     products          VendorProduct[]
     sample            Sample[]

@@ -44,9 +44,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 	// Create vendor option dropdown if user is a super admin
 	let vendorOptions: Option[] = [];
+	let vendorsArray = await fetchVendors()
 	if (user.role === 'SUPERADMIN') {
 		vendorOptions = createDropdownOptions({
-			array: await fetchVendors(),
+			array: vendorsArray,
 			labelKey: 'name',
 			valueKey: 'id',
 		});
@@ -105,20 +106,56 @@ export const loader: LoaderFunction = async ({ request }) => {
 	// Vendors
 	let vendors = searchParams.getAll('vendors');
 	if (user.role !== 'SUPERADMIN') {
-		where = {
-			...where,
-			vendorId: user.vendorId,
-		};
-	} else if (vendors && vendors.length > 0) {
-		where = {
-			...where,
-			vendorId: { in: vendors },
-		};
+		const shopifyLocationName = { startsWith: vendorsArray.find(vendor => vendor.id === user.vendorId)?.name }
+
+		if (where.OR) {
+			const originalOR = where.OR
+			delete where.OR;
+
+			where = {
+				...where,
+				AND: [
+					{ OR: originalOR },
+					{ OR: [ { vendorId: user.vendorId }, { shopifyLocationName } ] }
+				]
+			};
+		} else {
+			where = {
+				...where,
+				OR: [
+					{ vendorId: user.vendorId },
+					{ shopifyLocationName }
+				]
+			};
+		}
+	} else if (vendors && vendors.length > 0) {		
+		const selectedVendors = vendorsArray
+			.filter(vendor => vendors.includes(vendor.id))
+			.map(vendor => ({ shopifyLocationName: { startsWith: vendor.name } }));
+
+		selectedVendors.push({ vendorId: { in: vendors } })
+
+		if (where.OR) {
+			const originalOR = where.OR
+			delete where.OR;
+
+			where = {
+				...where,
+				AND: [
+					{ OR: originalOR },
+					{ OR: selectedVendors }
+				]
+			};
+		} else {
+			where = {
+				...where,
+				OR: selectedVendors
+			};
+		}
 	} else if (searchParams.has('search')) {
 		// If search is present but no vendors are selected, query all vendors
 		where = {
 			...where,
-			vendorId: { in: undefined },
 		};
 	}
 
@@ -881,7 +918,7 @@ function FulFillments({
 									</div>
 
 									<div className="mt-1 text-xs font-normal text-gray-500 dark:text-zinc-300">
-										{fulfillment.vendor?.name}
+										{fulfillment.shopifyLocationName || fulfillment.vendor?.name || ""}
 									</div>
 								</Link>
 							</td>

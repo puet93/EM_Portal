@@ -134,6 +134,22 @@ export async function fetchOrderByName(name: string) {
 						zip
 						phone
 					}
+					fulfillmentOrders(first: 30) {
+						nodes {
+							assignedLocation {
+								location {
+									id
+									name
+								}
+							}
+							lineItems(first: 100) {
+								nodes {
+									sku
+									totalQuantity
+								}
+							}
+						}
+					}
 					lineItems(first: 100) {
 						nodes {
 							title

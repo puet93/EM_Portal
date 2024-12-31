@@ -59,99 +59,131 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData();
-	const cart = formData.get('cart');
-	const address = formData.get('address');
-	const orderName = formData.get('orderName');
-	const shopifyOrderId = formData.get('shopifyOrderId');
+	const _action = formData.get('_action');
 
-	if (typeof cart !== 'string' || cart.length === 0) {
-		return json({ error: 'Unable to get cart.' });
-	}
-
-	if (typeof address !== 'string' || address.length === 0) {
-		return json({ error: 'Unable to get address.' });
-	}
-
-	if (typeof orderName !== 'string' || orderName.length === 0) {
-		return json({ error: 'Unable to get order name.' });
-	}
-
-	if (typeof shopifyOrderId !== 'string' || shopifyOrderId.length === 0) {
-		return json({ error: 'Unable to get order id.' });
-	}
-
-	const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
-	const parsedAddress = JSON.parse(address);
-	const fulfillments: string[] = [];
-
-	parsedCart.filter((item) => {
-		console.log('SAMPLE ID', item.id);
-		if (!item.vendorId) return; // Seems like a good place to check for no vendors
-
-		if (!fulfillments.includes(item.vendorId)) {
-			fulfillments.push(item.vendorId);
-		}
-	});
-
-	try {
-		const response = await prisma.$transaction(async (tx) => {
-			// Create the order, order line items, and fulfillments
-			const order = await prisma.order.create({
-				data: {
-					name: orderName,
-					shopifyOrderId: shopifyOrderId,
-					lineItems: {
-						create: parsedCart.map((item) => ({
-							sampleId: item.id,
-							quantity: Number(item.quantity),
-						})),
-					},
-					fulfillments: {
-						create: fulfillments.map((vendorId, index) => ({
-							name: `${orderName}-F${index + 1}`,
-							vendorId: vendorId,
-						})),
-					},
-					address: {
-						create: parsedAddress,
-					},
-				},
-				include: {
-					lineItems: {
-						include: {
-							sample: true,
+	switch (_action) {
+		case 'create_order': {
+			const cart = formData.get('cart');
+			const address = formData.get('address');
+			const orderName = formData.get('orderName');
+			const shopifyOrderId = formData.get('shopifyOrderId');
+		
+			if (typeof cart !== 'string' || cart.length === 0) {
+				return json({ error: 'Unable to get cart.' });
+			}
+		
+			if (typeof address !== 'string' || address.length === 0) {
+				return json({ error: 'Unable to get address.' });
+			}
+		
+			if (typeof orderName !== 'string' || orderName.length === 0) {
+				return json({ error: 'Unable to get order name.' });
+			}
+		
+			if (typeof shopifyOrderId !== 'string' || shopifyOrderId.length === 0) {
+				return json({ error: 'Unable to get order id.' });
+			}
+		
+			const parsedCart: { id: string; quantity: string }[] = JSON.parse(cart);
+			const parsedAddress = JSON.parse(address);
+			const fulfillments: string[] = [];
+		
+			parsedCart.filter((item) => {
+				console.log('SAMPLE ID', item.id);
+				if (!item.vendorId) return; // Seems like a good place to check for no vendors
+		
+				if (!fulfillments.includes(item.vendorId)) {
+					fulfillments.push(item.vendorId);
+				}
+			});
+		
+			try {
+				const response = await prisma.$transaction(async (tx) => {
+					// Create the order, order line items, and fulfillments
+					const order = await prisma.order.create({
+						data: {
+							name: orderName,
+							shopifyOrderId: shopifyOrderId,
+							lineItems: {
+								create: parsedCart.map((item) => ({
+									sampleId: item.id,
+									quantity: Number(item.quantity),
+								})),
+							},
+							fulfillments: {
+								create: fulfillments.map((vendorId, index) => ({
+									name: `${orderName}-F${index + 1}`,
+									vendorId: vendorId,
+								})),
+							},
+							address: {
+								create: parsedAddress,
+							},
 						},
-					},
-					fulfillments: true,
-				},
-			});
-
-			// Add the order line-items as fulfillment line-items to the correct fulfillments
-			order.lineItems.map(async (orderLineItem) => {
-				const fulfillment = await prisma.fulfillment.findFirst({
-					where: {
-						orderId: order.id,
-						vendorId: orderLineItem.sample.vendorId,
-					},
+						include: {
+							lineItems: {
+								include: {
+									sample: true,
+								},
+							},
+							fulfillments: true,
+						},
+					});
+		
+					// Add the order line-items as fulfillment line-items to the correct fulfillments
+					order.lineItems.map(async (orderLineItem) => {
+						const fulfillment = await prisma.fulfillment.findFirst({
+							where: {
+								orderId: order.id,
+								vendorId: orderLineItem.sample.vendorId,
+							},
+						});
+		
+						if (!fulfillment)
+							throw new Error('Unable to find fulfillment!');
+		
+						await prisma.fulfillmentLineItem.create({
+							data: {
+								orderLineItemId: orderLineItem.id,
+								fulfillmentId: fulfillment.id,
+							},
+						});
+					});
+		
+					return order;
 				});
+		
+				return redirect(`/orders/drafts/${response.id}`);
+			} catch (e) {
+				return badRequest({ errors: { form: e.message || 'Unknown error.' } });
+			}
+		}
+		case 'create_order_from_shopify': {
+			console.log('CREATING ORDER FROM SHOPIFY');
+			
+			// Get order name from form data
+			const orderName = formData.get('query');
 
-				if (!fulfillment)
-					throw new Error('Unable to find fulfillment!');
+			// TODO: Check to see if order already exists in the database
 
-				await prisma.fulfillmentLineItem.create({
-					data: {
-						orderLineItemId: orderLineItem.id,
-						fulfillmentId: fulfillment.id,
-					},
-				});
-			});
+			// Fetch order from Shopify with order name
+			const shopifyOrder = await fetchOrderByName(orderName)
+			
 
-			return order;
-		});
+			shopifyOrder.fulfillmentOrders = shopifyOrder.fulfillmentOrders.nodes
 
-		return redirect(`/orders/drafts/${response.id}`);
-	} catch (e) {
-		return badRequest({ errors: { form: e.message || 'Unknown error.' } });
+			console.log('FULFILLMENT ORDERS', shopifyOrder.fulfillmentOrders)
+			
+
+			// Create order
+			const order = await createOrder(shopifyOrder);
+			console.log('ORDER', order);
+
+			return json({ message: 'The merging is complete.' });
+		}
+		default: {
+			throw new Error(`Unsupported action: ${action}`);
+		}
 	}
 };
 
@@ -323,9 +355,13 @@ export default function NewOrderPage() {
 							</p>
 						</div>
 
-						<div className="mt-1">
+						<div className="mt-1 flex gap-x-3">
 							<Button type="submit" color="primary">
 								Autofill
+							</Button>
+
+							<Button type="submit" name="_action" value="create_order_from_shopify" formMethod="post">
+								Create From Shopify
 							</Button>
 						</div>
 					</Form>
@@ -706,3 +742,136 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 		</table>
 	);
 };
+
+async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
+	const shippingAddress = shopifySampleOrder.shippingAddress;
+	const phoneNumber = cleanPhoneNumber(shippingAddress.phone);
+
+	const lineItems: { quantity: number; sku: string, assignedLocationId: string, assignedLocationName: string }[] =
+		shopifySampleOrder.fulfillmentOrders.flatMap((fulfillmentOrder) =>
+			fulfillmentOrder.lineItems.nodes.map((lineItem) => {
+				const quantity = Number(lineItem.totalQuantity);
+				if (isNaN(quantity)) {
+					throw new Error(
+						`Invalid quantity for SKU ${lineItem.sku}: ${lineItem.totalQuantity}`
+					);
+				}
+				return { 
+					quantity, 
+					sku: lineItem.sku, 
+					assignedLocationId: fulfillmentOrder.assignedLocation.location.id, 
+					assignedLocationName: fulfillmentOrder.assignedLocation.location.name
+				};
+			})
+		);
+
+	const transactions = await prisma.$transaction(async (tx) => {
+		// Create the order, order line items, and fulfillments
+		const order = await tx.order.create({
+			data: {
+				name: shopifySampleOrder.name,
+				shopifyOrderId: shopifySampleOrder.id,
+				status: 'NEW',
+				lineItems: {
+					create: lineItems.map((lineItem) => ({
+						sample: {
+							connect: {
+								materialNo: lineItem.sku,
+							},
+						},
+						quantity: lineItem.quantity,
+						shopifyLocationId: lineItem.assignedLocationId,
+						shopifyLocationName: lineItem.assignedLocationName
+					})),
+				},
+				fulfillments: {
+					create: shopifySampleOrder.fulfillmentOrders.map(
+						(fulfillmentOrder, index) => ({
+							name: `${shopifySampleOrder.name}-0${index + 1}`,
+							shopifyFulfillmentOrderId: fulfillmentOrder.id,
+							shopifyLocationId: fulfillmentOrder.assignedLocation.id,
+							shopifyLocationName: fulfillmentOrder.assignedLocation.name,
+						})
+					),
+				},
+				address: {
+					create: {
+						line1: shippingAddress.name,
+						line2: shippingAddress.address1,
+						line3: shippingAddress.address2,
+						city: shippingAddress.city,
+						state: shippingAddress.provinceCode,
+						postalCode: shippingAddress.zip,
+						phoneNumber: phoneNumber,
+					},
+				},
+			},
+			include: {
+				lineItems: {
+					include: {
+						sample: true,
+					},
+				},
+				fulfillments: true,
+			},
+		});
+
+		// Add the order line-items as fulfillment line-items to the correct fulfillments
+		for (const orderLineItem of order.lineItems) {
+			const fulfillment = await tx.fulfillment.findFirst({
+				where: {
+					orderId: order.id,
+					shopifyLocationId: orderLineItem.shopifyLocationId,
+				},
+			});
+
+			if (!fulfillment) throw new Error('Unable to find fulfillment!');
+
+			await tx.fulfillmentLineItem.create({
+				data: {
+					orderLineItemId: orderLineItem.id,
+					fulfillmentId: fulfillment.id,
+				},
+			});
+		}
+
+		return order;
+	});
+
+	if (!transactions) return;
+	return transactions;
+}
+
+interface ShopifySampleOrder {
+	id: string;
+	name: string;
+	fulfillmentOrders: ShopifyFulfillmentOrder[];
+	shippingAddress: ShopifyShippingAddress;
+}
+
+interface ShopifyShippingAddress {
+	name: string;
+	address1: string;
+	address2?: string;
+	city: string;
+	provinceCode: string;
+	zip: string;
+	phone: string;
+}
+
+interface ShopifyFulfillmentOrder {
+	id: string;
+	assignedLocation: ShopifyAssignedLocation;
+	lineItems: ShopifyFulfillmentOrderLineItem[];
+}
+
+interface ShopifyFulfillmentOrderLineItem {
+	id: string;
+	sku: string;
+	totalQuantity: string;
+}
+
+interface ShopifyAssignedLocation {
+	id: string;
+	name: string;
+}

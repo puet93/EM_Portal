@@ -7,14 +7,11 @@ import {
 import {
 	Form,
 	Link,
-	Outlet,
 	useActionData,
-	useLoaderData,
 } from '@remix-run/react';
 import { requireUserId } from '~/session.server';
 import { prisma } from '~/db.server';
 import { parseCSV } from '~/utils/csv';
-import { combineArrays, standardizeQueryString } from '~/utils/helpers';
 import { badRequest } from '~/utils/request.server';
 
 import FileDropInput from '~/components/FileDropInput';
@@ -133,12 +130,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 				})
 			);
 
-			console.log('CSV', data);
-			console.log('PRODUCTS', products);
-
-			if (products) {
-				return json({ products });
-			}
+			if (products) return json({ products });
 
 			return badRequest({ formError: 'Not yet implemented.' });
 		}
@@ -148,7 +140,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 };
 
 export default function VendorProductsPage() {
-	// const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 
 	return (

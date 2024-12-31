@@ -75,7 +75,7 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 	const shippingAddress = shopifySampleOrder.shippingAddress;
 	const phoneNumber = cleanPhoneNumber(shippingAddress.phone);
 
-	const lineItems: { quantity: number; sku: string }[] =
+	const lineItems: { quantity: number; sku: string, assignedLocationId: string, assignedLocationName: string }[] =
 		shopifySampleOrder.fulfillmentOrders.flatMap((fulfillmentOrder) =>
 			fulfillmentOrder.lineItems.map((lineItem) => {
 				const quantity = Number(lineItem.totalQuantity);
@@ -84,7 +84,12 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 						`Invalid quantity for SKU ${lineItem.sku}: ${lineItem.totalQuantity}`
 					);
 				}
-				return { quantity, sku: lineItem.sku };
+				return { 
+					quantity, 
+					sku: lineItem.sku, 
+					assignedLocationId: fulfillmentOrder.assignedLocation.id, 
+					assignedLocationName: fulfillmentOrder.assignedLocation.name
+				};
 			})
 		);
 
@@ -103,6 +108,8 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 							},
 						},
 						quantity: lineItem.quantity,
+						shopifyLocationId: lineItem.assignedLocationId,
+						shopifyLocationName: lineItem.assignedLocationName
 					})),
 				},
 				fulfillments: {
@@ -110,12 +117,8 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 						(fulfillmentOrder, index) => ({
 							name: `${shopifySampleOrder.name}-0${index + 1}`,
 							shopifyFulfillmentOrderId: fulfillmentOrder.id,
-							vendor: {
-								connect: {
-									shopifyLocationId:
-										fulfillmentOrder.assignedLocation.id,
-								},
-							},
+							shopifyLocationId: fulfillmentOrder.assignedLocation.id,
+							shopifyLocationName: fulfillmentOrder.assignedLocation.name,
 						})
 					),
 				},
@@ -146,7 +149,7 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 			const fulfillment = await tx.fulfillment.findFirst({
 				where: {
 					orderId: order.id,
-					vendorId: orderLineItem.sample.vendorId,
+					shopifyLocationId: orderLineItem.shopifyLocationId,
 				},
 			});
 

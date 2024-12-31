@@ -1,4 +1,5 @@
 import type { ActionFunctionArgs } from '@remix-run/node';
+import { graphqlClient } from '~/utils/shopify.server';
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
 
@@ -12,8 +13,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
 		// Extract and parse the request body
 		const requestBody = await request.json(); // Use await for asynchronous body parsing
-		// console.log('Request received:', requestBody);
-		console.log(JSON.stringify(requestBody));
 
 		// Validate the structure of the webhook payload
 		if (!requestBody || typeof requestBody !== 'object') {
@@ -21,10 +20,36 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 			return new Response('Bad Request: Invalid JSON', { status: 400 });
 		}
 
-		// Process the request
-		console.log('Processing webhook for order:', requestBody.order_id);
+		if (requestBody?.company?.id) {
+			const query = `{
+				company(id: "gid://shopify/Company/${requestBody.company.id}") {
+					id
+    				name
+  				}
+			}`
 
-		return new Response('Order updated webhook received successfully', {
+			const companyResponse = await graphqlClient.query({ data: query })
+			const companyData = companyResponse?.body?.data?.company;
+			
+			if (!companyData || typeof companyData !== 'object') {
+				console.error('Invalid JSON structure:', companyRequestBody);
+				return new Response('Bad Request: Invalid JSON', { status: 400 });
+			}
+
+			// Overwrite the company information in the original requestBody
+			requestBody.company.name = companyData.name;
+		}
+
+		// const url = "https://edwardmartin--uat.sandbox.my.salesforce-sites.com/shopifywebhook/services/apexrest/createorder" // Sandbox
+		const url = "https://edwardmartin.my.salesforce-sites.com/shopifywebhook/services/apexrest/createorder" // Production
+
+		await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(requestBody),
+		});
+
+		return new Response('Order creation webhook received successfully', {
 			status: 201,
 		});
 	} catch (error) {

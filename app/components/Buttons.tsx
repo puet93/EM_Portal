@@ -36,6 +36,7 @@ interface ButtonProps {
 	as?: 'button' | 'link';
 	color?: 'primary' | 'secondary' | 'soft';
 	form?: string;
+	formMethod?: 'get' | 'post' | 'put' | 'delete' | 'patch';
 	fullWidth?: boolean;
 	name?: string;
 	onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -54,6 +55,7 @@ export function Button({
 	as = 'button',
 	color = 'secondary',
 	form,
+	formMethod,
 	fullWidth = false,
 	onClick,
 	name,
@@ -98,6 +100,7 @@ export function Button({
 			className={commonClasses}
 			onClick={onClick}
 			form={form}
+			formMethod={formMethod}
 		>
 			{children}
 		</button>
