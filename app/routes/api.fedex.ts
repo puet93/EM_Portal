@@ -59,12 +59,12 @@ export const action: ActionFunction = async ({ request }) => {
 		requestedShipment: {
 			shipper: {
 				address: {
-					streetLines: ['823 Emerald Bay'],
-					city: 'Laguna Beach',
+					streetLines: ['15411 Red Hill Ave', 'Suite E'],
+					city: 'Tustin',
 					stateOrProvinceCode: 'CA',
-					postalCode: '92651',
+					postalCode: '92780',
 					countryCode: 'US',
-					residential: true,
+					residential: false,
 				},
 				contact: {
 					companyName: 'Edward Martin, LLC',
