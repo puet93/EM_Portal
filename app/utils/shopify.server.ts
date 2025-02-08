@@ -136,6 +136,7 @@ export async function fetchOrderByName(name: string) {
 					}
 					fulfillmentOrders(first: 30) {
 						nodes {
+							id
 							assignedLocation {
 								location {
 									id
@@ -143,6 +144,17 @@ export async function fetchOrderByName(name: string) {
 								}
 							}
 							lineItems(first: 100) {
+								edges {
+									node {
+										lineItem {
+											quantity
+											sku
+											product {
+												tags
+											}
+										}
+									}
+								}
 								nodes {
 									sku
 									totalQuantity

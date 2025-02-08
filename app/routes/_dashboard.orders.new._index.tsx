@@ -159,8 +159,6 @@ export const action: ActionFunction = async ({ request }) => {
 			}
 		}
 		case 'create_order_from_shopify': {
-			console.log('CREATING ORDER FROM SHOPIFY');
-			
 			// Get order name from form data
 			const orderName = formData.get('query');
 
@@ -168,16 +166,10 @@ export const action: ActionFunction = async ({ request }) => {
 
 			// Fetch order from Shopify with order name
 			const shopifyOrder = await fetchOrderByName(orderName)
-			
-
 			shopifyOrder.fulfillmentOrders = shopifyOrder.fulfillmentOrders.nodes
 
-			console.log('FULFILLMENT ORDERS', shopifyOrder.fulfillmentOrders)
-			
-
 			// Create order
-			const order = await createOrder(shopifyOrder);
-			console.log('ORDER', order);
+			await createOrder(shopifyOrder);
 
 			return json({ message: 'The merging is complete.' });
 		}
@@ -267,8 +259,6 @@ export default function NewOrderPage() {
 				selectAllRef.current.indeterminate = true;
 			}
 		}
-
-		console.log('CART', cart);
 	}, [cart, results]);
 
 	return (
@@ -749,21 +739,38 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 
 	const lineItems: { quantity: number; sku: string, assignedLocationId: string, assignedLocationName: string }[] =
 		shopifySampleOrder.fulfillmentOrders.flatMap((fulfillmentOrder) =>
-			fulfillmentOrder.lineItems.nodes.map((lineItem) => {
-				const quantity = Number(lineItem.totalQuantity);
-				if (isNaN(quantity)) {
+			fulfillmentOrder.lineItems.edges.map((edge) => {
+				const { lineItem } = edge.node;
+				const parsedQuantity = Number(lineItem.quantity);
+				
+				if (isNaN(parsedQuantity)) {
 					throw new Error(
 						`Invalid quantity for SKU ${lineItem.sku}: ${lineItem.totalQuantity}`
 					);
 				}
+
+				if (!lineItem.product.tags.includes('sample')) {
+					return null;
+				}
+
 				return { 
-					quantity, 
+					quantity: parsedQuantity, 
 					sku: lineItem.sku, 
 					assignedLocationId: fulfillmentOrder.assignedLocation.location.id, 
 					assignedLocationName: fulfillmentOrder.assignedLocation.location.name
 				};
-			})
+			}).filter(Boolean)
 		);
+
+	// Filter fulfillment orders that have at least one sample product
+	const fulfillmentsWithSamples = shopifySampleOrder.fulfillmentOrders.filter((fulfillmentOrder) =>
+		fulfillmentOrder.lineItems.edges.some((edge) => edge.node.lineItem.product.tags.includes('sample'))
+	);
+
+	if (lineItems.length === 0) {
+		console.log('No sample line items found, skipping order creation.');
+		return;
+	}
 
 	const transactions = await prisma.$transaction(async (tx) => {
 		// Create the order, order line items, and fulfillments
@@ -785,7 +792,7 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 					})),
 				},
 				fulfillments: {
-					create: shopifySampleOrder.fulfillmentOrders.map(
+					create: fulfillmentsWithSamples.map(
 						(fulfillmentOrder, index) => ({
 							name: `${shopifySampleOrder.name}-0${index + 1}`,
 							shopifyFulfillmentOrderId: fulfillmentOrder.id,
@@ -800,7 +807,7 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 						line2: shippingAddress.address1,
 						line3: shippingAddress.address2,
 						city: shippingAddress.city,
-						state: shippingAddress.provinceCode,
+						state: shippingAddress.province,
 						postalCode: shippingAddress.zip,
 						phoneNumber: phoneNumber,
 					},
@@ -821,7 +828,7 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 			const fulfillment = await tx.fulfillment.findFirst({
 				where: {
 					orderId: order.id,
-					shopifyLocationId: orderLineItem.shopifyLocationId,
+					// shopifyLocationId: orderLineItem.shopifyLocationId,
 				},
 			});
 

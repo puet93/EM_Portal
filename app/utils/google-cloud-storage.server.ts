@@ -61,7 +61,7 @@ export async function uploadFileToGCS(file: Buffer, destination: string) {
 	await fileUpload.save(file);
 	const [url] = await fileUpload.getSignedUrl({
 		action: 'read',
-		expires: Date.now() + 1000 * 60 * 60,
+		expires: Date.now() + 24 * 1000 * 60 * 60, // 24 hours
 	});
 
 	return url;

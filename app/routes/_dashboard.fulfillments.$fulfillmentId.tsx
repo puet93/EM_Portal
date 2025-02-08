@@ -334,6 +334,10 @@ export default function OrderPage() {
 							? data.fulfillment.name
 							: 'Sample Order'}
 					</h1>
+					
+					{data?.fulfillment?.shopifyFulfillmentOrderId ? (
+						<p>{data.fulfillment.shopifyFulfillmentOrderId}</p>
+					) : null}
 
 					<div className="gap-x ml-auto flex items-center gap-x-4">
 						{/* Experimental Menu */}
@@ -599,13 +603,23 @@ export default function OrderPage() {
 									Ship To
 								</h3>
 
-								{data.user.role === 'SUPERADMIN' && (
+								{/* {data.user.role === 'SUPERADMIN' && (
 									<button
 										type="button"
 										className="text-sm font-normal leading-4 text-sky-600"
 										onClick={handleCopyToClipboard}
 									>
 										Copy
+									</button>
+								)} */}
+
+								{data.user.role === 'SUPERADMIN' && (
+									<button
+										type="button"
+										className="text-sm font-normal leading-4 text-sky-600"
+										onClick={() => setIsEditingAddress(!isEditingAddress)}
+									>
+										Edit
 									</button>
 								)}
 							</div>
@@ -685,11 +699,22 @@ export default function OrderPage() {
 											</span>
 										)}
 									</div>
+
 									<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
 										{data.fulfillment.trackingInfo
 											?.company ? (
 											data.fulfillment.trackingInfo
 												.company
+										) : (
+											<span className="italic text-zinc-600">
+												No shipping carrier
+											</span>
+										)}
+									</div>
+
+									<div className="text-sm leading-6 text-sky-600">
+										{data.fulfillment.trackingInfo?.labelUrl ? (
+											<a href={data.fulfillment.trackingInfo.labelUrl}>Download</a>
 										) : (
 											<span className="italic text-zinc-600">
 												No shipping carrier

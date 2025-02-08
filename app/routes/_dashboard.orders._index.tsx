@@ -790,6 +790,24 @@ function FulFillments({
 		window.open(url.toString(), '_blank');
 	}
 
+	function proceedToLabelGeneration() {
+		const selectedCheckboxes = document.querySelectorAll(
+			'input[name="fulfillmentIds"]:checked'
+		);
+		const selectedIds = Array.from(selectedCheckboxes).map(
+			(checkbox) => checkbox.value
+		);
+
+		if (selectedIds.length === 0) {
+			alert('Please select at least one order.');
+			return;
+		}
+
+		const url = new URL('/orders/shipping-labels', window.location.origin);
+		selectedIds.forEach((id) => url.searchParams.append('ids', id));
+		window.location.href = url.toString();
+	}
+
 	return (
 		<Form method="post">
 			<table className="min-w-full divide-y divide-gray-300 dark:divide-zinc-700">
@@ -811,10 +829,10 @@ function FulFillments({
 										color="primary"
 										size="xs"
 										name="_action"
-										value="createPickTickets"
-										onClick={openPickTickets}
+										value="generateFedExLabels"
+										onClick={proceedToLabelGeneration}
 									>
-										Print Tickets
+										Generate FedEx Labels
 									</Button>
 
 									<Button
@@ -825,6 +843,15 @@ function FulFillments({
 										onClick={openLabels}
 									>
 										Print Labels
+									</Button>
+
+									<Button
+										size="xs"
+										name="_action"
+										value="createPickTickets"
+										onClick={openPickTickets}
+									>
+										Print Tickets
 									</Button>
 
 									{userRole === 'SUPERADMIN' ? (

@@ -80,7 +80,7 @@ model Fulfillment {
     shopifyFulfillmentId      String?
     shopifyFulfillmentOrderId String?
     shopifyLocationId         String?
-    shopifyLocationName         String?
+    shopifyLocationName       String?
 }
 
 model FulfillmentLineItem {
@@ -94,6 +94,7 @@ model FulfillmentLineItem {
 model TrackingInfo {
     number        String      @id @unique
     company       String
+    labelUrl      String?
     fulfillment   Fulfillment @relation(fields: [fulfillmentId], references: [id], onDelete: Cascade)
     fulfillmentId String      @unique
 }
