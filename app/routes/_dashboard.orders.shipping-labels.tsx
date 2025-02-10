@@ -15,6 +15,20 @@ export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
 	const ids = searchParams.getAll('ids');
 
+	// Get current time (server time, likely UTC)
+	const now = new Date();
+
+	// Convert UTC time to Pacific Time
+	const pacificTime = new Intl.DateTimeFormat("en-US", {
+		timeZone: "America/Los_Angeles",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).format(now);
+	const [month, day, year] = pacificTime.split("/");
+	const todayPacific = `${year}-${month}-${day}`;
+	const shipDatestamp = todayPacific;
+
 	if (ids.length === 0) {
 		return json({ error: 'No fulfillments selected' });
 	}
@@ -68,6 +82,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 			const shipmentData: ShipmentData = {
 				mergeLabelDocOption: 'LABELS_AND_DOCS',
 				requestedShipment: {
+					shipDatestamp: shipDatestamp,
 					shipper: {
 						address: {
 							streetLines: ['15411 Red Hill Ave', 'Suite E'],
@@ -263,7 +278,6 @@ export default function What() {
 
 		window.open(url.toString(), '_blank');
 	};
-	
 
 	return (
 		<>
@@ -280,21 +294,27 @@ export default function What() {
 					<ol className="mt-8">
 						{data.results.map(({ status, value }) => { 
 							if (status === 'fulfilled') {
-								return (
+								return value ? (
 									<li key={value.id} className="mt-5">
-										<div className="text-sm leading-6">{value.name}</div>
-										<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">{value?.trackingInfo?.number}</div>
-										<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">{value?.trackingInfo?.company}</div>
+
+										<div className="text-sm leading-6">{value.name ? value.name : 'This fulfillment order is missing its name.'}</div>
+										
+										{value?.trackingInfo?.number && (
+											<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">{value.trackingInfo.number}</div>
+										)}
+
+										{value?.trackingInfo?.company && (
+											<div className="text-sm leading-6 text-gray-500 dark:text-zinc-400">{value.trackingInfo.company}</div>
+										)}
 									
-										{value?.trackingInfo?.labelUrl ? (
+										{value?.trackingInfo?.labelUrl && (
 											<a className="text-sm leading-6 text-sky-600" href={value.trackingInfo.labelUrl}>Download</a>
-										) : null}
+										)}
 									</li>
-								)
+								) : null
 							} else {
 								return <li>Something happened</li>
 							}
-							
 						})}
 					</ol>
 				) :

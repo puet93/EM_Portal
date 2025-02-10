@@ -21,11 +21,26 @@ export const action: ActionFunction = async ({ request }) => {
 	const state = formData.get('state') as string | null;
 	const zip = formData.get('zip') as string | null;
 	const phone = formData.get('phone') as string | null;
-
+	
 	const orderNo = formData.get('orderNo') as string | null;
 	const packagingType = formData.get('packagingType') as string | null;
 	const packageWeight = formData.get('packageWeight') as string | null;
 	const totalWeight = packageWeight ? parseFloat(packageWeight) : 0;
+
+	// Get current time (server time, likely UTC)
+	const now = new Date();
+
+	// Convert UTC time to Pacific Time
+	const pacificTime = new Intl.DateTimeFormat("en-US", {
+		timeZone: "America/Los_Angeles",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).format(now);
+	const [month, day, year] = pacificTime.split("/");
+	const todayPacific = `${year}-${month}-${day}`;
+	const shipDate = formData.get('shipDate') as string | null;
+	const shipDatestamp = shipDate && shipDate.trim() !== "" ? shipDate : todayPacific;
 
 	if (
 		!fullName ||
@@ -57,6 +72,7 @@ export const action: ActionFunction = async ({ request }) => {
 	const shipmentData: ShipmentData = {
 		mergeLabelDocOption: 'LABELS_AND_DOCS',
 		requestedShipment: {
+			shipDatestamp: shipDatestamp,
 			shipper: {
 				address: {
 					streetLines: ['15411 Red Hill Ave', 'Suite E'],

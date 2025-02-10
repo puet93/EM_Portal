@@ -30,6 +30,7 @@ export function ShippingLabelForm({
 }: ShippingLabelFormProps) {
 	const fetcher = useFetcher();
 	const normalizedState = normalizeStateInput(state) || 'Invalid State';
+	const today = new Date().toISOString().split("T")[0];
 
 	return (
 		<fetcher.Form method="post" action="/api/fedex">
@@ -238,6 +239,19 @@ export function ShippingLabelForm({
 							</div>
 						</div>
 					</div>
+
+					<div className="col-span-3">
+						<Label htmlFor="shipDate">Ship date</Label>
+						<div className="relative mt-2">
+							<Input
+								id="shipDate"
+								name="shipDate"
+								type="date"
+								defaultValue={today}
+							/>
+						</div>
+					</div>
+
 				</div>
 			</div>
 
