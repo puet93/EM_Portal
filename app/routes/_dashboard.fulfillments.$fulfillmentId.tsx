@@ -335,10 +335,6 @@ export default function OrderPage() {
 							: 'Sample Order'}
 					</h1>
 					
-					{data?.fulfillment?.shopifyFulfillmentOrderId ? (
-						<p>{data.fulfillment.shopifyFulfillmentOrderId}</p>
-					) : null}
-
 					<div className="gap-x ml-auto flex items-center gap-x-4">
 						{/* Experimental Menu */}
 						{data.user.role === 'SUPERADMIN' && (
@@ -455,6 +451,14 @@ export default function OrderPage() {
 						</div>
 					</div>
 				</div>
+				
+				{data?.fulfillment?.shopifyFulfillmentOrderId && (
+				<div className="mt-1">
+					<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
+						{data.fulfillment.shopifyFulfillmentOrderId}
+					</span>
+				</div>
+				)}
 
 				<div className="mt-1">
 					<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
