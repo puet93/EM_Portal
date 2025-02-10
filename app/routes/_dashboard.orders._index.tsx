@@ -330,6 +330,29 @@ export default function OrdersIndex() {
 	const [selectedStatuses, setSelectedStatuses] = useState<Option[]>([]);
 	const [selectedVendors, setSelectedVendors] = useState<Option[]>([]);
 
+	// 🔹 Function to generate search params string (placed inside the component)
+	const generateSearchParams = (newOffset: number) => {
+		let searchParamsString = `?offset=${newOffset}&pageSize=${pageSize}`;
+
+		if (searchParams.has('search')) {
+			searchParamsString += `&search=${encodeURIComponent(searchParams.get('search')!)}`;
+		}
+
+		if (searchParams.has('statuses')) {
+			searchParams.getAll('statuses').forEach((status) => {
+				searchParamsString += `&statuses=${encodeURIComponent(status)}`;
+			});
+		}
+
+		if (searchParams.has('vendors')) {
+			searchParams.getAll('vendors').forEach((vendor) => {
+				searchParamsString += `&vendors=${encodeURIComponent(vendor)}`;
+			});
+		}
+
+		return searchParamsString;
+	};
+
 	useEffect(() => {
 		const indices: number[] = data.statuses.map(
 			(status: FulfillmentStatus) =>
@@ -358,6 +381,9 @@ export default function OrdersIndex() {
 		);
 		setSelectedVendors(indices.map((index) => data.vendorOptions[index]));
 	}, [data.vendors, data.vendorOptions]);
+
+	// Pagination
+	const pages = getPaginationRange(currentPage, totalPages);
 
 	return (
 		<>
@@ -471,7 +497,6 @@ export default function OrdersIndex() {
 
 			{/* Fulfillments */}
 			<section className="page-section">
-				{/* Pagination */}
 				<div className="flex items-center justify-between py-4">
 					{count !== 0 ? (
 						<p className="text-sm text-gray-700 dark:text-zinc-300">
@@ -482,69 +507,81 @@ export default function OrdersIndex() {
 						</p>
 					) : null}
 
-					<nav
-						className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-						aria-label="Pagination"
-					>
-						{Array.from(
-							{ length: totalPages },
-							(_, i) => i + 1
-						).map((page) => {
-							// Style based on current page
-							const className =
-								page === currentPage
-									? 'relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-zinc-950'
-									: 'relative inline-flex items-center px-4 py-2 text-sm font-semibold dark:bg-white/10 dark:hover:bg-white/20 text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-white dark:ring-0';
+					{/* Pagination */}
+					<nav area-label="pagination" className="isolate inline-flex -space-x-px rounded-md shadow-sm dark:bg-zinc-950">
+						{/* Previous Button */}
+						{currentPage > 1 ? (
+							<Link
+								to={generateSearchParams(offset - pageSize)}
+								className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700`}
+							>
+								<span className="sr-only">Previous</span>
+								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+									<path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd"></path>
+								</svg>
+							</Link>
+						) : (
+							<button 
+								disabled
+								aria-disabled="true"
+								className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700"
+							>
+								<span className="sr-only">Previous</span>
+								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+									<path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd"></path>
+								</svg>
+							</button>
+						)}
 
-							// Create search params string
-							let searchParamsString = '';
-
-							// Offset and page size
-							searchParamsString =
-								searchParamsString +
-								`?offset=${(page - 1) * pageSize}` +
-								`&pageSize=${pageSize}`;
-
-							// Search
-							if (searchParams.has('search')) {
-								searchParamsString =
-									searchParamsString +
-									`&search=${searchParams.get('search')}`;
-							}
-
-							// Statuses
-							if (searchParams.has('statuses')) {
-								searchParams
-									.getAll('statuses')
-									.map((status) => {
-										searchParamsString =
-											searchParamsString +
-											`&statuses=${status}`;
-									});
-							}
-
-							// Vendors
-							if (searchParams.has('vendors')) {
-								searchParams.getAll('vendors').map((vendor) => {
-									searchParamsString =
-										searchParamsString +
-										`&vendors=${vendor}`;
-								});
-							}
-
-							return (
+						{/* Page Numbers */}
+						{pages.map((page, index) =>
+							page === "..." ? (
+								<span 
+									key={`ellipsis-${index}`} 
+									className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0 dark:ring-zinc-700"
+								>
+									...
+								</span>
+							) : (
 								<Link
-									aria-current={
-										page === currentPage ? 'page' : false
-									}
-									className={className}
 									key={page}
-									to={searchParamsString}
+									to={generateSearchParams((page - 1) * pageSize)}
+									// to={`?offset=${(page - 1) * pageSize}&pageSize=${pageSize}`}
+									className={`relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-20 focus:outline-offset-0 md:inline-flex dark:ring-zinc-700 ${
+										page === currentPage
+											? "bg-sky-600 text-white"
+											: "text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/10"
+									}`}
+									aria-current={page === currentPage ? "page" : undefined}
 								>
 									{page}
 								</Link>
-							);
-						})}
+							)
+						)}
+
+						{/* Next Button */}
+						{currentPage < totalPages ? (
+							<Link
+								to={generateSearchParams(offset + pageSize)}
+								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700"
+							>
+								<span className="sr-only">Next</span>
+								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+									<path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"></path>
+								</svg>
+							</Link>
+						) : (
+							<button 
+								disabled
+								aria-disabled="true"
+								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700"
+							>
+								<span className="sr-only">Next</span>
+								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+									<path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"></path>
+								</svg>
+							</button>
+						)}
 					</nav>
 				</div>
 
@@ -1098,6 +1135,38 @@ function createDropdownOptions({
 		label: item[labelKey],
 		value: item[valueKey],
 	}));
+}
+
+function getPaginationRange(currentPage: number, totalPages: number, pageRange: number = 2) {
+    const pages: (number | "...")[] = [];
+
+    if (totalPages <= 1) return [1]; // Edge case: Only one page
+
+    pages.push(1); // Always include first page
+
+    // Handle leading "..."
+    if (currentPage - pageRange > 2) {
+        pages.push("...");
+    }
+
+    // Add pages around current page
+    for (let i = Math.max(2, currentPage - pageRange); i <= Math.min(totalPages - 1, currentPage + pageRange); i++) {
+        if (!pages.includes(i)) {  // Ensure no duplicates
+            pages.push(i);
+        }
+    }
+
+    // Handle trailing "..."
+    if (currentPage + pageRange < totalPages - 1) {
+        pages.push("...");
+    }
+
+    // Always include last page
+    if (!pages.includes(totalPages)) {
+        pages.push(totalPages);
+    }
+
+    return pages;
 }
 
 async function fetchVendors() {
