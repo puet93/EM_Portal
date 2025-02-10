@@ -25,6 +25,7 @@ interface FedExResponse {
 export interface ShipmentData {
 	mergeLabelDocOption: string;
 	requestedShipment: {
+		shipDatestamp: string;
 		shipper: {
 			address: {
 				streetLines: string[];
