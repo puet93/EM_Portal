@@ -60,6 +60,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 			},
 			order: {
 				select: {
+					id: true,
 					name: true,
 					address: true,
 				},
@@ -249,15 +250,16 @@ export default function OrderPage() {
 	const data = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
+	const [isEditingAddress, setIsEditingAddress] = useState(false);
 	const [isEditing, setIsEditing] = useState(
 		!data.fulfillment.trackingInfo?.number ||
-			!data.fulfillment.trackingInfo?.company
+		!data.fulfillment.trackingInfo?.company
 	);
 
 	const fulfillment = data.fulfillment;
 	const order = fulfillment.order;
-	const address = order.address;
-
+	const { address } = order;
+	
 	useEffect(() => {
 		if (
 			navigation.state === 'loading' &&
@@ -266,6 +268,14 @@ export default function OrderPage() {
 			setIsEditing(false);
 		}
 	}, [navigation]);
+
+	// Edit ship to address
+	const shipToAddress = useFetcher();
+	useEffect(() => {
+		if (shipToAddress.state === 'idle' && shipToAddress.data == null) {
+			setIsEditingAddress(false);
+		}
+	}, [shipToAddress]);
 
 	const handleCancelClick = () => {
 		setIsEditing(false);
@@ -607,16 +617,6 @@ export default function OrderPage() {
 									Ship To
 								</h3>
 
-								{/* {data.user.role === 'SUPERADMIN' && (
-									<button
-										type="button"
-										className="text-sm font-normal leading-4 text-sky-600"
-										onClick={handleCopyToClipboard}
-									>
-										Copy
-									</button>
-								)} */}
-
 								{data.user.role === 'SUPERADMIN' && (
 									<button
 										type="button"
@@ -628,7 +628,7 @@ export default function OrderPage() {
 								)}
 							</div>
 
-							{address ? (
+							{(!isEditingAddress && address) ? (
 								<>
 									<address className="mt-2 text-sm not-italic leading-6 text-gray-500 dark:text-zinc-400">
 										{address.line1 && `${address.line1}\n`}
@@ -655,6 +655,122 @@ export default function OrderPage() {
 										</div>
 									) : null}
 								</>
+							) : null}
+
+							{isEditingAddress ? (
+								<shipToAddress.Form
+									method="post"
+									action={`/api/addresses/${data.fulfillment.order.address.id}`}
+								>
+									<div className="input input--sm">
+										<label htmlFor="name">Name</label>
+										<input
+											type="text"
+											autoComplete="name"
+											id="name"
+											name="line1"
+											defaultValue={address.line1}
+										/>
+									</div>
+						
+									<div className="input input--sm">
+										<label htmlFor="address-line1">
+											Street Address
+										</label>
+										<input
+											type="text"
+											autoComplete="address-line1"
+											id="address-line1"
+											name="line2"
+											defaultValue={address.line2}
+										/>
+									</div>
+						
+									<div className="input input--sm">
+										<label htmlFor="address-line2">
+											Suite, Unit, Apt #
+										</label>
+										<input
+											type="text"
+											autoComplete="address-line2"
+											id="address-line2"
+											name="line3"
+											defaultValue={address.line3}
+										/>
+									</div>
+						
+									<div className="input input--sm">
+										<label htmlFor="address-level2">City</label>
+										<input
+											type="text"
+											id="address-level2"
+											autoComplete="address-level2"
+											name="city"
+											defaultValue={address.city}
+										/>
+									</div>
+						
+									<div className="input input--sm">
+										<label htmlFor="address-level1">
+											State
+										</label>
+										<input
+											type="text"
+											id="address-level1"
+											autoComplete="address-level1"
+											name="state"
+											defaultValue={address.state}
+										/>
+									</div>
+						
+									<div className="input input--sm">
+										<label htmlFor="postal-code">
+											ZIP Code
+										</label>
+										<input
+											type="text"
+											id="postal-code"
+											autoComplete="postal-code"
+											name="postalCode"
+											defaultValue={address.postalCode}
+										/>
+									</div>
+
+									<div className="input input--sm">
+										<label htmlFor="phoneNumber">
+											Phone Number
+										</label>
+										<input
+											type="text"
+											id="phoneNumber"
+											name="phoneNumber"
+											defaultValue={address.phoneNumber}
+										/>
+									</div>
+						
+									<div className="flex">
+										{shipToAddress.state === 'submitting' ? (
+											<Button
+												size="xs"
+												type="button"
+											>
+												Saving...
+											</Button>
+										) : (
+											<Button
+												size="xs"
+												type="submit"
+												color="primary"
+											>
+												Update Address
+											</Button>
+										)}
+						
+										<div className="ml-2">
+											<Button size="xs" onClick={() => setIsEditingAddress(false)}>Cancel</Button>
+										</div>
+									</div>
+								</shipToAddress.Form>
 							) : null}
 						</div>
 
