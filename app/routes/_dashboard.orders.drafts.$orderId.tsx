@@ -356,7 +356,6 @@ export default function NewOrderDetailsPage() {
 					{data.order.fulfillments.map((fulfillment) => (
 						<section className="page-section" key={fulfillment.id}>
 							<div className="page-section-header align-baseline">
-								<h2 className="">{fulfillment.vendor.name}</h2>
 								<Link to={`/fulfillments/${fulfillment.id}`}>
 									{fulfillment.name}
 								</Link>
@@ -368,7 +367,7 @@ export default function NewOrderDetailsPage() {
 											Material No.
 										</th>
 										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
-											{fulfillment.vendor.name}
+											Vendor's Name
 										</th>
 										<th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
 											Edward Martin
@@ -640,7 +639,7 @@ export default function NewOrderDetailsPage() {
 
 						{!isEditing ? (
 							<>
-								<address>
+								<address className="whitespace-nowrap pt-4 text-sm text-gray-500 dark:text-zinc-400">
 									{data.order.address.line1}
 									<br />
 									{data.order.address.line2}
@@ -654,6 +653,10 @@ export default function NewOrderDetailsPage() {
 									{`${data.order.address.city}, ${data.order.address.state} ${data.order.address.postalCode}`}
 								</address>
 
+								{data?.order?.address?.phoneNumber && (
+									<div className="whitespace-nowrap pt-4 text-sm text-gray-500 dark:text-zinc-400">{data.order.address.phoneNumber}</div>
+								)}
+								
 								<button
 									className="link"
 									onClick={handleEditClick}
