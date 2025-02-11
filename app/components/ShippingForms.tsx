@@ -199,7 +199,7 @@ export function ShippingLabelForm({
 							</div>
 						</div>
 
-						<div className="col-span-3">
+						<div className="col-span-2">
 							<Label htmlFor="packagingType">Packaging</Label>
 							<div className="mt-2">
 								<Select
@@ -223,7 +223,7 @@ export function ShippingLabelForm({
 							</div>
 						</div>
 
-						<div className="col-span-3">
+						<div className="col-span-2">
 							<Label htmlFor="packageWeight">Weight</Label>
 							<div className="relative mt-2">
 								<Input
@@ -238,20 +238,19 @@ export function ShippingLabelForm({
 								</div>
 							</div>
 						</div>
-					</div>
 
-					<div className="col-span-3">
-						<Label htmlFor="shipDate">Ship date</Label>
-						<div className="relative mt-2">
-							<Input
-								id="shipDate"
-								name="shipDate"
-								type="date"
-								defaultValue={today}
-							/>
+						<div className="col-span-2">
+							<Label htmlFor="shipDate">Ship date</Label>
+							<div className="relative mt-2">
+								<Input
+									id="shipDate"
+									name="shipDate"
+									type="date"
+									defaultValue={today}
+								/>
+							</div>
 						</div>
 					</div>
-
 				</div>
 			</div>
 
