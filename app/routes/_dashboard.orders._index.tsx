@@ -24,6 +24,7 @@ import {
 } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import { Button } from '~/components/Buttons';
+import { Input } from '~/components/Input';
 import MultiSelectMenu from '~/components/MultiSelectMenu';
 
 import type { SyntheticEvent } from 'react';
@@ -749,8 +750,10 @@ function FulFillments({
 	userRole: 'SUPERADMIN' | 'ADMIN' | 'USER';
 	fulfillments: any[];
 }) {
+	const today = new Date().toISOString().split("T")[0];
 	const selectAllRef = useRef<HTMLInputElement>(null);
 	const [isShowingActionButtons, setIsShowingActionButtons] = useState(false);
+	const [shipDate, setShipDate] = useState(today)
 
 	const handleCheckboxChange = () => {
 		// Find all checkboxes with name="fulfillmentIds"
@@ -842,6 +845,7 @@ function FulFillments({
 
 		const url = new URL('/orders/shipping-labels', window.location.origin);
 		selectedIds.forEach((id) => url.searchParams.append('ids', id));
+		url.searchParams.append('shipDate', shipDate)
 		window.location.href = url.toString();
 	}
 
@@ -871,6 +875,8 @@ function FulFillments({
 									>
 										Generate FedEx Labels
 									</Button>
+
+									<Input type="date" onChange={(e) => setShipDate(e.target.value)} value={shipDate} name="shipDate" id="shipDate" />
 
 									<Button
 										color="primary"
