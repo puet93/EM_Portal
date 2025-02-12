@@ -14,20 +14,22 @@ import type { LoaderFunction } from "@remix-run/node";
 export const loader: LoaderFunction = async ({ request }) => {
 	const searchParams = new URL(request.url).searchParams;
 	const ids = searchParams.getAll('ids');
-
-	// Get current time (server time, likely UTC)
-	const now = new Date();
-
-	// Convert UTC time to Pacific Time
-	const pacificTime = new Intl.DateTimeFormat("en-US", {
-		timeZone: "America/Los_Angeles",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(now);
-	const [month, day, year] = pacificTime.split("/");
-	const todayPacific = `${year}-${month}-${day}`;
-	const shipDatestamp = todayPacific;
+	
+	let shipDate = searchParams.get('shipDate')?.trim();
+  
+	// If shipDate is empty, use the current date in Pacific Time
+	const shipDatestamp =
+		shipDate && shipDate !== ''
+			? shipDate
+			: new Date().toLocaleDateString('en-US', {
+					timeZone: 'America/Los_Angeles',
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+			  })
+			  .split('/')
+			  .reverse()
+			  .join('-');
 
 	if (ids.length === 0) {
 		return json({ error: 'No fulfillments selected' });
@@ -49,8 +51,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 			trackingInfo: true,
 		},
 	});
-
-	fulfillments.forEach(fulfillment => console.log(fulfillment));
 
 	// Generate a shipping label for each fulfullment
 	const results = await Promise.allSettled(

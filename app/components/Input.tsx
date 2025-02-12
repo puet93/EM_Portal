@@ -15,6 +15,8 @@ interface InputProps {
 	placeholder?: string;
 	readOnly?: boolean;
 	required?: boolean;
+	onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+	value?: string;
 }
 
 export function Input({
@@ -29,6 +31,8 @@ export function Input({
 	placeholder = '',
 	readOnly = false,
 	required = false,
+	onChange,
+	value,
 }: InputProps) {
 	const disabledClasses = 'disabled:cursor-not-allowed';
 
@@ -36,20 +40,29 @@ export function Input({
 		disabled ? disabledClasses : ''
 	}`.trim();
 
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		if (onChange) {
+			onChange(event);
+		}
+	};
+
+	const inputProps = {
+		id,
+		name,
+		type,
+		form: form || undefined,
+		autoFocus,
+		className: inputClasses,
+		placeholder,
+		disabled,
+		readOnly,
+		required,
+		onChange: handleChange,
+		...(value !== undefined ? { value } : { defaultValue }) // Ensure only one is passed
+	  };
+
 	const input = (
-		<input
-			id={id}
-			name={name}
-			type={type}
-			form={form || undefined}
-			defaultValue={defaultValue}
-			autoFocus={autoFocus}
-			className={inputClasses}
-			placeholder={placeholder}
-			disabled={disabled}
-			readOnly={readOnly}
-			required={required}
-		/>
+		<input {...inputProps} />
 	);
 
 	if (label) {
