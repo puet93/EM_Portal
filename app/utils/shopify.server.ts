@@ -7,8 +7,20 @@ interface ErrorResult {
 	message: string;
 }
 
+interface Fulfillment {
+	id: string;
+	status: string;
+	createdAt: string;
+};
+
 interface ShopifyProduct {
 	title: string;
+}
+
+interface TrackingInfo {
+	company: 'FedEx' | 'UPS' | 'USPS';
+	number: string;
+	url: string;
 }
 
 const {
@@ -400,12 +412,6 @@ export async function addTag({ id, tag }: { id: string; tag: string }) {
 	}
 }
 
-interface TrackingInfo {
-	company: 'FedEx' | 'UPS' | 'USPS';
-	number: string;
-	url: string;
-}
-
 export async function createFulfillment(
 	fulfillmentOrderId: string,
 	notifyCustomer: boolean,
@@ -455,4 +461,99 @@ export async function createFulfillment(
 
 	console.log('Fulfillment created:', fulfillmentCreateV2.fulfillment.id);
 	return fulfillmentCreateV2.fulfillment;
+}
+
+export async function updateFulfillmentTrackingInfo(
+	fulfillmentId: string,
+	notifyCustomer: boolean,
+	trackingInfo: TrackingInfo
+) {
+	const query = `mutation fulfillmentTrackingInfoUpdateV2($fulfillmentId: ID!, $trackingInfoInput: FulfillmentTrackingInput!, $notifyCustomer: Boolean) {
+		fulfillmentTrackingInfoUpdateV2(fulfillmentId: $fulfillmentId, trackingInfoInput: $trackingInfoInput, notifyCustomer: $notifyCustomer) {
+		  	fulfillment {
+				id
+				status
+				trackingInfo {
+			  		company
+			  		number
+			  		url
+				}
+		  	}
+		  	userErrors {
+				field
+				message
+		  	}
+		}
+	}`;
+
+	const variables = {
+		"fulfillmentId": fulfillmentId,
+		"notifyCustomer": notifyCustomer,
+		"trackingInfoInput": {
+		  	"company": trackingInfo.company,
+		  	"number": trackingInfo.number
+		}
+	}
+
+	try {
+		const response = await graphqlClient.query({
+			data: {
+				query: query,
+				variables: variables,
+			},
+		});
+
+		if (!response?.body?.data?.fulfillmentTrackingInfoUpdateV2) {
+		  	throw new Error("Unable to update fulfillment tracking info.");
+		}
+
+		return response.body.data.fulfillmentTrackingInfoUpdateV2;
+	} catch (error) {
+		console.error("Error updating fulfillment tracking info:", error);
+		throw new Error("Failed to update fulfillment tracking info.");
+	}
+}
+
+export async function fetchFulfillments(fulfillmentOrderId: string): Promise<null | Fulfillment[]> {
+	if (!fulfillmentOrderId) {
+	  	throw new Error("fetchFulfillmentOrder: Missing fulfillmentOrderId");
+	}
+  
+	const query = `query getFulfillmentOrder($id: ID!) {
+		fulfillmentOrder(id: $id) {
+			fulfillments(first: 10) {
+				edges {
+					node {
+						id
+						status
+						createdAt
+					}
+				}
+			}
+		}
+	}`;
+  
+	try {
+	  	const response = await graphqlClient.query({
+			data: {
+		  		query,
+		  		variables: { id: fulfillmentOrderId },
+			},
+	  	});
+  
+	  	if (!response?.body?.data?.fulfillmentOrder) {
+			throw new Error("fetchFulfillmentOrder: No fulfillment order found.");
+	  	}
+  
+	  	const fulfillmentOrder = response.body.data.fulfillmentOrder;
+
+		if (fulfillmentOrder.fulfillments.edges.length === 0) {
+			return null;
+		}	
+
+	  	return fulfillmentOrder.fulfillments.edges.map((edge) => edge.node);
+	} catch (error) {
+		console.error("Error fetching fulfillment order:", error);
+	  	throw new Error("Failed to fetch fulfillment order.");
+	}
 }

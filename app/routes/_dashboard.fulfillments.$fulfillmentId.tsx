@@ -32,7 +32,7 @@ import { ShippingLabelForm } from '~/components/ShippingForms';
 
 import type { FulfillmentStatus } from '@prisma/client';
 import type { ActionFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { createFulfillment } from '~/utils/shopify.server';
+import { createFulfillment, fetchFulfillments, updateFulfillmentTrackingInfo } from '~/utils/shopify.server';
 
 const menuItemButtonStyle =
 	'block w-full px-4 py-2 text-left text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 dark:text-white dark:data-[focus]:bg-sky-600';
@@ -191,32 +191,37 @@ export const action: ActionFunction = async ({ params, request }) => {
 				},
 			});
 
+			// Upsert tracking information on Shopify
 			if (fulfillment.shopifyFulfillmentOrderId) {
-				// TODO: Check to see if fulfillmentOrder is closed
-
-				let trackingUrl = '';
-
-				if (shippingCarrier.toLowerCase() === 'fedex') {
-					trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
-				} else if (shippingCarrier.toLowerCase() === 'ups') {
-					trackingUrl = `https://www.ups.com/WebTracking?loc=en_US&requester=ST&trackNums=${trackingNumber}`;
-				} else {
-					trackingUrl = '';
-				}
-
 				try {
-					await createFulfillment(
-						fulfillment.shopifyFulfillmentOrderId,
-						false,
-						{
-							company: shippingCarrier,
-							number: trackingNumber,
-							url: trackingUrl,
-						}
-					);
+					// Checks to see if Fulfillments exists on Fulfillment Order
+					const fulfillments = await fetchFulfillments(fulfillment.shopifyFulfillmentOrderId);
+					
+					// If no fulfillments, create fulfillment
+					if (!fulfillments) {
+						await createFulfillment(
+							fulfillment.shopifyFulfillmentOrderId,
+							false,
+							{
+								company: shippingCarrier,
+								number: trackingNumber,
+							}
+						);
+					}
+
+					// If fulfillments exists, update the first fulfillment. Note: I've never seen a case with second fulfillment.
+					if (fulfillments) {
+						await updateFulfillmentTrackingInfo(
+							fulfillments[0].id,
+							false,
+							{
+								company: shippingCarrier,
+								number: trackingNumber,
+							}
+						)
+					}
 				} catch (error) {
-					console.log('Unable to update tracking info on Shopify.');
-					console.log(error);
+					console.error('Unable to update tracking info on Shopify:', error);
 				}
 			}
 
@@ -465,7 +470,7 @@ export default function OrderPage() {
 				{data?.fulfillment?.shopifyFulfillmentOrderId && (
 				<div className="mt-1">
 					<span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
-						{data.fulfillment.shopifyFulfillmentOrderId}
+						Fulfillment Order ID: {data.fulfillment.shopifyFulfillmentOrderId}
 					</span>
 				</div>
 				)}
@@ -657,7 +662,7 @@ export default function OrderPage() {
 								</>
 							) : null}
 
-							{isEditingAddress ? (
+							{isEditingAddress && address ? (
 								<shipToAddress.Form
 									method="post"
 									action={`/api/addresses/${data.fulfillment.order.address.id}`}
@@ -669,7 +674,7 @@ export default function OrderPage() {
 											autoComplete="name"
 											id="name"
 											name="line1"
-											defaultValue={address.line1}
+											defaultValue={address.line1 ?? ''}
 										/>
 									</div>
 						
@@ -682,7 +687,7 @@ export default function OrderPage() {
 											autoComplete="address-line1"
 											id="address-line1"
 											name="line2"
-											defaultValue={address.line2}
+											defaultValue={address.line2 ?? ''}
 										/>
 									</div>
 						
@@ -695,7 +700,7 @@ export default function OrderPage() {
 											autoComplete="address-line2"
 											id="address-line2"
 											name="line3"
-											defaultValue={address.line3}
+											defaultValue={address.line3 ?? ''}
 										/>
 									</div>
 						
@@ -706,7 +711,7 @@ export default function OrderPage() {
 											id="address-level2"
 											autoComplete="address-level2"
 											name="city"
-											defaultValue={address.city}
+											defaultValue={address.city ?? ''}
 										/>
 									</div>
 						
@@ -719,7 +724,7 @@ export default function OrderPage() {
 											id="address-level1"
 											autoComplete="address-level1"
 											name="state"
-											defaultValue={address.state}
+											defaultValue={address.state ?? ''}
 										/>
 									</div>
 						
@@ -732,7 +737,7 @@ export default function OrderPage() {
 											id="postal-code"
 											autoComplete="postal-code"
 											name="postalCode"
-											defaultValue={address.postalCode}
+											defaultValue={address.postalCode ?? ''}
 										/>
 									</div>
 
@@ -744,7 +749,7 @@ export default function OrderPage() {
 											type="text"
 											id="phoneNumber"
 											name="phoneNumber"
-											defaultValue={address.phoneNumber}
+											defaultValue={address.phoneNumber ?? ''}
 										/>
 									</div>
 						
