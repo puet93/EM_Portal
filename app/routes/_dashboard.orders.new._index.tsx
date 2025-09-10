@@ -169,9 +169,13 @@ export const action: ActionFunction = async ({ request }) => {
 			shopifyOrder.fulfillmentOrders = shopifyOrder.fulfillmentOrders.nodes
 
 			// Create order
-			await createOrder(shopifyOrder);
+			try {
+				const order = await createOrder(shopifyOrder);
 
-			return json({ message: 'The merging is complete.' });
+				return redirect(`/orders?search=${encodeURIComponent(order.name)}&statuses=NEW`);
+			} catch(e) {
+				return json({ error: "There was a problem with creating the order." }, 500);
+			}
 		}
 		default: {
 			throw new Error(`Unsupported action: ${action}`);
@@ -845,7 +849,12 @@ async function createOrder(shopifySampleOrder: ShopifySampleOrder) {
 		return order;
 	});
 
-	if (!transactions) return;
+	if (!transactions) {
+		throw new Error('Unable to create order.')
+	}
+
+	console.log('TRANSACTIONS', transactions);
+
 	return transactions;
 }
 

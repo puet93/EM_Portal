@@ -514,7 +514,7 @@ export default function OrdersIndex() {
 						{currentPage > 1 ? (
 							<Link
 								to={generateSearchParams(offset - pageSize)}
-								className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700`}
+								className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700 dark:bg-zinc-900`}
 							>
 								<span className="sr-only">Previous</span>
 								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
@@ -525,7 +525,7 @@ export default function OrdersIndex() {
 							<button 
 								disabled
 								aria-disabled="true"
-								className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700"
+								className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700 dark:bg-zinc-900"
 							>
 								<span className="sr-only">Previous</span>
 								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
@@ -539,7 +539,7 @@ export default function OrdersIndex() {
 							page === "..." ? (
 								<span 
 									key={`ellipsis-${index}`} 
-									className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0 dark:ring-zinc-700"
+									className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0 dark:ring-zinc-700 dark:bg-zinc-900 dark:text-zinc-700"
 								>
 									...
 								</span>
@@ -551,7 +551,7 @@ export default function OrdersIndex() {
 									className={`relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-20 focus:outline-offset-0 md:inline-flex dark:ring-zinc-700 ${
 										page === currentPage
 											? "bg-sky-600 text-white"
-											: "text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/10"
+											: "text-gray-900 hover:bg-gray-50 dark:text-white dark:bg-zinc-900 dark:hover:bg-white/10"
 									}`}
 									aria-current={page === currentPage ? "page" : undefined}
 								>
@@ -564,7 +564,7 @@ export default function OrdersIndex() {
 						{currentPage < totalPages ? (
 							<Link
 								to={generateSearchParams(offset + pageSize)}
-								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700"
+								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:hover:bg-white/10 dark:text-white dark:ring-zinc-700 dark:bg-zinc-900"
 							>
 								<span className="sr-only">Next</span>
 								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
@@ -575,7 +575,7 @@ export default function OrdersIndex() {
 							<button 
 								disabled
 								aria-disabled="true"
-								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700"
+								className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset focus:z-20 focus:outline-offset-0 dark:text-zinc-700 dark:ring-zinc-700 dark:bg-zinc-900"
 							>
 								<span className="sr-only">Next</span>
 								<svg className="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
